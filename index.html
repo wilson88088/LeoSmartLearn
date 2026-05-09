@@ -1,0 +1,1693 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>小學學習通</title>
+  <style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue:#2563eb;--blue-lt:#dbeafe;--blue-ltt:#eff6ff;
+  --green:#22c55e;--amber:#f59e0b;--red:#ef4444;
+  --gray-1:#f8fafc;--gray-2:#e5e7eb;--gray-3:#6b7280;--gray-4:#374151;
+  --navy:#172554;--white:#fff;--radius:16px;--radius-lg:24px;
+}
+.app{font-family:'Noto Sans TC','Microsoft JhengHei',sans-serif;background:#f0f4f8;min-height:600px;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;font-size:14px;color:#1f2937}
+.frame{display:grid;grid-template-columns:220px 1fr;min-height:600px}
+/* Sidebar */
+.sidebar{background:linear-gradient(160deg,#1e3a8a,#2563eb);padding:20px 16px;display:flex;flex-direction:column;gap:6px}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:20px;color:#fff}
+.brand-icon{width:40px;height:40px;border-radius:14px;background:rgba(255,255,255,.2);display:grid;place-items:center;font-size:22px;flex-shrink:0}
+.brand-name{font-size:17px;font-weight:900;color:#fff}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;color:rgba(255,255,255,.75);cursor:pointer;font-weight:500;transition:all .2s;font-size:13px;border:none;background:none;width:100%;text-align:left}
+.nav-item:hover{background:rgba(255,255,255,.15);color:#fff}
+.nav-item.active{background:rgba(255,255,255,.22);color:#fff;font-weight:700}
+.nav-icon{width:22px;text-align:center;font-size:16px}
+/* Main */
+.main{display:flex;flex-direction:column;overflow:hidden}
+.topbar{padding:16px 20px;background:#fff;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;gap:12px}
+.topbar-left{flex:1}
+.topbar-title{font-size:17px;font-weight:800;color:#111}
+.topbar-sub{font-size:12px;color:var(--gray-3);margin-top:2px}
+.streak-badge{background:#fef3c7;color:#92400e;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700;margin-right:8px}
+.search-box{padding:8px 14px;border-radius:999px;border:1px solid #e5e7eb;background:#f8fafc;font-size:13px;color:#374151;outline:none;width:180px}
+.search-box:focus{border-color:var(--blue)}
+.avatar-btn{width:38px;height:38px;border-radius:50%;background:#fef3c7;display:grid;place-items:center;font-size:20px;cursor:pointer;border:none;flex-shrink:0}
+/* Pages */
+.page{display:none;padding:18px 20px;overflow-y:auto;flex:1}
+.page.active{display:block}
+/* Cards */
+.card{background:#fff;border-radius:20px;padding:18px;box-shadow:0 4px 16px rgba(15,23,42,.07);border:1px solid rgba(15,23,42,.05);margin-bottom:14px}
+.card-title{font-size:15px;font-weight:800;margin-bottom:14px;color:#111}
+/* Grid */
+.grid-2{display:grid;grid-template-columns:1.3fr 1fr;gap:14px}
+/* Tasks */
+.task-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-radius:14px;background:var(--gray-1);margin-bottom:8px;transition:background .2s;cursor:pointer}
+.task-item:last-child{margin-bottom:0}
+.task-item:hover{background:#e5e7eb}
+.task-item.done{opacity:.5}
+.task-item.done .task-name{text-decoration:line-through}
+.task-meta{display:flex;align-items:center;gap:10px}
+.task-check{width:22px;height:22px;border-radius:50%;border:2px solid #cbd5e1;cursor:pointer;display:grid;place-items:center;font-size:13px;flex-shrink:0;transition:all .2s;background:#fff}
+.task-check.checked{background:var(--green);border-color:var(--green);color:#fff}
+.task-name{font-size:13px;font-weight:700;color:#111}
+.task-desc{font-size:11px;color:var(--gray-3);margin-top:2px}
+.task-tag{font-size:11px;padding:3px 8px;border-radius:999px;font-weight:700;background:#eff6ff;color:#1d4ed8;white-space:nowrap}
+.start-btn{border:none;border-radius:999px;padding:7px 14px;font-weight:800;cursor:pointer;background:var(--blue);color:#fff;font-size:12px;transition:all .2s;white-space:nowrap}
+.start-btn:hover{background:#1d4ed8;transform:scale(1.03)}
+.start-btn.done-btn{background:#22c55e}
+/* Progress */
+.prog-row{margin-bottom:12px}
+.prog-meta{display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:6px}
+.prog-pct{color:var(--gray-3)}
+.bar{height:10px;background:#e5e7eb;border-radius:999px;overflow:hidden}
+.bar-fill{height:100%;border-radius:999px;background:var(--blue);transition:width .8s ease}
+/* Calendar */
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.cal-nav{border:none;background:none;cursor:pointer;font-size:18px;color:var(--gray-3);padding:4px 8px;border-radius:8px}
+.cal-nav:hover{background:var(--gray-1)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-day-name{font-size:10px;color:var(--gray-3);text-align:center;padding:4px 0;font-weight:700}
+.cal-day{min-height:44px;border-radius:10px;background:var(--gray-1);padding:5px;font-size:11px;border:1.5px solid transparent;cursor:pointer;transition:all .2s;position:relative}
+.cal-day b{display:block;margin-bottom:3px;font-size:12px;color:#374151}
+.cal-day:hover{border-color:#93c5fd}
+.cal-day.today{border-color:var(--blue);background:var(--blue-ltt)}
+.cal-day.today b{color:var(--blue)}
+.cal-day.has-event{}
+.dots{display:flex;flex-wrap:wrap;gap:2px;margin-top:2px}
+.dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+/* Switches */
+.switch-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #f1f5f9}
+.switch-row:last-child{border-bottom:none;padding-bottom:0}
+.switch-label{font-size:13px;font-weight:700;color:#111}
+.switch-sub{font-size:11px;color:var(--gray-3);margin-top:2px}
+.toggle{position:relative;width:44px;height:24px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0;position:absolute}
+.toggle-track{position:absolute;inset:0;border-radius:999px;background:#cbd5e1;cursor:pointer;transition:.25s}
+.toggle input:checked + .toggle-track{background:#22c55e}
+.toggle-track:after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.25s;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.toggle input:checked + .toggle-track:after{transform:translateX(20px)}
+/* Stats row */
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.stat-card{background:var(--blue-ltt);border-radius:14px;padding:12px 14px;text-align:center}
+.stat-num{font-size:22px;font-weight:900;color:var(--blue)}
+.stat-lbl{font-size:11px;color:#1d4ed8;margin-top:2px}
+/* Subject history */
+.subj-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f1f5f9}
+.subj-row:last-child{border-bottom:none}
+.subj-icon{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;font-size:18px;flex-shrink:0}
+.subj-info{flex:1}
+.subj-name{font-size:13px;font-weight:700}
+.subj-detail{font-size:11px;color:var(--gray-3);margin-top:2px}
+.subj-pct{font-size:15px;font-weight:900;color:var(--blue)}
+/* Parent summary */
+.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.summary-item{background:var(--gray-1);border-radius:14px;padding:14px}
+.summary-item h4{font-size:12px;color:var(--gray-3);margin-bottom:8px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.week-bar{display:flex;align-items:flex-end;gap:6px;height:60px;margin-top:8px}
+.week-col{flex:1;border-radius:6px 6px 0 0;background:#bfdbfe;min-height:8px;transition:height .5s;position:relative;cursor:pointer}
+.week-col.today{background:var(--blue)}
+.week-col-label{font-size:10px;text-align:center;color:var(--gray-3);margin-top:4px}
+/* Modal overlay */
+.modal-overlay{position:absolute;inset:0;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;z-index:100;border-radius:16px;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:#fff;border-radius:24px;padding:24px;width:320px;box-shadow:0 20px 60px rgba(0,0,0,.15);max-height:80vh;overflow-y:auto}
+.modal-title{font-size:17px;font-weight:900;margin-bottom:6px}
+.modal-sub{font-size:13px;color:var(--gray-3);margin-bottom:18px}
+.modal-btn{width:100%;border:none;border-radius:12px;padding:12px;font-weight:800;font-size:14px;cursor:pointer;margin-top:8px}
+.modal-start{background:var(--blue);color:#fff}
+.modal-close{background:var(--gray-1);color:#374151}
+.timer-display{font-size:40px;font-weight:900;color:var(--blue);text-align:center;margin:16px 0;letter-spacing:.05em}
+.prog-note{font-size:12px;color:var(--gray-3);text-align:center;margin-bottom:12px}
+
+/* Chinese Learning Styles */
+.zhuyin-display{font-size:48px;font-weight:900;text-align:center;padding:30px 20px;background:#f0f4f8;border-radius:16px;margin-bottom:20px;line-height:1.5;color:#2563eb;font-family:'Microsoft JhengHei','Noto Sans TC',sans-serif}
+.phrase-display{font-size:16px;color:#6b7280;text-align:center;margin-bottom:20px;padding:12px;background:#f8fafc;border-radius:12px;font-weight:700}
+.score-btn{padding:12px 14px;border:2px solid #e5e7eb;background:#fff;border-radius:10px;cursor:pointer;font-weight:700;font-size:12px;transition:all .2s;margin:6px;flex:1;min-width:100px}
+.score-btn:hover{border-color:#2563eb;color:#2563eb}
+.score-btn.selected{background:#2563eb;color:#fff;border-color:#2563eb}
+
+/* Login Screen */
+.login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#1e3a8a,#2563eb);display:flex;align-items:center;justify-content:center;z-index:1000;font-family:'Noto Sans TC','Microsoft JhengHei',sans-serif}
+.login-card{background:#fff;border-radius:24px;padding:40px;width:320px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center}
+.login-icon{font-size:60px;margin-bottom:16px}
+.login-title{font-size:24px;font-weight:900;color:#111;margin-bottom:8px}
+.login-sub{font-size:13px;color:#6b7280;margin-bottom:24px}
+.login-input{width:100%;padding:12px 14px;border:1px solid #e5e7eb;border-radius:12px;font-size:14px;font-family:'Noto Sans TC','Microsoft JhengHei',sans-serif;outline:none;margin-bottom:12px}
+.login-input:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.login-btn{width:100%;padding:12px;border:none;border-radius:12px;background:#2563eb;color:#fff;font-weight:800;font-size:14px;cursor:pointer;transition:all .2s;font-family:'Noto Sans TC','Microsoft JhengHei',sans-serif}
+.login-btn:hover{background:#1d4ed8;transform:scale(1.02)}
+
+/* Form styles */
+.form-label{display:block;font-size:12px;font-weight:700;color:#374151;margin-bottom:6px;margin-top:12px}
+.form-input,.form-textarea,.form-select{width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;font-family:'Noto Sans TC','Microsoft JhengHei',sans-serif;outline:none;margin-top:4px}
+.form-input:focus,.form-textarea:focus,.form-select:focus{border-color:#2563eb}
+.form-textarea{min-height:100px;resize:vertical}
+
+.review-progress{background:#e5e7eb;border-radius:999px;height:6px;margin-bottom:12px}
+.review-progress-fill{background:#2563eb;height:100%;border-radius:999px;transition:width .3s}
+
+.schedule-item{padding:12px;background:#f8fafc;border-radius:10px;margin-bottom:8px;border-left:4px solid #2563eb}
+.schedule-item-name{font-weight:700;color:#111;margin-bottom:4px}
+.schedule-item-date{font-size:12px;color:#6b7280}
+
+.phrase-grid{display:grid;gap:8px}
+.phrase-row{padding:10px;background:#f8fafc;border:2px solid #e5e7eb;border-radius:10px;cursor:pointer;transition:all .2s}
+.phrase-row:hover{border-color:#2563eb;background:#eff6ff}
+.phrase-row-text{font-weight:700;margin-bottom:4px}
+.phrase-row-zhuyin{font-size:12px;color:#6b7280}
+  </style>
+</head>
+<body>
+
+<!-- Login Screen -->
+<div class="login-screen" id="login-screen">
+  <div class="login-card">
+    <div class="login-icon">📘</div>
+    <div class="login-title">小學學習通</div>
+    <div class="login-sub">歡迎來到學習系統</div>
+    <input
+      type="text"
+      class="login-input"
+      id="kid-name-input"
+      placeholder="請輸入小孩名字"
+      onkeypress="if(event.key==='Enter') startApp()"
+    />
+    <button class="login-btn" onclick="startApp()">開始學習 🚀</button>
+  </div>
+</div>
+
+<!-- Main App -->
+<div class="app" style="position:relative;display:none" id="main-app">
+  <div class="frame">
+    <nav class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">📘</div>
+        <span class="brand-name">小學學習通</span>
+      </div>
+      <button class="nav-item active" onclick="showPage('today')">
+        <span class="nav-icon">🏠</span>今日學習
+      </button>
+      <button class="nav-item" onclick="showPage('calendar')">
+        <span class="nav-icon">📅</span>月曆 / 週曆
+      </button>
+      <button class="nav-item" onclick="showPage('subjects')">
+        <span class="nav-icon">📚</span>科目歷程
+      </button>
+      <button class="nav-item" onclick="showPage('reminders')">
+        <span class="nav-icon">⏰</span>學習提醒
+      </button>
+      <button class="nav-item" onclick="showPage('parent')">
+        <span class="nav-icon">👨‍👩‍👧</span>家長摘要
+      </button>
+      <button class="nav-item" onclick="showPage('course-setting')">
+        <span class="nav-icon">⚙️</span>課程設定
+      </button>
+      <button class="nav-item" onclick="resetApp()" style="margin-top:auto;color:rgba(255,255,255,.75)">
+        <span class="nav-icon">🔄</span>重新開始
+      </button>
+    </nav>
+
+    <div class="main">
+      <div class="topbar">
+        <div class="topbar-left">
+          <div class="topbar-title"><span id="kid-name-display">小明</span>，今天有 <span id="task-count">3</span> 個任務</div>
+          <div class="topbar-sub">
+            <span class="streak-badge">🔥 連續 6 天</span>
+            本週完成 <span id="week-done">7</span> / 10
+          </div>
+        </div>
+        <input class="search-box" placeholder="🔍 搜尋科目或作業" id="search-box" oninput="handleSearch(this.value)" />
+        <button class="avatar-btn" onclick="showPage('parent')">😊</button>
+      </div>
+
+      <!-- Today Page -->
+      <div class="page active" id="page-today">
+        <div class="stat-row">
+          <div class="stat-card">
+            <div class="stat-num" id="stat-done">0</div>
+            <div class="stat-lbl">已完成任務</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num">67%</div>
+            <div class="stat-lbl">平均進度</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num">24</div>
+            <div class="stat-lbl">學習分鐘</div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <div class="card">
+              <div class="card-title">📋 今日任務</div>
+              <div id="task-list"></div>
+            </div>
+            <div class="card">
+              <div class="card-title">📊 科目進度</div>
+              <div id="progress-list"></div>
+            </div>
+          </div>
+          <div>
+            <div class="card">
+              <div class="card-title">📅 5 月學習月曆</div>
+              <div class="cal-header">
+                <button class="cal-nav" onclick="changeMonth(-1)">‹</button>
+                <span id="cal-month-label" style="font-size:13px;font-weight:700;color:#374151">2025 年 5 月</span>
+                <button class="cal-nav" onclick="changeMonth(1)">›</button>
+              </div>
+              <div class="cal-grid" id="mini-cal"></div>
+            </div>
+            <div class="card">
+              <div class="card-title">⏰ 提醒設定</div>
+              <div id="reminder-list-mini"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Calendar Page -->
+      <div class="page" id="page-calendar">
+        <div class="card">
+          <div class="cal-header">
+            <button class="cal-nav" onclick="changeMonth(-1)">‹</button>
+            <span id="cal-month-label2" style="font-size:16px;font-weight:800;color:#111">2025 年 5 月</span>
+            <button class="cal-nav" onclick="changeMonth(1)">›</button>
+          </div>
+          <div class="cal-grid" style="gap:6px" id="main-cal"></div>
+        </div>
+        <div class="card" id="cal-event-detail">
+          <div class="card-title">📌 本月學習紀錄</div>
+          <div id="event-list-display"></div>
+        </div>
+      </div>
+
+      <!-- Subjects Page -->
+      <div class="page" id="page-subjects">
+        <div class="card">
+          <div class="card-title">📚 科目學習歷程</div>
+          <div id="subject-history"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">📈 學習趨勢（本週）</div>
+          <div class="week-bar" id="week-chart"></div>
+          <div style="display:flex;gap:6px;margin-top:4px">
+            <div style="flex:1;text-align:center;font-size:10px;color:var(--gray-3)">一</div>
+            <div style="flex:1;text-align:center;font-size:10px;color:var(--gray-3)">二</div>
+            <div style="flex:1;text-align:center;font-size:10px;color:var(--gray-3)">三</div>
+            <div style="flex:1;text-align:center;font-size:10px;color:var(--gray-3)">四</div>
+            <div style="flex:1;text-align:center;font-size:10px;color:var(--gray-3)">五</div>
+            <div style="flex:1;text-align:center;font-size:10px;color:var(--gray-3)">六</div>
+            <div style="flex:1;text-align:center;font-size:10px;color:var(--gray-3)">日</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reminders Page -->
+      <div class="page" id="page-reminders">
+        <div class="card">
+          <div class="card-title">⏰ 學習提醒設定</div>
+          <div id="reminders-full"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">➕ 新增提醒</div>
+          <div style="display:grid;gap:10px">
+            <div>
+              <label style="font-size:12px;color:var(--gray-3);font-weight:700;display:block;margin-bottom:4px">提醒名稱</label>
+              <input id="new-reminder-name" style="width:100%;padding:8px 12px;border-radius:10px;border:1px solid #e5e7eb;font-size:13px;outline:none" placeholder="例：英語口說練習" />
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div>
+                <label style="font-size:12px;color:var(--gray-3);font-weight:700;display:block;margin-bottom:4px">時間</label>
+                <input id="new-reminder-time" type="time" value="19:00" style="width:100%;padding:8px 12px;border-radius:10px;border:1px solid #e5e7eb;font-size:13px;outline:none" />
+              </div>
+              <div>
+                <label style="font-size:12px;color:var(--gray-3);font-weight:700;display:block;margin-bottom:4px">頻率</label>
+                <select id="new-reminder-freq" style="width:100%;padding:8px 12px;border-radius:10px;border:1px solid #e5e7eb;font-size:13px;outline:none;background:#fff">
+                  <option>每天</option><option>每週一</option><option>每週五</option><option>週末</option>
+                </select>
+              </div>
+            </div>
+            <button onclick="addReminder()" style="padding:10px;border-radius:12px;border:none;background:var(--blue);color:#fff;font-weight:800;font-size:13px;cursor:pointer">新增提醒</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Parent Page -->
+      <div class="page" id="page-parent">
+        <div class="stat-row">
+          <div class="stat-card">
+            <div class="stat-num">7</div>
+            <div class="stat-lbl">本週完成任務</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num">6</div>
+            <div class="stat-lbl">連續學習天數</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num">142</div>
+            <div class="stat-lbl">本週學習分鐘</div>
+          </div>
+        </div>
+        <div class="summary-grid">
+          <div class="summary-item">
+            <h4>各科進度</h4>
+            <div id="parent-progress"></div>
+          </div>
+          <div class="summary-item">
+            <h4>本週學習時長（分鐘）</h4>
+            <div class="week-bar" id="parent-week-chart" style="height:80px"></div>
+            <div style="display:flex;gap:6px;margin-top:4px">
+              <div style="flex:1;text-align:center;font-size:10px;color:var(--gray-3)">一</div>
+              <div style="flex:1;text-align:center;font-size:10px;color:var(--gray-3)">二</div>
+              <div style="flex:1;text-align:center;font-size:10px;color:var(--gray-3)">三</div>
+              <div style="flex:1;text-align:center;font-size:10px;color:var(--gray-3)">四</div>
+              <div style="flex:1;text-align:center;font-size:10px;color:var(--gray-3)">五</div>
+              <div style="flex:1;text-align:center;font-size:10px;color:var(--gray-3)">六</div>
+              <div style="flex:1;text-align:center;font-size:10px;color:var(--gray-3)">日</div>
+            </div>
+          </div>
+          <div class="summary-item" style="grid-column:1/-1">
+            <h4>老師評語 / 近期作業</h4>
+            <div style="display:grid;gap:8px;margin-top:8px">
+              <div style="background:#fff;border-radius:10px;padding:10px 12px;font-size:12px">
+                <b style="color:#059669">國語</b> — 本週生字全數通過，請繼續保持！
+              </div>
+              <div style="background:#fff;border-radius:10px;padding:10px 12px;font-size:12px">
+                <b style="color:#d97706">數學</b> — 分數單元需加強，建議多做練習題。
+              </div>
+              <div style="background:#fff;border-radius:10px;padding:10px 12px;font-size:12px">
+                <b style="color:#2563eb">英語</b> — 聽力測驗表現優秀，口說練習持續中。
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Course Setting Page -->
+      <div class="page" id="page-course-setting">
+        <div class="card">
+          <div class="card-title">📚 課程管理</div>
+          <button onclick="openAddCourseModal()" style="width:100%;padding:12px;background:#2563eb;color:#fff;border:none;border-radius:12px;font-weight:800;cursor:pointer;margin-bottom:16px">+ 新增課程</button>
+          <div id="courses-list" style="display:grid;gap:10px"></div>
+        </div>
+
+        <div class="card" id="course-detail-card" style="display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <div class="card-title">編輯課程</div>
+            <button onclick="closeCourseDetail()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#6b7280">✕</button>
+          </div>
+          <div class="form-label">課程名稱</div>
+          <input type="text" id="course-name-input" class="form-input" />
+
+          <div style="margin-top:20px;padding:16px;background:#f8fafc;border-radius:12px">
+            <div style="font-weight:700;margin-bottom:12px;color:#111">📝 編輯詞句和注音</div>
+            <div id="phrase-editor" style="display:grid;gap:12px"></div>
+            <button onclick="addPhraseRow()" style="width:100%;margin-top:12px;padding:10px;background:#e5e7eb;border:none;border-radius:8px;cursor:pointer;font-weight:700">+ 新增詞句</button>
+          </div>
+
+          <button onclick="saveCourse()" style="width:100%;margin-top:16px;padding:12px;background:#22c55e;color:#fff;border:none;border-radius:12px;font-weight:800;cursor:pointer">保存課程</button>
+          <button onclick="deleteCourse()" style="width:100%;margin-top:8px;padding:12px;background:#ef4444;color:#fff;border:none;border-radius:12px;font-weight:800;cursor:pointer">刪除課程</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">📋 加入行程</div>
+          <div class="form-label">選擇複習課程</div>
+          <select id="review-course-select" class="form-select" onchange="updateReviewConfig()">
+            <option value="">請選擇課程...</option>
+          </select>
+          <div class="form-label">每日複習行數</div>
+          <input type="number" id="daily-review-count" class="form-input" value="5" min="1" max="20" />
+          <button onclick="addToSchedule()" style="width:100%;margin-top:12px;padding:12px;background:#2563eb;color:#fff;border:none;border-radius:12px;font-weight:800;cursor:pointer">✓ 加入行程</button>
+        </div>
+
+        <div class="card" id="schedule-card">
+          <div class="card-title">📅 今日複習行程</div>
+          <div id="schedule-list" style="min-height:100px"></div>
+        </div>
+      </div>
+
+      <!-- Chinese Review Page - Reading Phase -->
+      <div class="page" id="page-chinese-review" style="display:none;padding:20px;background:#f0f4f8">
+        <div style="margin-bottom:20px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div style="font-size:13px;font-weight:700;color:#111">複習進度</div>
+            <div style="font-size:12px;color:#6b7280">
+              <span id="review-index">1</span> / <span id="review-total">5</span>
+            </div>
+          </div>
+          <div class="review-progress" style="height:8px">
+            <div class="review-progress-fill" id="review-progress" style="width:0%;height:100%;background:#2563eb;border-radius:999px"></div>
+          </div>
+        </div>
+
+        <div style="background:#fff;border-radius:16px;padding:24px;margin-bottom:20px;min-height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center">
+
+          <div style="text-align:center;margin-bottom:30px;width:100%">
+            <div style="font-size:14px;color:#111;font-weight:700;margin-bottom:4px">小朋友，請大聲讀出這一行！</div>
+            <div style="font-size:12px;color:#6b7280">(系統已自動讀出，請跟著唸)</div>
+          </div>
+
+          <div style="background:#f0f4f8;border-radius:16px;padding:40px 20px;width:100%;text-align:center;margin-bottom:24px">
+            <div style="font-size:56px;font-weight:900;color:#2563eb;margin-bottom:16px;line-height:1.5;min-height:80px;display:flex;align-items:center;justify-content:center" id="review-zhuyin">ㄅㄆㄇ</div>
+            <div style="border-top:2px solid #e5e7eb;padding-top:16px">
+              <div style="font-size:13px;color:#6b7280;margin-bottom:8px">詞句</div>
+              <div style="font-size:24px;color:#111;font-weight:900" id="review-phrase">詞語例子</div>
+            </div>
+          </div>
+
+          <button onclick="speakCurrentPhrase()" style="width:100%;max-width:300px;padding:14px;background:#2563eb;color:#fff;border:none;border-radius:12px;cursor:pointer;font-weight:800;margin-bottom:16px;font-size:15px">🔊 再讀一次</button>
+
+          <button onclick="completeCurrentPhrase()" style="width:100%;max-width:300px;padding:14px;background:#22c55e;color:#fff;border:none;border-radius:12px;cursor:pointer;font-weight:800;font-size:15px" id="next-btn">下一步 →</button>
+        </div>
+      </div>
+
+      <!-- Chinese Review Page - Scoring Phase -->
+      <div class="page" id="page-chinese-scoring" style="display:none">
+        <div class="card">
+          <div class="card-title">📝 家長評分</div>
+          <div style="margin-bottom:20px;padding:16px;background:#f0f4f8;border-radius:12px">
+            <div style="font-size:13px;color:#6b7280;margin-bottom:12px">請對每一行詞句進行評分</div>
+            <div id="scoring-list" style="display:grid;gap:12px"></div>
+          </div>
+
+          <button onclick="completeScoringAndFinish()" style="width:100%;padding:14px;background:#22c55e;color:#fff;border:none;border-radius:12px;cursor:pointer;font-weight:800;font-size:14px">✓ 完成評分</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Task Modal -->
+  <div class="modal-overlay" id="task-modal">
+    <div class="modal">
+      <div class="modal-title" id="modal-task-title">國語｜生字複習</div>
+      <div class="modal-sub" id="modal-task-desc">預估 10 分鐘 · 每天 5 個詞</div>
+      <div class="timer-display" id="modal-timer">10:00</div>
+      <div class="prog-note" id="modal-status">按「開始學習」啟動計時</div>
+      <button class="modal-btn modal-start" id="modal-action-btn" onclick="toggleTimer()">▶ 開始學習</button>
+      <button class="modal-btn modal-close" onclick="closeModal()">關閉</button>
+    </div>
+  </div>
+
+  <!-- Add Course Modal -->
+  <div class="modal-overlay" id="add-course-modal">
+    <div class="modal">
+      <div class="modal-title">新增課程</div>
+      <div style="margin-bottom:12px">
+        <div class="form-label">課程名稱</div>
+        <input type="text" id="new-course-name" class="form-input" placeholder="例：第一課 春天來了" />
+      </div>
+      <div style="margin-bottom:12px">
+        <div class="form-label">詞句（每行一個，注音另行輸入）</div>
+        <textarea id="new-course-phrases" class="form-textarea" placeholder="例：
+美麗的花朵
+春天的陽光
+快樂的日子
+認真學習"></textarea>
+      </div>
+      <button onclick="addNewCourse()" class="modal-btn modal-start">建立課程</button>
+      <button onclick="closeAddCourseModal()" class="modal-btn modal-close">取消</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/pinyin-pro@3.19.2/lib/index.js"></script>
+<script>
+// Debug: Check if pinyin library loaded
+console.log('Page loading...');
+setTimeout(() => {
+  console.log('After 100ms - checking pinyin library...');
+  console.log('window.pinyin:', typeof window.pinyin);
+  console.log('pinyin:', typeof pinyin);
+  if(typeof window.pinyin !== 'undefined'){
+    console.log('window.pinyin.pinyin:', typeof window.pinyin.pinyin);
+    console.log('window.pinyin.py:', typeof window.pinyin.py);
+    try {
+      const test = window.pinyin.pinyin('測試', {type: window.pinyin.py.NORMAL});
+      console.log('Test call result:', test);
+    } catch(e){
+      console.log('Test call error:', e.message);
+    }
+  }
+}, 100);
+
+let kidName = '';
+let courses = [];
+let charHistory = {};
+let currentCourse = null;
+let currentReviewLines = [];
+let reviewIndex = 0;
+let currentSchedule = null;
+let tempPhrases = [];
+
+const defaultTasks = [
+  {id:0,name:'國語｜生字複習',desc:'每天 5 個詞',time:10,tag:'每日任務',done:false,clickable:true},
+  {id:1,name:'數學｜分數小測驗',desc:'老師指派',time:8,tag:'指派作業',done:false},
+  {id:2,name:'自然｜影片檢核點',desc:'本週複習',time:6,tag:'本週任務',done:false},
+];
+
+const subjects = [
+  {name:'國語',icon:'📖',pct:70,color:'#059669',bg:'#d1fae5',done:14,total:20},
+  {name:'數學',icon:'🔢',pct:50,color:'#d97706',bg:'#fef3c7',done:10,total:20},
+  {name:'英語',icon:'🌐',pct:80,color:'#2563eb',bg:'#dbeafe',done:16,total:20},
+  {name:'自然',icon:'🔬',pct:60,color:'#7c3aed',bg:'#ede9fe',done:12,total:20},
+  {name:'社會',icon:'🗺️',pct:45,color:'#dc2626',bg:'#fee2e2',done:9,total:20},
+];
+const reminders = [
+  {id:0,name:'每日 19:00 國語複習',sub:'每天 5 個詞',on:true},
+  {id:1,name:'每週五考卷複習',sub:'數學 + 英語',on:true},
+  {id:2,name:'週末英語口說練習',sub:'每週六 10:00',on:false},
+];
+const events = {
+  1:[{color:'#2563eb',label:'國語'}],
+  3:[{color:'#f59e0b',label:'數學測驗'}],
+  5:[{color:'#2563eb',label:'英語'},{color:'#22c55e',label:'自然'}],
+  9:[{color:'#ef4444',label:'補救教學'}],
+  13:[{color:'#2563eb',label:'國語'}],
+  17:[{color:'#22c55e',label:'自然實驗'}],
+  20:[{color:'#f59e0b',label:'數學'}],
+  23:[{color:'#2563eb',label:'英語聽力'}],
+  27:[{color:'#ef4444',label:'月考'}],
+};
+const weekMins = [20,35,18,28,24,15,0];
+let curMonth = 4, curYear = 2025;
+let timerInterval = null, timerRunning = false, timerVal = 600, activeTask = null;
+
+function startApp(){
+  const input = document.getElementById('kid-name-input').value.trim();
+  if(!input){
+    alert('請輸入小孩名字');
+    return;
+  }
+  kidName = input;
+  document.getElementById('kid-name-display').textContent = kidName;
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('main-app').style.display = 'flex';
+  loadData();
+  renderAll();
+}
+
+function resetApp(){
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('main-app').style.display = 'none';
+  document.getElementById('kid-name-input').value = '';
+  document.getElementById('kid-name-input').focus();
+}
+
+function loadData(){
+  const stored = localStorage.getItem('chineseData-' + kidName);
+  if(stored){
+    const data = JSON.parse(stored);
+    courses = data.courses || [];
+    charHistory = data.charHistory || {};
+    currentSchedule = data.currentSchedule || null;
+  }
+}
+
+function saveData(){
+  localStorage.setItem('chineseData-' + kidName, JSON.stringify({courses, charHistory, currentSchedule}));
+}
+
+function renderAll(){
+  renderTasks([...defaultTasks]);
+  renderProgress();
+  renderRemindersMini();
+  renderReminders();
+  renderCalendar('mini-cal','cal-month-label');
+  renderCalendar('main-cal','cal-month-label2');
+  renderSubjects();
+  renderParent();
+  updateStats();
+  renderCoursesList();
+  updateCourseSelects();
+  renderScheduleList();
+}
+
+function showPage(name){
+  console.log('showPage called with name:', name);
+
+  // Hide all pages
+  document.querySelectorAll('.page').forEach(p => {
+    p.classList.remove('active');
+    p.style.display = 'none';
+  });
+
+  // Deactivate all nav items
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+  // Show the target page
+  const targetPage = document.getElementById('page-'+name);
+  console.log('targetPage element:', targetPage);
+
+  if(targetPage){
+    targetPage.classList.add('active');
+    targetPage.style.display = 'block';
+    console.log('Page displayed:', name);
+  } else {
+    console.error('Page not found:', 'page-'+name);
+  }
+
+  // Highlight nav item
+  const navMap={today:0,calendar:1,subjects:2,reminders:3,parent:4,'course-setting':5};
+  if(navMap[name] !== undefined) {
+    document.querySelectorAll('.nav-item')[navMap[name]].classList.add('active');
+  }
+}
+
+function renderTasks(list){
+  const el = document.getElementById('task-list');
+  el.innerHTML = list.map(t=>`
+    <div class="task-item ${t.done?'done':''}" id="task-${t.id}" ${t.clickable ? `onclick="startChineseReview('${t.id}')"` : ''}>
+      <div class="task-meta">
+        <div class="task-check ${t.done?'checked':''}" onclick="event.stopPropagation();toggleTask(${t.id})">${t.done?'✓':''}</div>
+        <div>
+          <div class="task-name">${t.name}</div>
+          <div class="task-desc">${t.desc} · 預估 ${t.time} 分鐘</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="task-tag">${t.tag}</span>
+        <button class="start-btn ${t.done?'done-btn':''}" onclick="event.stopPropagation();${t.id === 0 ? "startChineseReview(0)" : "openTask(" + t.id + ")"}">${t.done?'✓ 完成':'開始'}</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleTask(id){
+  defaultTasks[id].done = !defaultTasks[id].done;
+  updateStats(); renderTasks([...defaultTasks]);
+}
+
+function updateStats(){
+  const d = defaultTasks.filter(t=>t.done).length;
+  document.getElementById('stat-done').textContent = d;
+  document.getElementById('task-count').textContent = defaultTasks.filter(t=>!t.done).length;
+  document.getElementById('week-done').textContent = 7 + d;
+}
+
+function renderProgress(){
+  document.getElementById('progress-list').innerHTML = subjects.slice(0,3).map(s=>`
+    <div class="prog-row">
+      <div class="prog-meta"><b>${s.name}</b><span class="prog-pct">${s.pct}%</span></div>
+      <div class="bar"><div class="bar-fill" style="width:${s.pct}%;background:${s.color}"></div></div>
+    </div>
+  `).join('');
+}
+
+function renderRemindersMini(){
+  document.getElementById('reminder-list-mini').innerHTML = reminders.map((r,i)=>`
+    <div class="switch-row">
+      <div><div class="switch-label">${r.name}</div><div class="switch-sub">${r.sub}</div></div>
+      <label class="toggle"><input type="checkbox" ${r.on?'checked':''} onchange="toggleReminder(${r.id})"><div class="toggle-track"></div></label>
+    </div>
+  `).join('');
+}
+
+function renderReminders(){
+  document.getElementById('reminders-full').innerHTML = reminders.map((r,i)=>`
+    <div class="switch-row">
+      <div><div class="switch-label">${r.name}</div><div class="switch-sub">${r.sub}</div></div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <label class="toggle"><input type="checkbox" ${r.on?'checked':''} onchange="toggleReminder(${r.id})"><div class="toggle-track"></div></label>
+        <button onclick="deleteReminder(${r.id})" style="border:none;background:none;cursor:pointer;color:#ef4444;font-size:16px">🗑</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleReminder(id){
+  reminders[id].on = !reminders[id].on;
+  renderRemindersMini(); renderReminders();
+}
+
+function addReminder(){
+  const n=document.getElementById('new-reminder-name').value.trim();
+  const t=document.getElementById('new-reminder-time').value;
+  const f=document.getElementById('new-reminder-freq').value;
+  if(!n) return;
+  reminders.push({id:reminders.length,name:`${f} ${t} ${n}`,sub:f,on:true});
+  document.getElementById('new-reminder-name').value='';
+  renderRemindersMini(); renderReminders();
+}
+
+function deleteReminder(id){
+  reminders.splice(id,1);
+  reminders.forEach((r,i)=>r.id=i);
+  renderRemindersMini(); renderReminders();
+}
+
+function renderCalendar(miniId, labelId){
+  const mn=['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
+  const el=document.getElementById(miniId);
+  const lb=document.getElementById(labelId);
+  lb.textContent=`${curYear} 年 ${mn[curMonth]}`;
+  const days=['日','一','二','三','四','五','六'];
+  const first=new Date(curYear,curMonth,1).getDay();
+  const total=new Date(curYear,curMonth+1,0).getDate();
+  const today=new Date();
+  let html=days.map(d=>`<div class="cal-day-name">${d}</div>`).join('');
+  for(let i=0;i<first;i++) html+=`<div></div>`;
+  for(let d=1;d<=total;d++){
+    const isToday=curYear===today.getFullYear()&&curMonth===today.getMonth()&&d===today.getDate();
+    const ev=events[d]||[];
+    const dots=ev.map(e=>`<div class="dot" style="background:${e.color}" title="${e.label}"></div>`).join('');
+    html+=`<div class="cal-day ${isToday?'today':''}" onclick="showDayEvents(${d})">
+      <b>${d}</b>${ev.length?`<div class="dots">${dots}</div>`:''}
+    </div>`;
+  }
+  el.innerHTML=html;
+  renderEventList();
+}
+
+function renderEventList(){
+  const el=document.getElementById('event-list-display');
+  if(!el) return;
+  const all=Object.entries(events).sort((a,b)=>a[0]-b[0]);
+  el.innerHTML=all.map(([day,evs])=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f1f5f9">
+      <div style="width:28px;height:28px;border-radius:8px;background:#eff6ff;display:grid;place-items:center;font-size:12px;font-weight:800;color:#1d4ed8;flex-shrink:0">${day}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${evs.map(e=>`<span style="background:${e.color}22;color:${e.color};padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700">${e.label}</span>`).join('')}</div>
+    </div>
+  `).join('');
+}
+
+function showDayEvents(d){
+  const ev=events[d];
+  if(!ev||!ev.length) return;
+  const el=document.getElementById('event-list-display');
+  if(el) el.scrollIntoView({behavior:'smooth'});
+}
+
+function changeMonth(dir){
+  curMonth+=dir;
+  if(curMonth<0){curMonth=11;curYear--;}
+  if(curMonth>11){curMonth=0;curYear++;}
+  renderCalendar('mini-cal','cal-month-label');
+  renderCalendar('main-cal','cal-month-label2');
+}
+
+function renderSubjects(){
+  document.getElementById('subject-history').innerHTML=subjects.map(s=>`
+    <div class="subj-row">
+      <div class="subj-icon" style="background:${s.bg}">${s.icon}</div>
+      <div class="subj-info">
+        <div class="subj-name">${s.name}</div>
+        <div class="subj-detail">完成 ${s.done} / ${s.total} 個任務</div>
+        <div class="bar" style="margin-top:5px"><div class="bar-fill" style="width:${s.pct}%;background:${s.color}"></div></div>
+      </div>
+      <div class="subj-pct" style="color:${s.color}">${s.pct}%</div>
+    </div>
+  `).join('');
+  const mx=Math.max(...weekMins)||1;
+  document.getElementById('week-chart').innerHTML=weekMins.map((m,i)=>`
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:60px">
+      <div style="width:100%;border-radius:6px 6px 0 0;background:${i===4?'var(--blue)':'#bfdbfe'};height:${Math.round(m/mx*52)+8}px" title="${m} 分鐘"></div>
+    </div>
+  `).join('');
+}
+
+function renderParent(){
+  document.getElementById('parent-progress').innerHTML=subjects.map(s=>`
+    <div style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+        <span style="font-weight:700;color:${s.color}">${s.name}</span><span style="color:var(--gray-3)">${s.pct}%</span>
+      </div>
+      <div class="bar" style="height:8px"><div class="bar-fill" style="width:${s.pct}%;background:${s.color}"></div></div>
+    </div>
+  `).join('');
+  const mx=Math.max(...weekMins)||1;
+  document.getElementById('parent-week-chart').innerHTML=weekMins.map((m,i)=>`
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:80px">
+      <div style="font-size:10px;color:var(--gray-3);margin-bottom:2px">${m}</div>
+      <div style="width:100%;border-radius:6px 6px 0 0;background:${i===4?'var(--blue)':'#bfdbfe'};height:${Math.round(m/mx*58)+4}px"></div>
+    </div>
+  `).join('');
+}
+
+function openTask(id){
+  activeTask=id;
+  const t=defaultTasks[id];
+  document.getElementById('modal-task-title').textContent=t.name;
+  document.getElementById('modal-task-desc').textContent=`預估 ${t.time} 分鐘 · ${t.desc}`;
+  timerVal=t.time*60; timerRunning=false;
+  clearInterval(timerInterval);
+  document.getElementById('modal-timer').textContent=fmtTime(timerVal);
+  document.getElementById('modal-status').textContent=t.done?'已完成此任務':'按「開始學習」啟動計時';
+  document.getElementById('modal-action-btn').textContent=t.done?'✓ 已完成':'▶ 開始學習';
+  document.getElementById('task-modal').classList.add('open');
+}
+
+function closeModal(){
+  clearInterval(timerInterval); timerRunning=false;
+  document.getElementById('task-modal').classList.remove('open');
+}
+
+function toggleTimer(){
+  if(defaultTasks[activeTask].done){closeModal();return;}
+  if(!timerRunning){
+    timerRunning=true;
+    document.getElementById('modal-action-btn').textContent='⏸ 暫停';
+    document.getElementById('modal-status').textContent='計時中…加油！';
+    timerInterval=setInterval(()=>{
+      timerVal--;
+      document.getElementById('modal-timer').textContent=fmtTime(timerVal);
+      if(timerVal<=0){
+        clearInterval(timerInterval); timerRunning=false;
+        defaultTasks[activeTask].done=true;
+        updateStats(); renderTasks([...defaultTasks]);
+        document.getElementById('modal-status').textContent='🎉 完成！太棒了！';
+        document.getElementById('modal-action-btn').textContent='✓ 完成，關閉';
+      }
+    },1000);
+  } else {
+    clearInterval(timerInterval); timerRunning=false;
+    document.getElementById('modal-action-btn').textContent='▶ 繼續';
+    document.getElementById('modal-status').textContent='已暫停';
+  }
+}
+
+function fmtTime(s){
+  return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+}
+
+function handleSearch(v){
+  if(!v.trim()){renderTasks([...defaultTasks]);return;}
+  const f=defaultTasks.filter(t=>t.name.includes(v)||t.desc.includes(v)||t.tag.includes(v));
+  renderTasks(f);
+}
+
+// ========== 課程管理功能 ==========
+
+function renderCoursesList(){
+  let html = '';
+  if(courses.length === 0){
+    html = '<div style="text-align:center;padding:20px;color:#6b7280">還沒有課程，點擊「+ 新增課程」開始建立</div>';
+  } else {
+    html = courses.map(course => `
+      <div style="padding:16px;background:#f8fafc;border:2px solid #e5e7eb;border-radius:12px;cursor:pointer" onclick="editCourse('${course.id}')">
+        <div style="font-weight:800;color:#111;margin-bottom:4px;font-size:16px">第 ${course.id} 課</div>
+        <div style="color:#6b7280;margin-bottom:4px">${course.name}</div>
+        <div style="font-size:12px;color:#2563eb;font-weight:700">${course.lines.length} 行詞句</div>
+      </div>
+    `).join('');
+  }
+  document.getElementById('courses-list').innerHTML = html;
+}
+
+function openAddCourseModal(){
+  document.getElementById('add-course-modal').classList.add('open');
+  document.getElementById('new-course-name').value = '';
+  document.getElementById('new-course-phrases').value = '';
+  document.getElementById('new-course-name').focus();
+}
+
+function closeAddCourseModal(){
+  document.getElementById('add-course-modal').classList.remove('open');
+}
+
+function addNewCourse(){
+  const name = document.getElementById('new-course-name').value.trim();
+  const phrases = document.getElementById('new-course-phrases').value.split('\n').filter(p => p.trim());
+
+  if(!name || !phrases.length){
+    alert('請輸入課程名稱和詞句');
+    return;
+  }
+
+  const courseId = courses.length > 0 ? String(Math.max(...courses.map(c => parseInt(c.id))) + 1) : '1';
+  const lines = phrases.map(phrase => ({phrase, zhuyin: ''}));
+
+  const course = {id: courseId, name, lines};
+  courses.push(course);
+
+  saveData();
+  closeAddCourseModal();
+  renderCoursesList();
+  updateCourseSelects();
+
+  // Auto-generate Zhuyin for all phrases and show editor
+  currentCourse = course;
+  tempPhrases = JSON.parse(JSON.stringify(course.lines));
+
+  // Auto-generate zhuyin for each phrase using built-in character map
+  let generatedCount = 0;
+
+  tempPhrases.forEach((line, idx) => {
+    if(line.phrase){
+      let zhuyin = '';
+      let charCount = 0;
+
+      // Process each character
+      for(let i = 0; i < line.phrase.length; i++){
+        const char = line.phrase[i];
+
+        // Skip spaces and punctuation
+        if(/\s|[，。！？；：『』「」（）]/.test(char)){
+          if(char !== ' ') zhuyin += char;
+          continue;
+        }
+
+        // Look up in character map
+        if(charToPinyinMap[char]){
+          const pinyin = charToPinyinMap[char].toLowerCase();
+          const toneMatch = pinyin.match(/[1-5]$/);
+          const basePinyin = pinyin.replace(/[1-5]$/,'');
+          const toneNum = toneMatch ? toneMatch[0] : '5';
+
+          if(pinyinToZhuyinMap[basePinyin]){
+            let zhuyinChar = pinyinToZhuyinMap[basePinyin];
+            const toneMark = pinyinToZhuyinMap[toneNum] || '';
+            zhuyinChar += toneMark;
+            zhuyin += zhuyinChar + ' ';
+            charCount++;
+          } else {
+            zhuyin += pinyin + ' ';
+          }
+        }
+      }
+
+      if(zhuyin.trim()){
+        line.zhuyin = zhuyin.trim();
+        generatedCount++;
+        console.log('Auto-generated for "' + line.phrase + '":', line.zhuyin);
+      }
+    }
+  });
+
+  // Show the course editor so user can confirm/edit generated zhuyin
+  renderPhraseEditor();
+  document.getElementById('course-name-input').value = currentCourse.name;
+  document.getElementById('course-detail-card').style.display = 'block';
+
+  // Show appropriate message
+  if(generatedCount > 0){
+    alert(`✓ 課程已建立！已為 ${generatedCount} 行詞句自動產生注音\n\n請確認或編輯下方的注音內容`);
+  } else {
+    alert(`📝 課程已建立！包含 ${tempPhrases.length} 行詞句\n\n請點擊「🤖 自動注音」按鈕為每行詞句生成注音\n或手動輸入注音內容`);
+  }
+}
+
+function editCourse(courseId){
+  currentCourse = courses.find(c => c.id === courseId);
+  if(!currentCourse) return;
+
+  document.getElementById('course-name-input').value = currentCourse.name;
+  tempPhrases = JSON.parse(JSON.stringify(currentCourse.lines));
+
+  renderPhraseEditor();
+  document.getElementById('course-detail-card').style.display = 'block';
+}
+
+function closeCourseDetail(){
+  currentCourse = null;
+  tempPhrases = [];
+  document.getElementById('course-detail-card').style.display = 'none';
+}
+
+function renderPhraseEditor(){
+  const html = tempPhrases.map((line, idx) => `
+    <div style="padding:12px;background:#fff;border:1px solid #e5e7eb;border-radius:10px">
+      <div style="font-size:12px;color:#6b7280;margin-bottom:6px">第 ${idx + 1} 行</div>
+      <div class="form-label">詞句</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <input type="text" class="form-input" value="${line.phrase}" onchange="tempPhrases[${idx}].phrase=this.value" style="flex:1;margin:0" />
+        <button onclick="autoGenerateZhuyin(${idx})" style="padding:10px 12px;background:#2563eb;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:11px;white-space:nowrap">🤖 自動注音</button>
+      </div>
+      <div class="form-label">注音</div>
+      <input type="text" class="form-input" value="${line.zhuyin}" onchange="tempPhrases[${idx}].zhuyin=this.value" placeholder="例：ㄇㄟˇ ㄌㄧˋ ㄉㄜ˙ ㄏㄨㄚ ㄉㄨㄛˇ" style="margin-bottom:8px" />
+      <button onclick="tempPhrases.splice(${idx},1);renderPhraseEditor()" style="width:100%;padding:6px;background:#fee2e2;border:none;border-radius:6px;cursor:pointer;color:#991b1b;font-weight:700;font-size:11px">刪除</button>
+    </div>
+  `).join('');
+
+  document.getElementById('phrase-editor').innerHTML = html;
+}
+
+// Common Chinese characters to pinyin mapping (most frequently used characters)
+const charToPinyinMap = {
+  '天': 'tian1', '氣': 'qi4', '好': 'hao3', '棒': 'bang4', '你': 'ni3', '去': 'qu4',
+  '我': 'wo3', '他': 'ta1', '她': 'ta1', '是': 'shi4', '有': 'you3', '在': 'zai4',
+  '了': 'le5', '的': 'de5', '和': 'he2', '說': 'shuo1', '看': 'kan4', '聽': 'ting1',
+  '讀': 'du2', '寫': 'xie3', '做': 'zuo4', '學': 'xue2', '習': 'xi2', '教': 'jiao4',
+  '書': 'shu1', '本': 'ben3', '紙': 'zhi3', '筆': 'bi3', '門': 'men2', '家': 'jia1',
+  '人': 'ren2', '大': 'da4', '小': 'xiao3', '多': 'duo1', '少': 'shao3', '高': 'gao1',
+  '低': 'di1', '長': 'chang2', '短': 'duan3', '快': 'kuai4', '慢': 'man4', '新': 'xin1',
+  '舊': 'jiu4', '美': 'mei3', '麗': 'li4', '醜': 'chou3', '黑': 'hei1', '白': 'bai2',
+  '紅': 'hong2', '綠': 'lü4', '藍': 'lan2', '黃': 'huang2', '春': 'chun1', '夏': 'xia4',
+  '秋': 'qiu1', '冬': 'dong1', '花': 'hua1', '草': 'cao3', '樹': 'shu4', '木': 'mu4',
+  '水': 'shui3', '火': 'huo3', '土': 'tu3', '金': 'jin1', '石': 'shi2', '山': 'shan1',
+  '河': 'he2', '海': 'hai3', '雲': 'yun2', '雨': 'yu3', '風': 'feng1', '雪': 'xue3',
+  '日': 'ri4', '月': 'yue4', '星': 'xing1', '光': 'guang1', '暗': 'an4', '明': 'ming2',
+  '亮': 'liang4', '昨': 'zuo2', '今': 'jin1', '明': 'ming2', '後': 'hou4', '前': 'qian2',
+  '左': 'zuo3', '右': 'you4', '上': 'shang4', '下': 'xia4', '中': 'zhong1', '內': 'nei4',
+  '外': 'wai4', '進': 'jin4', '出': 'chu1', '來': 'lai2', '去': 'qu4', '過': 'guo4',
+  '到': 'dao4', '離': 'li2', '向': 'xiang4', '從': 'cong2', '為': 'wei2', '被': 'bei3',
+  '把': 'ba3', '給': 'gei3', '對': 'dui4', '跟': 'gen1', '同': 'tong2', '與': 'yu3',
+  '及': 'ji2', '或': 'huo4', '但': 'dan4', '因': 'yin1', '果': 'guo3', '所': 'suo3',
+  '以': 'yi3', '使': 'shi3', '讓': 'rang4', '得': 'de2', '卻': 'que4', '也': 'ye3',
+  '太': 'tai4', '非': 'fei1', '無': 'wu2', '有': 'you3', '只': 'zhi3', '都': 'du1',
+  '很': 'hen3', '最': 'zui4', '比': 'bi3', '較': 'jiao4', '極': 'ji2', '更': 'geng4',
+  '又': 'you4', '能': 'neng2', '會': 'hui4', '可': 'ke3', '應': 'ying1', '該': 'gai1',
+  '必': 'bi4', '要': 'yao4', '須': 'xu1', '應': 'ying4', '該': 'gai1', '想': 'xiang3',
+  '願': 'yuan4', '希': 'xi1', '望': 'wang4', '準': 'zhun3', '備': 'bei4', '開': 'kai1',
+  '關': 'guan1', '起': 'qi3', '止': 'zhi3', '始': 'shi3', '終': 'zhong1', '結': 'jie1',
+  '束': 'shu4', '進': 'jin4', '退': 'tui4', '走': 'zou3', '跑': 'pao3', '跳': 'tiao4',
+  '坐': 'zuo4', '站': 'zhan4', '躺': 'tang3', '睡': 'shui4', '醒': 'xing3', '起': 'qi3',
+  '吃': 'chi1', '喝': 'he1', '飲': 'yin3', '食': 'shi2', '飯': 'fan4', '菜': 'cai4',
+  '果': 'guo3', '肉': 'rou4', '魚': 'yu2', '蛋': 'dan4', '乳': 'ru3', '油': 'you2',
+  '鹽': 'yan2', '糖': 'tang2', '醬': 'jiang4', '醋': 'cu4', '茶': 'cha2', '酒': 'jiu3',
+  '牛': 'niu2', '羊': 'yang2', '豬': 'zhu1', '狗': 'gou3', '貓': 'mao1', '鳥': 'niao3',
+  '魚': 'yu2', '蟲': 'chong2', '蝴': 'hu2', '蝶': 'die2', '蜂': 'feng1', '蜜': 'mi4',
+  '顏': 'yan2', '色': 'se4', '形': 'xing2', '狀': 'zhuang4', '樣': 'yang4', '子': 'zi3'
+};
+
+// Comprehensive Pinyin to Zhuyin conversion table
+const pinyinToZhuyinMap = {
+  // Initials (聲母)
+  'zh': 'ㄓ', 'ch': 'ㄔ', 'sh': 'ㄕ', 'r': 'ㄖ', 'z': 'ㄗ', 'c': 'ㄘ', 's': 'ㄙ',
+  'b': 'ㄅ', 'p': 'ㄆ', 'm': 'ㄇ', 'f': 'ㄈ', 'd': 'ㄉ', 't': 'ㄊ', 'n': 'ㄋ', 'l': 'ㄌ',
+  'g': 'ㄍ', 'k': 'ㄎ', 'h': 'ㄏ', 'j': 'ㄐ', 'q': 'ㄑ', 'x': 'ㄒ', 'y': 'ㄧ', 'w': 'ㄨ',
+
+  // Complete syllables (多音節)
+  'a': 'ㄚ', 'ai': 'ㄞ', 'an': 'ㄢ', 'ang': 'ㄤ', 'ao': 'ㄠ',
+  'ba': 'ㄅㄚ', 'bai': 'ㄅㄞ', 'ban': 'ㄅㄢ', 'bang': 'ㄅㄤ', 'bao': 'ㄅㄠ', 'be': 'ㄅㄜ', 'bei': 'ㄅㄟ', 'ben': 'ㄅㄣ', 'beng': 'ㄅㄥ', 'bi': 'ㄅㄧ', 'bian': 'ㄅㄧㄢ', 'biao': 'ㄅㄧㄠ', 'bie': 'ㄅㄧㄝ', 'bin': 'ㄅㄧㄣ', 'bing': 'ㄅㄧㄥ', 'bo': 'ㄅㄛ', 'bu': 'ㄅㄨ',
+  'ca': 'ㄘㄚ', 'cai': 'ㄘㄞ', 'can': 'ㄘㄢ', 'cao': 'ㄘㄠ', 'ce': 'ㄘㄜ', 'cei': 'ㄘㄟ', 'cen': 'ㄘㄣ', 'ceng': 'ㄘㄥ', 'cha': 'ㄔㄚ', 'chai': 'ㄔㄞ', 'chan': 'ㄔㄢ', 'chang': 'ㄔㄤ', 'chao': 'ㄔㄠ', 'che': 'ㄔㄜ', 'chen': 'ㄔㄣ', 'cheng': 'ㄔㄥ', 'chi': 'ㄔ', 'chong': 'ㄔㄨㄥ', 'chou': 'ㄔㄡ', 'chu': 'ㄔㄨ', 'chuai': 'ㄔㄨㄞ', 'chuan': 'ㄔㄨㄢ', 'chuang': 'ㄔㄨㄤ', 'chui': 'ㄔㄨㄟ', 'chun': 'ㄔㄨㄣ', 'chuo': 'ㄔㄨㄛ', 'ci': 'ㄘ', 'cong': 'ㄘㄨㄥ', 'cou': 'ㄘㄡ', 'cu': 'ㄘㄨ', 'cuan': 'ㄘㄨㄢ', 'cui': 'ㄘㄨㄟ', 'cun': 'ㄘㄨㄣ', 'cuo': 'ㄘㄨㄛ',
+  'da': 'ㄉㄚ', 'dai': 'ㄉㄞ', 'dan': 'ㄉㄢ', 'dang': 'ㄉㄤ', 'dao': 'ㄉㄠ', 'de': 'ㄉㄜ', 'dei': 'ㄉㄟ', 'den': 'ㄉㄣ', 'deng': 'ㄉㄥ', 'di': 'ㄉㄧ', 'dian': 'ㄉㄧㄢ', 'diao': 'ㄉㄧㄠ', 'die': 'ㄉㄧㄝ', 'ding': 'ㄉㄧㄥ', 'diu': 'ㄉㄧㄡ', 'dong': 'ㄉㄨㄥ', 'dou': 'ㄉㄡ', 'du': 'ㄉㄨ', 'duan': 'ㄉㄨㄢ', 'dui': 'ㄉㄨㄟ', 'dun': 'ㄉㄨㄣ', 'duo': 'ㄉㄨㄛ',
+  'e': 'ㄜ', 'ei': 'ㄟ', 'en': 'ㄣ', 'eng': 'ㄥ', 'er': 'ㄦ',
+  'fa': 'ㄈㄚ', 'fan': 'ㄈㄢ', 'fang': 'ㄈㄤ', 'fei': 'ㄈㄟ', 'fen': 'ㄈㄣ', 'feng': 'ㄈㄥ', 'fo': 'ㄈㄛ', 'fou': 'ㄈㄡ', 'fu': 'ㄈㄨ',
+  'ga': 'ㄍㄚ', 'gai': 'ㄍㄞ', 'gan': 'ㄍㄢ', 'gang': 'ㄍㄤ', 'gao': 'ㄍㄠ', 'ge': 'ㄍㄜ', 'gei': 'ㄍㄟ', 'gen': 'ㄍㄣ', 'geng': 'ㄍㄥ', 'gong': 'ㄍㄨㄥ', 'gou': 'ㄍㄡ', 'gu': 'ㄍㄨ', 'gua': 'ㄍㄨㄚ', 'guai': 'ㄍㄨㄞ', 'guan': 'ㄍㄨㄢ', 'guang': 'ㄍㄨㄤ', 'gui': 'ㄍㄨㄟ', 'gun': 'ㄍㄨㄣ', 'guo': 'ㄍㄨㄛ',
+  'ha': 'ㄏㄚ', 'hai': 'ㄏㄞ', 'han': 'ㄏㄢ', 'hang': 'ㄏㄤ', 'hao': 'ㄏㄠ', 'he': 'ㄏㄜ', 'hei': 'ㄏㄟ', 'hen': 'ㄏㄣ', 'heng': 'ㄏㄥ', 'hong': 'ㄏㄨㄥ', 'hou': 'ㄏㄡ', 'hu': 'ㄏㄨ', 'hua': 'ㄏㄨㄚ', 'huai': 'ㄏㄨㄞ', 'huan': 'ㄏㄨㄢ', 'huang': 'ㄏㄨㄤ', 'hui': 'ㄏㄨㄟ', 'hun': 'ㄏㄨㄣ', 'huo': 'ㄏㄨㄛ',
+  'i': 'ㄧ',
+  'ji': 'ㄐ', 'jia': 'ㄐㄧㄚ', 'jian': 'ㄐㄧㄢ', 'jiang': 'ㄐㄧㄤ', 'jiao': 'ㄐㄧㄠ', 'jie': 'ㄐㄧㄝ', 'jin': 'ㄐㄧㄣ', 'jing': 'ㄐㄧㄥ', 'jiong': 'ㄐㄩㄥ', 'jiu': 'ㄐㄧㄡ', 'ju': 'ㄐㄩ', 'juan': 'ㄐㄩㄢ', 'jue': 'ㄐㄩㄝ', 'jun': 'ㄐㄩㄣ',
+  'ka': 'ㄎㄚ', 'kai': 'ㄎㄞ', 'kan': 'ㄎㄢ', 'kang': 'ㄎㄤ', 'kao': 'ㄎㄠ', 'ke': 'ㄎㄜ', 'ken': 'ㄎㄣ', 'keng': 'ㄎㄥ', 'kong': 'ㄎㄨㄥ', 'kou': 'ㄎㄡ', 'ku': 'ㄎㄨ', 'kua': 'ㄎㄨㄚ', 'kuai': 'ㄎㄨㄞ', 'kuan': 'ㄎㄨㄢ', 'kuang': 'ㄎㄨㄤ', 'kui': 'ㄎㄨㄟ', 'kun': 'ㄎㄨㄣ', 'kuo': 'ㄎㄨㄛ',
+  'la': 'ㄌㄚ', 'lai': 'ㄌㄞ', 'lan': 'ㄌㄢ', 'lang': 'ㄌㄤ', 'lao': 'ㄌㄠ', 'le': 'ㄌㄜ', 'lei': 'ㄌㄟ', 'len': 'ㄌㄣ', 'leng': 'ㄌㄥ', 'li': 'ㄌㄧ', 'lia': 'ㄌㄧㄚ', 'lian': 'ㄌㄧㄢ', 'liang': 'ㄌㄧㄤ', 'liao': 'ㄌㄧㄠ', 'lie': 'ㄌㄧㄝ', 'lin': 'ㄌㄧㄣ', 'ling': 'ㄌㄧㄥ', 'liu': 'ㄌㄧㄡ', 'lo': 'ㄌㄛ', 'long': 'ㄌㄨㄥ', 'lou': 'ㄌㄡ', 'lu': 'ㄌㄨ', 'luan': 'ㄌㄨㄢ', 'lü': 'ㄌㄩ', 'lüe': 'ㄌㄩㄝ', 'lun': 'ㄌㄨㄣ', 'luo': 'ㄌㄨㄛ',
+  'ma': 'ㄇㄚ', 'mai': 'ㄇㄞ', 'man': 'ㄇㄢ', 'mang': 'ㄇㄤ', 'mao': 'ㄇㄠ', 'me': 'ㄇㄜ', 'mei': 'ㄇㄟ', 'men': 'ㄇㄣ', 'meng': 'ㄇㄥ', 'mi': 'ㄇㄧ', 'mian': 'ㄇㄧㄢ', 'miao': 'ㄇㄧㄠ', 'mie': 'ㄇㄧㄝ', 'min': 'ㄇㄧㄣ', 'ming': 'ㄇㄧㄥ', 'miu': 'ㄇㄧㄡ', 'mo': 'ㄇㄛ', 'mou': 'ㄇㄡ', 'mu': 'ㄇㄨ',
+  'na': 'ㄋㄚ', 'nai': 'ㄋㄞ', 'nan': 'ㄋㄢ', 'nang': 'ㄋㄤ', 'nao': 'ㄋㄠ', 'ne': 'ㄋㄜ', 'nei': 'ㄋㄟ', 'nen': 'ㄋㄣ', 'neng': 'ㄋㄥ', 'ni': 'ㄋㄧ', 'nian': 'ㄋㄧㄢ', 'niang': 'ㄋㄧㄤ', 'niao': 'ㄋㄧㄠ', 'nie': 'ㄋㄧㄝ', 'nin': 'ㄋㄧㄣ', 'ning': 'ㄋㄧㄥ', 'niu': 'ㄋㄧㄡ', 'nong': 'ㄋㄨㄥ', 'nou': 'ㄋㄡ', 'nu': 'ㄋㄨ', 'nü': 'ㄋㄩ', 'nüe': 'ㄋㄩㄝ', 'nuo': 'ㄋㄨㄛ',
+  'o': 'ㄛ', 'ou': 'ㄡ',
+  'pa': 'ㄆㄚ', 'pai': 'ㄆㄞ', 'pan': 'ㄆㄢ', 'pang': 'ㄆㄤ', 'pao': 'ㄆㄠ', 'pei': 'ㄆㄟ', 'pen': 'ㄆㄣ', 'peng': 'ㄆㄥ', 'pi': 'ㄆㄧ', 'pian': 'ㄆㄧㄢ', 'piao': 'ㄆㄧㄠ', 'pie': 'ㄆㄧㄝ', 'pin': 'ㄆㄧㄣ', 'ping': 'ㄆㄧㄥ', 'po': 'ㄆㄛ', 'pou': 'ㄆㄡ', 'pu': 'ㄆㄨ',
+  'qi': 'ㄑ', 'qia': 'ㄑㄧㄚ', 'qian': 'ㄑㄧㄢ', 'qiang': 'ㄑㄧㄤ', 'qiao': 'ㄑㄧㄠ', 'qie': 'ㄑㄧㄝ', 'qin': 'ㄑㄧㄣ', 'qing': 'ㄑㄧㄥ', 'qiong': 'ㄑㄩㄥ', 'qiu': 'ㄑㄧㄡ', 'qu': 'ㄑㄩ', 'quan': 'ㄑㄩㄢ', 'que': 'ㄑㄩㄝ', 'qun': 'ㄑㄩㄣ',
+  'ra': 'ㄖㄚ', 'ran': 'ㄖㄢ', 'rang': 'ㄖㄤ', 'rao': 'ㄖㄠ', 're': 'ㄖㄜ', 'ren': 'ㄖㄣ', 'reng': 'ㄖㄥ', 'ri': 'ㄖ', 'rong': 'ㄖㄨㄥ', 'rou': 'ㄖㄡ', 'ru': 'ㄖㄨ', 'ruan': 'ㄖㄨㄢ', 'rui': 'ㄖㄨㄟ', 'run': 'ㄖㄨㄣ', 'ruo': 'ㄖㄨㄛ',
+  'sa': 'ㄙㄚ', 'sai': 'ㄙㄞ', 'san': 'ㄙㄢ', 'sang': 'ㄙㄤ', 'sao': 'ㄙㄠ', 'se': 'ㄙㄜ', 'sei': 'ㄙㄟ', 'sen': 'ㄙㄣ', 'seng': 'ㄙㄥ', 'sha': 'ㄕㄚ', 'shai': 'ㄕㄞ', 'shan': 'ㄕㄢ', 'shang': 'ㄕㄤ', 'shao': 'ㄕㄠ', 'she': 'ㄕㄜ', 'shei': 'ㄕㄟ', 'shen': 'ㄕㄣ', 'sheng': 'ㄕㄥ', 'shi': 'ㄕ', 'shou': 'ㄕㄡ', 'shu': 'ㄕㄨ', 'shua': 'ㄕㄨㄚ', 'shuai': 'ㄕㄨㄞ', 'shuan': 'ㄕㄨㄢ', 'shuang': 'ㄕㄨㄤ', 'shui': 'ㄕㄨㄟ', 'shun': 'ㄕㄨㄣ', 'shuo': 'ㄕㄨㄛ', 'si': 'ㄙ', 'song': 'ㄙㄨㄥ', 'sou': 'ㄙㄡ', 'su': 'ㄙㄨ', 'suan': 'ㄙㄨㄢ', 'sui': 'ㄙㄨㄟ', 'sun': 'ㄙㄨㄣ', 'suo': 'ㄙㄨㄛ',
+  'ta': 'ㄊㄚ', 'tai': 'ㄊㄞ', 'tan': 'ㄊㄢ', 'tang': 'ㄊㄤ', 'tao': 'ㄊㄠ', 'te': 'ㄊㄜ', 'tei': 'ㄊㄟ', 'ten': 'ㄊㄣ', 'teng': 'ㄊㄥ', 'ti': 'ㄊㄧ', 'tian': 'ㄊㄧㄢ', 'tiao': 'ㄊㄧㄠ', 'tie': 'ㄊㄧㄝ', 'ting': 'ㄊㄧㄥ', 'tong': 'ㄊㄨㄥ', 'tou': 'ㄊㄡ', 'tu': 'ㄊㄨ', 'tuan': 'ㄊㄨㄢ', 'tui': 'ㄊㄨㄟ', 'tun': 'ㄊㄨㄣ', 'tuo': 'ㄊㄨㄛ',
+  'u': 'ㄨ', 'ü': 'ㄩ',
+  'wa': 'ㄨㄚ', 'wai': 'ㄨㄞ', 'wan': 'ㄨㄢ', 'wang': 'ㄨㄤ', 'wei': 'ㄨㄟ', 'wen': 'ㄨㄣ', 'weng': 'ㄨㄥ', 'wo': 'ㄨㄛ', 'wu': 'ㄨ',
+  'xi': 'ㄒ', 'xia': 'ㄒㄧㄚ', 'xian': 'ㄒㄧㄢ', 'xiang': 'ㄒㄧㄤ', 'xiao': 'ㄒㄧㄠ', 'xie': 'ㄒㄧㄝ', 'xin': 'ㄒㄧㄣ', 'xing': 'ㄒㄧㄥ', 'xiong': 'ㄒㄩㄥ', 'xiu': 'ㄒㄧㄡ', 'xu': 'ㄒㄩ', 'xuan': 'ㄒㄩㄢ', 'xue': 'ㄒㄩㄝ', 'xun': 'ㄒㄩㄣ',
+  'ya': 'ㄧㄚ', 'yan': 'ㄧㄢ', 'yang': 'ㄧㄤ', 'yao': 'ㄧㄠ', 'ye': 'ㄧㄝ', 'yi': 'ㄧ', 'yin': 'ㄧㄣ', 'ying': 'ㄧㄥ', 'yo': 'ㄧㄛ', 'yong': 'ㄩㄥ', 'you': 'ㄧㄡ', 'yu': 'ㄩ', 'yuan': 'ㄩㄢ', 'yue': 'ㄩㄝ', 'yun': 'ㄩㄣ',
+  'za': 'ㄗㄚ', 'zai': 'ㄗㄞ', 'zan': 'ㄗㄢ', 'zang': 'ㄗㄤ', 'zao': 'ㄗㄠ', 'ze': 'ㄗㄜ', 'zei': 'ㄗㄟ', 'zen': 'ㄗㄣ', 'zeng': 'ㄗㄥ', 'zha': 'ㄓㄚ', 'zhai': 'ㄓㄞ', 'zhan': 'ㄓㄢ', 'zhang': 'ㄓㄤ', 'zhao': 'ㄓㄠ', 'zhe': 'ㄓㄜ', 'zhei': 'ㄓㄟ', 'zhen': 'ㄓㄣ', 'zheng': 'ㄓㄥ', 'zhi': 'ㄓ', 'zhong': 'ㄓㄨㄥ', 'zhou': 'ㄓㄡ', 'zhu': 'ㄓㄨ', 'zhua': 'ㄓㄨㄚ', 'zhuai': 'ㄓㄨㄞ', 'zhuan': 'ㄓㄨㄢ', 'zhuang': 'ㄓㄨㄤ', 'zhui': 'ㄓㄨㄟ', 'zhun': 'ㄓㄨㄣ', 'zhuo': 'ㄓㄨㄛ', 'zi': 'ㄗ', 'zong': 'ㄗㄨㄥ', 'zou': 'ㄗㄡ', 'zu': 'ㄗㄨ', 'zuan': 'ㄗㄨㄢ', 'zui': 'ㄗㄨㄟ', 'zun': 'ㄗㄨㄣ', 'zuo': 'ㄗㄨㄛ',
+
+  // Tones (聲調)
+  '1': 'ˉ', '2': 'ˊ', '3': 'ˇ', '4': 'ˋ', '5': '˙'
+};
+
+function convertPinyinToZhuyin(pinyinStr){
+  // pinyinStr format: "tian1" or with tone mark
+  const pinyin = pinyinStr.toLowerCase();
+
+  // Remove tone number to get base syllable
+  const basePinyin = pinyin.replace(/[1-5]$/,'');
+
+  // Extract tone number
+  const toneMatch = pinyin.match(/[1-5]$/);
+  const toneNum = toneMatch ? toneMatch[0] : '5';
+
+  // Look up in conversion table
+  if(pinyinToZhuyinMap[basePinyin]){
+    let zhuyinChar = pinyinToZhuyinMap[basePinyin];
+    const toneMark = pinyinToZhuyinMap[toneNum] || '';
+    return zhuyinChar + toneMark;
+  }
+
+  return null; // Not found
+}
+
+function autoGenerateZhuyin(idx){
+  const phrase = tempPhrases[idx].phrase;
+
+  if(!phrase){
+    alert('請先輸入詞句');
+    return;
+  }
+
+  console.log('autoGenerateZhuyin called for:', phrase);
+  console.log('嘗試使用線上拼音API...');
+
+  // Try multiple API endpoints
+  const apis = [
+    // API 1: Pinyin.info
+    `https://api.pinyin.info/v1/convert/${encodeURIComponent(phrase)}`,
+    // API 2: Alternative API
+    `https://japi.y.qq.com/?g_tk=1&jsonpCallback=jsonp&env=website&u=utf-8&action=GetPinyin&word=${encodeURIComponent(phrase)}`,
+  ];
+
+  // Try first API with timeout
+  tryApi(0, apis, phrase, idx);
+}
+
+function tryApi(apiIndex, apis, phrase, idx, timeout = 3000){
+  if(apiIndex >= apis.length){
+    console.log('所有API均失敗，使用內置字庫');
+    generateZhuyinFromBuiltInMap(phrase, idx);
+    return;
+  }
+
+  const apiUrl = apis[apiIndex];
+  console.log(`嘗試API ${apiIndex + 1}: ${apiUrl.substring(0, 50)}...`);
+
+  // Create timeout promise
+  const timeoutPromise = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('API timeout')), timeout)
+  );
+
+  Promise.race([
+    fetch(apiUrl, {
+      method: 'GET',
+      headers: {'Accept': 'application/json'}
+    }).then(r => r.json()),
+    timeoutPromise
+  ])
+    .then(data => {
+      console.log('API ' + (apiIndex + 1) + ' 響應:', data);
+
+      let zhuyin = generateZhuyinFromApiResponse(data, phrase);
+
+      if(zhuyin){
+        tempPhrases[idx].zhuyin = zhuyin.trim();
+        renderPhraseEditor();
+        console.log('✓ 線上API生成注音:', tempPhrases[idx].zhuyin);
+        return;
+      }
+
+      // Try next API
+      console.log('API ' + (apiIndex + 1) + ' 無法產生注音，嘗試下一個');
+      tryApi(apiIndex + 1, apis, phrase, idx);
+    })
+    .catch(error => {
+      console.log('API ' + (apiIndex + 1) + ' 錯誤:', error.message);
+      // Try next API
+      tryApi(apiIndex + 1, apis, phrase, idx);
+    });
+}
+
+function generateZhuyinFromApiResponse(data, phrase){
+  // Try to parse different API response formats
+  let zhuyin = '';
+
+  // Format 1: Direct pinyin array
+  if(Array.isArray(data)){
+    for(let item of data){
+      if(typeof item === 'string'){
+        const zhuyinChar = convertPinyinToZhuyin(item);
+        if(zhuyinChar) zhuyin += zhuyinChar + ' ';
+      }
+    }
+  }
+  // Format 2: Object with pinyin property
+  else if(data && data.pinyin){
+    if(typeof data.pinyin === 'string'){
+      const zhuyinChar = convertPinyinToZhuyin(data.pinyin);
+      if(zhuyinChar) zhuyin += zhuyinChar + ' ';
+    } else if(Array.isArray(data.pinyin)){
+      for(let p of data.pinyin){
+        if(typeof p === 'string'){
+          const zhuyinChar = convertPinyinToZhuyin(p);
+          if(zhuyinChar) zhuyin += zhuyinChar + ' ';
+        }
+      }
+    }
+  }
+
+  return zhuyin;
+}
+
+function generateZhuyinFromBuiltInMap(phrase, idx){
+  // Fallback: Use built-in character map
+  let zhuyin = '';
+  let generatedCount = 0;
+
+  // Process each character in the phrase
+  for(let i = 0; i < phrase.length; i++){
+    const char = phrase[i];
+
+    // Skip spaces and punctuation
+    if(/\s|[，。！？；：『』「」（）]/.test(char)){
+      if(char !== ' ') zhuyin += char;
+      continue;
+    }
+
+    // Look up character in built-in map
+    if(charToPinyinMap[char]){
+      const pinyin = charToPinyinMap[char];
+      const zhuyinChar = convertPinyinToZhuyin(pinyin);
+
+      if(zhuyinChar){
+        zhuyin += zhuyinChar + ' ';
+        generatedCount++;
+        console.log('Built-in map: "' + char + '" → ' + zhuyinChar);
+      }
+    } else {
+      // Character not in map
+      console.log('字"' + char + '"不在內置字庫中');
+    }
+  }
+
+  if(generatedCount > 0){
+    tempPhrases[idx].zhuyin = zhuyin.trim();
+    renderPhraseEditor();
+    console.log('✓ 內置字庫生成注音:', tempPhrases[idx].zhuyin);
+    return;
+  }
+
+  // No characters were generated
+  console.log('無法生成注音 - 字不在字庫中');
+
+  alert(`自動注音說明：
+
+詞句：${phrase}
+
+系統無法自動產生注音。
+
+請使用以下方式：
+
+1️⃣ Google搜尋「${phrase} 注音」
+2️⃣ 線上注音查詢：https://www.moedict.tw/
+3️⃣ 手動輸入注音
+
+常見例子：
+• 天氣 → ㄊㄧㄢ ㄑㄧˋ
+• 好棒 → ㄏㄠˇ ㄅㄤˋ
+• 學習 → ㄒㄩㄝˊ ㄒㄧˊ
+• 春天 → ㄔㄨㄣ ㄊㄧㄢ`);
+}
+
+function addPhraseRow(){
+  tempPhrases.push({phrase: '', zhuyin: ''});
+  renderPhraseEditor();
+}
+
+function saveCourse(){
+  if(!currentCourse) return;
+  const name = document.getElementById('course-name-input').value.trim();
+
+  if(!name){
+    alert('請輸入課程名稱');
+    return;
+  }
+
+  const validLines = tempPhrases.filter(p => p.phrase.trim());
+  if(!validLines.length){
+    alert('請至少輸入一行詞句');
+    return;
+  }
+
+  currentCourse.name = name;
+  currentCourse.lines = validLines;
+
+  saveData();
+  closeCourseDetail();
+  renderCoursesList();
+  updateCourseSelects();
+  alert('課程已保存！');
+}
+
+function deleteCourse(){
+  if(!currentCourse || !confirm('確定要刪除此課程嗎？')) return;
+
+  courses = courses.filter(c => c.id !== currentCourse.id);
+  saveData();
+  closeCourseDetail();
+  renderCoursesList();
+  updateCourseSelects();
+}
+
+function updateCourseSelects(){
+  let html = '<option value="">請選擇課程...</option>';
+  courses.forEach(c => {
+    html += `<option value="${c.id}">${c.name}</option>`;
+  });
+  document.getElementById('review-course-select').innerHTML = html;
+}
+
+function updateReviewConfig(){
+  const courseId = document.getElementById('review-course-select').value;
+  if(!courseId){
+    alert('請選擇課程');
+  }
+}
+
+function addToSchedule(){
+  const courseId = document.getElementById('review-course-select').value;
+  if(!courseId){
+    alert('請選擇課程');
+    return;
+  }
+
+  const course = courses.find(c => c.id === courseId);
+  if(!course || !course.lines.length){
+    alert('課程無有效詞句');
+    return;
+  }
+
+  const dailyCount = parseInt(document.getElementById('daily-review-count').value) || 5;
+  const selectCount = Math.min(dailyCount, course.lines.length);
+
+  // Random select lines
+  const selected = course.lines.sort(() => Math.random() - 0.5).slice(0, selectCount);
+
+  currentSchedule = {
+    courseId: courseId,
+    courseName: course.name,
+    lines: selected,
+    addedDate: new Date().toISOString()
+  };
+
+  saveData();
+  renderScheduleList();
+
+  // Reload data to ensure it's in memory
+  loadData();
+
+  alert('✓ 已加入行程！點擊「今日學習」中的「國語｜生字複習」開始練習');
+}
+
+function renderScheduleList(){
+  if(!currentSchedule || !currentSchedule.lines || !currentSchedule.lines.length){
+    document.getElementById('schedule-list').innerHTML = '<div style="text-align:center;padding:20px;color:#6b7280">尚未加入行程</div>';
+    return;
+  }
+
+  let html = `<div style="margin-bottom:12px">
+    <div style="font-weight:700;color:#111;margin-bottom:4px">${currentSchedule.courseName}</div>
+    <div style="font-size:12px;color:#6b7280;margin-bottom:12px">共 ${currentSchedule.lines.length} 行待複習</div>
+    <div style="display:grid;gap:8px">`;
+
+  currentSchedule.lines.forEach((line, idx) => {
+    html += `<div style="padding:8px;background:#f8fafc;border-radius:8px;border-left:4px solid #2563eb">
+      <div style="font-weight:700;color:#111;font-size:13px">${line.phrase}</div>
+      ${line.zhuyin ? `<div style="font-size:11px;color:#6b7280;margin-top:2px">${line.zhuyin}</div>` : ''}
+    </div>`;
+  });
+
+  html += '</div><button onclick="clearSchedule()" style="width:100%;margin-top:12px;padding:8px;background:#e5e7eb;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:12px">清除行程</button></div>';
+
+  document.getElementById('schedule-list').innerHTML = html;
+}
+
+function clearSchedule(){
+  currentSchedule = null;
+  saveData();
+  renderScheduleList();
+}
+
+let reviewLineScores = {}; // Store scores for each line
+let isSpeaking = false;
+
+function showNextReviewLine(){
+  console.log('showNextReviewLine called, reviewIndex:', reviewIndex, 'total:', currentReviewLines ? currentReviewLines.length : 'undefined');
+
+  // Safety check
+  if(!currentReviewLines || currentReviewLines.length === 0){
+    console.error('currentReviewLines is empty or undefined!');
+    alert('錯誤：沒有詞句數據');
+    showPage('today');
+    return;
+  }
+
+  if(reviewIndex >= currentReviewLines.length){
+    // All lines shown, go to scoring phase
+    console.log('Going to scoring page');
+    showScoringPage();
+    return;
+  }
+
+  const line = currentReviewLines[reviewIndex];
+  console.log('Showing line:', line);
+
+  // Safety check for line
+  if(!line){
+    console.error('Line is undefined at index:', reviewIndex);
+    return;
+  }
+
+  // Update UI - with error handling
+  try {
+    const zhuyin = line.zhuyin || '(未設定注音)';
+    const phrase = line.phrase || '(未設定詞句)';
+
+    console.log('Updating zhuyin element...');
+    const zhuyinEl = document.getElementById('review-zhuyin');
+    console.log('zhuyin element found:', zhuyinEl);
+    if(zhuyinEl) {
+      zhuyinEl.textContent = zhuyin;
+      zhuyinEl.innerHTML = zhuyin; // Try both methods
+      console.log('zhuyin set to:', zhuyin);
+    }
+
+    console.log('Updating phrase element...');
+    const phraseEl = document.getElementById('review-phrase');
+    console.log('phrase element found:', phraseEl);
+    if(phraseEl) {
+      phraseEl.textContent = phrase;
+      phraseEl.innerHTML = phrase; // Try both methods
+      console.log('phrase set to:', phrase);
+    }
+
+    const indexEl = document.getElementById('review-index');
+    if(indexEl) indexEl.textContent = reviewIndex + 1;
+
+    const totalEl = document.getElementById('review-total');
+    if(totalEl) totalEl.textContent = currentReviewLines.length;
+
+    const progressEl = document.getElementById('review-progress');
+    if(progressEl) {
+      progressEl.style.width = ((reviewIndex + 1) / currentReviewLines.length * 100) + '%';
+    }
+
+    // Update button text
+    const nextBtn = document.getElementById('next-btn');
+    if(nextBtn){
+      if(reviewIndex + 1 >= currentReviewLines.length){
+        nextBtn.textContent = '完成朗讀 ✓';
+      } else {
+        nextBtn.textContent = '下一步 →';
+      }
+    }
+
+    console.log('UI updated successfully');
+
+  } catch(e) {
+    console.error('Error updating UI:', e);
+    console.error('Stack trace:', e.stack);
+    alert('顯示界面出錯：' + e.message);
+    return;
+  }
+
+  // Auto speak after a short delay
+  isSpeaking = true;
+  setTimeout(() => {
+    console.log('Auto-speaking phrase');
+    speakCurrentPhrase();
+  }, 800);
+}
+
+function speakCurrentPhrase(){
+  if(reviewIndex >= currentReviewLines.length){
+    isSpeaking = false;
+    return;
+  }
+
+  const line = currentReviewLines[reviewIndex];
+  const phrase = line.phrase;
+
+  console.log('Speaking phrase:', phrase);
+
+  // Cancel any ongoing speech
+  window.speechSynthesis.cancel();
+
+  // Use Web Speech API
+  const utterance = new SpeechSynthesisUtterance(phrase);
+  utterance.lang = 'zh-TW'; // Traditional Chinese (Taiwan)
+  utterance.rate = 0.9; // Speed
+  utterance.pitch = 1.0; // Pitch
+  utterance.volume = 1.0; // Volume
+
+  utterance.onstart = () => {
+    console.log('Speech started');
+    isSpeaking = true;
+  };
+
+  utterance.onend = () => {
+    console.log('Speech ended');
+    isSpeaking = false;
+  };
+
+  utterance.onerror = (e) => {
+    console.log('Speech error:', e);
+    isSpeaking = false;
+  };
+
+  window.speechSynthesis.speak(utterance);
+}
+
+function completeCurrentPhrase(){
+  reviewIndex++;
+  showNextReviewLine();
+}
+
+function showScoringPage(){
+  showPage('chinese-scoring');
+  renderScoringInterface();
+}
+
+function renderScoringInterface(){
+  let html = '';
+  reviewLineScores = {};
+
+  currentReviewLines.forEach((line, idx) => {
+    reviewLineScores[idx] = 'correct'; // Default to correct
+    html += `
+      <div style="padding:14px;background:#fff;border:2px solid #e5e7eb;border-radius:12px">
+        <div style="font-weight:700;color:#111;margin-bottom:8px;font-size:13px">第 ${idx + 1} 行</div>
+        <div style="margin-bottom:12px">
+          <div style="font-size:14px;color:#111;margin-bottom:2px">${line.phrase}</div>
+          <div style="font-size:12px;color:#6b7280">${line.zhuyin || '(未設定注音)'}</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="score-btn" style="flex:1;min-width:80px" onclick="setLineScore(${idx}, 'weak')" data-idx="${idx}">❌ 答錯</button>
+          <button class="score-btn" style="flex:1;min-width:80px" onclick="setLineScore(${idx}, 'unstable')" data-idx="${idx}">⚠️ 不穩</button>
+          <button class="score-btn selected" style="flex:1;min-width:80px" onclick="setLineScore(${idx}, 'correct')" data-idx="${idx}">✓ 正確</button>
+        </div>
+      </div>
+    `;
+  });
+
+  document.getElementById('scoring-list').innerHTML = html;
+}
+
+function setLineScore(lineIdx, score){
+  reviewLineScores[lineIdx] = score;
+
+  // Update button styles
+  const buttons = document.querySelectorAll(`[data-idx="${lineIdx}"]`);
+  buttons.forEach(btn => btn.classList.remove('selected'));
+
+  const selectedBtn = event.target;
+  selectedBtn.classList.add('selected');
+}
+
+function completeScoringAndFinish(){
+  const now = new Date();
+
+  // Save scores for each line
+  currentReviewLines.forEach((line, idx) => {
+    const lineKey = line.phrase;
+    const score = reviewLineScores[idx];
+
+    if(!charHistory[lineKey]){
+      charHistory[lineKey] = {
+        status: 'new',
+        nextReview: now.toISOString(),
+        history: [],
+        weakCount: 0
+      };
+    }
+
+    let status, nextReview;
+    switch(score){
+      case 'weak':
+        status = 'weak';
+        charHistory[lineKey].weakCount = (charHistory[lineKey].weakCount || 0) + 1;
+        nextReview = new Date(now.getTime() + 1 * 24 * 60 * 60 * 1000);
+        break;
+      case 'unstable':
+        status = 'unstable';
+        nextReview = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+        break;
+      case 'correct':
+        const prevStatus = charHistory[lineKey].status;
+        if(prevStatus === 'new' || prevStatus === 'weak'){
+          status = 'unstable';
+          nextReview = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+        } else if(prevStatus === 'unstable'){
+          status = 'proficient';
+          nextReview = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+        } else if(prevStatus === 'proficient'){
+          status = 'very-proficient';
+          nextReview = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+        } else {
+          status = 'very-proficient';
+          nextReview = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        }
+        break;
+    }
+
+    charHistory[lineKey].status = status;
+    charHistory[lineKey].nextReview = nextReview.toISOString();
+    charHistory[lineKey].history.push({
+      date: now.toISOString(),
+      score: score,
+      status: status
+    });
+  });
+
+  saveData();
+  alert('完成今日複習！太棒了！🎉');
+  clearSchedule();
+  showPage('today');
+}
+
+function startChineseReview(taskId){
+  console.log('startChineseReview called with taskId:', taskId);
+  console.log('currentSchedule:', currentSchedule);
+
+  if(taskId !== 0 && taskId !== '0'){
+    openTask(taskId);
+    return;
+  }
+
+  // Check if schedule exists
+  if(!currentSchedule || !currentSchedule.lines || !currentSchedule.lines.length){
+    console.log('No schedule found');
+    alert('請先在「課程設定」中加入行程\n\n步驟：\n1. 點擊左邊「⚙️ 課程設定」\n2. 選擇課程\n3. 設定複習行數\n4. 點擊「✓ 加入行程」');
+    showPage('course-setting');
+    return;
+  }
+
+  console.log('Starting review with lines:', currentSchedule.lines);
+
+  // Set up review lines
+  currentReviewLines = [...currentSchedule.lines];
+  reviewIndex = 0;
+  reviewLineScores = {};
+
+  // Verify data
+  if(!currentReviewLines || currentReviewLines.length === 0){
+    console.error('currentReviewLines is empty!');
+    alert('錯誤：沒有詞句數據');
+    return;
+  }
+
+  console.log('Review setup complete. Lines count:', currentReviewLines.length);
+
+  // Clear any ongoing speech
+  window.speechSynthesis.cancel();
+
+  // Switch to review page
+  showPage('chinese-review');
+
+  console.log('Page switched to chinese-review');
+
+  // Ensure the page is rendered before starting
+  setTimeout(() => {
+    console.log('Calling showNextReviewLine, reviewIndex:', reviewIndex);
+    showNextReviewLine();
+  }, 500);
+}
+
+window.addEventListener('load', () => {
+  document.getElementById('kid-name-input').focus();
+});
+</script>
+
+</body>
+</html>
