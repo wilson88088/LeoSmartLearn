@@ -878,6 +878,50 @@ function handleSearch(v){
   renderTasks(f);
 }
 
+function updateCourseSelects(){
+  const sel = document.getElementById('review-course-select');
+  sel.innerHTML = '<option value="">請選擇課程...</option>' + courses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+}
+
+function renderScheduleList(){
+  const el = document.getElementById('schedule-list');
+  if(!currentSchedule){
+    el.innerHTML = '<div style="color:#6b7280;padding:20px;text-align:center">還沒有設定今日複習行程</div>';
+    return;
+  }
+  const c = courses.find(x => x.id === currentSchedule.courseId);
+  if(!c){
+    el.innerHTML = '<div style="color:#ef4444;padding:20px;text-align:center">課程已刪除</div>';
+    return;
+  }
+  el.innerHTML = `
+    <div style="padding:16px;background:#f0fdf4;border-left:4px solid #22c55e;border-radius:8px">
+      <div style="font-weight:700;color:#166534;margin-bottom:4px">${c.name}</div>
+      <div style="color:#4b5563;margin-bottom:8px">每日複習 ${currentSchedule.lineCount} 行詞句</div>
+      <button onclick="clearSchedule()" style="padding:6px 12px;background:#ef4444;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">移除行程</button>
+    </div>
+  `;
+}
+
+function addToSchedule(){
+  const courseId = document.getElementById('review-course-select').value;
+  const lineCount = parseInt(document.getElementById('daily-review-count').value) || 5;
+  if(!courseId){
+    alert('請選擇課程');
+    return;
+  }
+  currentSchedule = {courseId, lineCount};
+  saveData();
+  renderScheduleList();
+  document.getElementById('review-course-select').value = '';
+}
+
+function clearSchedule(){
+  currentSchedule = null;
+  saveData();
+  renderScheduleList();
+}
+
 // ========== 課程管理功能 ==========
 
 function renderCoursesList(){
@@ -949,22 +993,10 @@ function addNewCourse(){
           continue;
         }
 
-        // Look up in character map
-        if(charToPinyinMap[char]){
-          const pinyin = charToPinyinMap[char].toLowerCase();
-          const toneMatch = pinyin.match(/[1-5]$/);
-          const basePinyin = pinyin.replace(/[1-5]$/,'');
-          const toneNum = toneMatch ? toneMatch[0] : '5';
-
-          if(pinyinToZhuyinMap[basePinyin]){
-            let zhuyinChar = pinyinToZhuyinMap[basePinyin];
-            const toneMark = pinyinToZhuyinMap[toneNum] || '';
-            zhuyinChar += toneMark;
-            zhuyin += zhuyinChar + ' ';
-            charCount++;
-          } else {
-            zhuyin += pinyin + ' ';
-          }
+        // Look up in ZHUYIN_DICT
+        if(typeof ZHUYIN_DICT !== 'undefined' && ZHUYIN_DICT[char]){
+          zhuyin += ZHUYIN_DICT[char] + ' ';
+          charCount++;
         }
       }
 
@@ -989,6 +1021,69 @@ function addNewCourse(){
   }
 }
 
+function startChineseReview(id){
+  if(!currentSchedule){
+    alert('請先在「課程管理」中加入今日複習行程');
+    return;
+  }
+  const course = courses.find(c => c.id === currentSchedule.courseId);
+  if(!course){
+    alert('課程不存在');
+    return;
+  }
+  showPage('chinese-review');
+  reviewIndex = 0;
+  renderReviewContent();
+}
+
+function renderReviewContent(){
+  if(!currentSchedule) return;
+  const course = courses.find(c => c.id === currentSchedule.courseId);
+  if(!course || !course.lines.length) return;
+
+  const line = course.lines[reviewIndex];
+  document.getElementById('review-total').textContent = course.lines.length;
+  document.getElementById('review-index').textContent = reviewIndex + 1;
+  document.getElementById('review-phrase').textContent = line.phrase;
+  document.getElementById('review-zhuyin').textContent = line.zhuyin || 'ㄅㄆㄇ';
+
+  const progress = ((reviewIndex + 1) / course.lines.length) * 100;
+  document.getElementById('review-progress').style.width = progress + '%';
+
+  speakCurrentPhrase();
+}
+
+function speakCurrentPhrase(){
+  if(!currentSchedule) return;
+  const course = courses.find(c => c.id === currentSchedule.courseId);
+  if(!course || !course.lines[reviewIndex]) return;
+
+  const line = course.lines[reviewIndex];
+  const utterance = new SpeechSynthesisUtterance(line.phrase);
+  utterance.lang = 'zh-TW';
+  utterance.rate = 0.8;
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(utterance);
+}
+
+function completeCurrentPhrase(){
+  if(!currentSchedule) return;
+  const course = courses.find(c => c.id === currentSchedule.courseId);
+  if(!course) return;
+
+  if(reviewIndex < course.lines.length - 1){
+    reviewIndex++;
+    renderReviewContent();
+  } else {
+    showPage('today');
+    alert('✓ 複習完成！');
+  }
+}
+
+function updateReviewConfig(){
+  renderScheduleList();
+}
+
 function editCourse(courseId){
   currentCourse = courses.find(c => c.id === courseId);
   if(!currentCourse) return;
@@ -1004,6 +1099,51 @@ function closeCourseDetail(){
   currentCourse = null;
   tempPhrases = [];
   document.getElementById('course-detail-card').style.display = 'none';
+}
+
+function addPhraseRow(){
+  tempPhrases.push({phrase: '', zhuyin: ''});
+  renderPhraseEditor();
+}
+
+function saveCourse(){
+  const name = document.getElementById('course-name-input').value.trim();
+  if(!name){
+    alert('請輸入課程名稱');
+    return;
+  }
+  if(!tempPhrases.length){
+    alert('請至少新增一行詞句');
+    return;
+  }
+  if(currentCourse){
+    currentCourse.name = name;
+    currentCourse.lines = tempPhrases;
+  }
+  saveData();
+  closeCourseDetail();
+  renderCoursesList();
+  alert('✓ 課程已保存');
+}
+
+function deleteCourse(){
+  if(!currentCourse) return;
+  if(!confirm('確定要刪除此課程？')) return;
+
+  courses = courses.filter(c => c.id !== currentCourse.id);
+  if(currentSchedule && currentSchedule.courseId === currentCourse.id){
+    currentSchedule = null;
+  }
+  saveData();
+  closeCourseDetail();
+  renderCoursesList();
+  renderScheduleList();
+  alert('✓ 課程已刪除');
+}
+
+function completeScoringAndFinish(){
+  showPage('today');
+  alert('✓ 評分完成，感謝您的評價！');
 }
 
 function renderPhraseEditor(){
@@ -1024,670 +1164,104 @@ function renderPhraseEditor(){
   document.getElementById('phrase-editor').innerHTML = html;
 }
 
-// Common Chinese characters to pinyin mapping (most frequently used characters)
-const charToPinyinMap = {
-  '天': 'tian1', '氣': 'qi4', '好': 'hao3', '棒': 'bang4', '你': 'ni3', '去': 'qu4',
-  '我': 'wo3', '他': 'ta1', '她': 'ta1', '是': 'shi4', '有': 'you3', '在': 'zai4',
-  '了': 'le5', '的': 'de5', '和': 'he2', '說': 'shuo1', '看': 'kan4', '聽': 'ting1',
-  '讀': 'du2', '寫': 'xie3', '做': 'zuo4', '學': 'xue2', '習': 'xi2', '教': 'jiao4',
-  '書': 'shu1', '本': 'ben3', '紙': 'zhi3', '筆': 'bi3', '門': 'men2', '家': 'jia1',
-  '人': 'ren2', '大': 'da4', '小': 'xiao3', '多': 'duo1', '少': 'shao3', '高': 'gao1',
-  '低': 'di1', '長': 'chang2', '短': 'duan3', '快': 'kuai4', '慢': 'man4', '新': 'xin1',
-  '舊': 'jiu4', '美': 'mei3', '麗': 'li4', '醜': 'chou3', '黑': 'hei1', '白': 'bai2',
-  '紅': 'hong2', '綠': 'lü4', '藍': 'lan2', '黃': 'huang2', '春': 'chun1', '夏': 'xia4',
-  '秋': 'qiu1', '冬': 'dong1', '花': 'hua1', '草': 'cao3', '樹': 'shu4', '木': 'mu4',
-  '水': 'shui3', '火': 'huo3', '土': 'tu3', '金': 'jin1', '石': 'shi2', '山': 'shan1',
-  '河': 'he2', '海': 'hai3', '雲': 'yun2', '雨': 'yu3', '風': 'feng1', '雪': 'xue3',
-  '日': 'ri4', '月': 'yue4', '星': 'xing1', '光': 'guang1', '暗': 'an4', '明': 'ming2',
-  '亮': 'liang4', '昨': 'zuo2', '今': 'jin1', '明': 'ming2', '後': 'hou4', '前': 'qian2',
-  '左': 'zuo3', '右': 'you4', '上': 'shang4', '下': 'xia4', '中': 'zhong1', '內': 'nei4',
-  '外': 'wai4', '進': 'jin4', '出': 'chu1', '來': 'lai2', '去': 'qu4', '過': 'guo4',
-  '到': 'dao4', '離': 'li2', '向': 'xiang4', '從': 'cong2', '為': 'wei2', '被': 'bei3',
-  '把': 'ba3', '給': 'gei3', '對': 'dui4', '跟': 'gen1', '同': 'tong2', '與': 'yu3',
-  '及': 'ji2', '或': 'huo4', '但': 'dan4', '因': 'yin1', '果': 'guo3', '所': 'suo3',
-  '以': 'yi3', '使': 'shi3', '讓': 'rang4', '得': 'de2', '卻': 'que4', '也': 'ye3',
-  '太': 'tai4', '非': 'fei1', '無': 'wu2', '有': 'you3', '只': 'zhi3', '都': 'du1',
-  '很': 'hen3', '最': 'zui4', '比': 'bi3', '較': 'jiao4', '極': 'ji2', '更': 'geng4',
-  '又': 'you4', '能': 'neng2', '會': 'hui4', '可': 'ke3', '應': 'ying1', '該': 'gai1',
-  '必': 'bi4', '要': 'yao4', '須': 'xu1', '應': 'ying4', '該': 'gai1', '想': 'xiang3',
-  '願': 'yuan4', '希': 'xi1', '望': 'wang4', '準': 'zhun3', '備': 'bei4', '開': 'kai1',
-  '關': 'guan1', '起': 'qi3', '止': 'zhi3', '始': 'shi3', '終': 'zhong1', '結': 'jie1',
-  '束': 'shu4', '進': 'jin4', '退': 'tui4', '走': 'zou3', '跑': 'pao3', '跳': 'tiao4',
-  '坐': 'zuo4', '站': 'zhan4', '躺': 'tang3', '睡': 'shui4', '醒': 'xing3', '起': 'qi3',
-  '吃': 'chi1', '喝': 'he1', '飲': 'yin3', '食': 'shi2', '飯': 'fan4', '菜': 'cai4',
-  '果': 'guo3', '肉': 'rou4', '魚': 'yu2', '蛋': 'dan4', '乳': 'ru3', '油': 'you2',
-  '鹽': 'yan2', '糖': 'tang2', '醬': 'jiang4', '醋': 'cu4', '茶': 'cha2', '酒': 'jiu3',
-  '牛': 'niu2', '羊': 'yang2', '豬': 'zhu1', '狗': 'gou3', '貓': 'mao1', '鳥': 'niao3',
-  '魚': 'yu2', '蟲': 'chong2', '蝴': 'hu2', '蝶': 'die2', '蜂': 'feng1', '蜜': 'mi4',
-  '顏': 'yan2', '色': 'se4', '形': 'xing2', '狀': 'zhuang4', '樣': 'yang4', '子': 'zi3'
-};
 
-// Comprehensive Pinyin to Zhuyin conversion table
-const pinyinToZhuyinMap = {
-  // Initials (聲母)
-  'zh': 'ㄓ', 'ch': 'ㄔ', 'sh': 'ㄕ', 'r': 'ㄖ', 'z': 'ㄗ', 'c': 'ㄘ', 's': 'ㄙ',
-  'b': 'ㄅ', 'p': 'ㄆ', 'm': 'ㄇ', 'f': 'ㄈ', 'd': 'ㄉ', 't': 'ㄊ', 'n': 'ㄋ', 'l': 'ㄌ',
-  'g': 'ㄍ', 'k': 'ㄎ', 'h': 'ㄏ', 'j': 'ㄐ', 'q': 'ㄑ', 'x': 'ㄒ', 'y': 'ㄧ', 'w': 'ㄨ',
-
-  // Complete syllables (多音節)
-  'a': 'ㄚ', 'ai': 'ㄞ', 'an': 'ㄢ', 'ang': 'ㄤ', 'ao': 'ㄠ',
-  'ba': 'ㄅㄚ', 'bai': 'ㄅㄞ', 'ban': 'ㄅㄢ', 'bang': 'ㄅㄤ', 'bao': 'ㄅㄠ', 'be': 'ㄅㄜ', 'bei': 'ㄅㄟ', 'ben': 'ㄅㄣ', 'beng': 'ㄅㄥ', 'bi': 'ㄅㄧ', 'bian': 'ㄅㄧㄢ', 'biao': 'ㄅㄧㄠ', 'bie': 'ㄅㄧㄝ', 'bin': 'ㄅㄧㄣ', 'bing': 'ㄅㄧㄥ', 'bo': 'ㄅㄛ', 'bu': 'ㄅㄨ',
-  'ca': 'ㄘㄚ', 'cai': 'ㄘㄞ', 'can': 'ㄘㄢ', 'cao': 'ㄘㄠ', 'ce': 'ㄘㄜ', 'cei': 'ㄘㄟ', 'cen': 'ㄘㄣ', 'ceng': 'ㄘㄥ', 'cha': 'ㄔㄚ', 'chai': 'ㄔㄞ', 'chan': 'ㄔㄢ', 'chang': 'ㄔㄤ', 'chao': 'ㄔㄠ', 'che': 'ㄔㄜ', 'chen': 'ㄔㄣ', 'cheng': 'ㄔㄥ', 'chi': 'ㄔ', 'chong': 'ㄔㄨㄥ', 'chou': 'ㄔㄡ', 'chu': 'ㄔㄨ', 'chuai': 'ㄔㄨㄞ', 'chuan': 'ㄔㄨㄢ', 'chuang': 'ㄔㄨㄤ', 'chui': 'ㄔㄨㄟ', 'chun': 'ㄔㄨㄣ', 'chuo': 'ㄔㄨㄛ', 'ci': 'ㄘ', 'cong': 'ㄘㄨㄥ', 'cou': 'ㄘㄡ', 'cu': 'ㄘㄨ', 'cuan': 'ㄘㄨㄢ', 'cui': 'ㄘㄨㄟ', 'cun': 'ㄘㄨㄣ', 'cuo': 'ㄘㄨㄛ',
-  'da': 'ㄉㄚ', 'dai': 'ㄉㄞ', 'dan': 'ㄉㄢ', 'dang': 'ㄉㄤ', 'dao': 'ㄉㄠ', 'de': 'ㄉㄜ', 'dei': 'ㄉㄟ', 'den': 'ㄉㄣ', 'deng': 'ㄉㄥ', 'di': 'ㄉㄧ', 'dian': 'ㄉㄧㄢ', 'diao': 'ㄉㄧㄠ', 'die': 'ㄉㄧㄝ', 'ding': 'ㄉㄧㄥ', 'diu': 'ㄉㄧㄡ', 'dong': 'ㄉㄨㄥ', 'dou': 'ㄉㄡ', 'du': 'ㄉㄨ', 'duan': 'ㄉㄨㄢ', 'dui': 'ㄉㄨㄟ', 'dun': 'ㄉㄨㄣ', 'duo': 'ㄉㄨㄛ',
-  'e': 'ㄜ', 'ei': 'ㄟ', 'en': 'ㄣ', 'eng': 'ㄥ', 'er': 'ㄦ',
-  'fa': 'ㄈㄚ', 'fan': 'ㄈㄢ', 'fang': 'ㄈㄤ', 'fei': 'ㄈㄟ', 'fen': 'ㄈㄣ', 'feng': 'ㄈㄥ', 'fo': 'ㄈㄛ', 'fou': 'ㄈㄡ', 'fu': 'ㄈㄨ',
-  'ga': 'ㄍㄚ', 'gai': 'ㄍㄞ', 'gan': 'ㄍㄢ', 'gang': 'ㄍㄤ', 'gao': 'ㄍㄠ', 'ge': 'ㄍㄜ', 'gei': 'ㄍㄟ', 'gen': 'ㄍㄣ', 'geng': 'ㄍㄥ', 'gong': 'ㄍㄨㄥ', 'gou': 'ㄍㄡ', 'gu': 'ㄍㄨ', 'gua': 'ㄍㄨㄚ', 'guai': 'ㄍㄨㄞ', 'guan': 'ㄍㄨㄢ', 'guang': 'ㄍㄨㄤ', 'gui': 'ㄍㄨㄟ', 'gun': 'ㄍㄨㄣ', 'guo': 'ㄍㄨㄛ',
-  'ha': 'ㄏㄚ', 'hai': 'ㄏㄞ', 'han': 'ㄏㄢ', 'hang': 'ㄏㄤ', 'hao': 'ㄏㄠ', 'he': 'ㄏㄜ', 'hei': 'ㄏㄟ', 'hen': 'ㄏㄣ', 'heng': 'ㄏㄥ', 'hong': 'ㄏㄨㄥ', 'hou': 'ㄏㄡ', 'hu': 'ㄏㄨ', 'hua': 'ㄏㄨㄚ', 'huai': 'ㄏㄨㄞ', 'huan': 'ㄏㄨㄢ', 'huang': 'ㄏㄨㄤ', 'hui': 'ㄏㄨㄟ', 'hun': 'ㄏㄨㄣ', 'huo': 'ㄏㄨㄛ',
-  'i': 'ㄧ',
-  'ji': 'ㄐ', 'jia': 'ㄐㄧㄚ', 'jian': 'ㄐㄧㄢ', 'jiang': 'ㄐㄧㄤ', 'jiao': 'ㄐㄧㄠ', 'jie': 'ㄐㄧㄝ', 'jin': 'ㄐㄧㄣ', 'jing': 'ㄐㄧㄥ', 'jiong': 'ㄐㄩㄥ', 'jiu': 'ㄐㄧㄡ', 'ju': 'ㄐㄩ', 'juan': 'ㄐㄩㄢ', 'jue': 'ㄐㄩㄝ', 'jun': 'ㄐㄩㄣ',
-  'ka': 'ㄎㄚ', 'kai': 'ㄎㄞ', 'kan': 'ㄎㄢ', 'kang': 'ㄎㄤ', 'kao': 'ㄎㄠ', 'ke': 'ㄎㄜ', 'ken': 'ㄎㄣ', 'keng': 'ㄎㄥ', 'kong': 'ㄎㄨㄥ', 'kou': 'ㄎㄡ', 'ku': 'ㄎㄨ', 'kua': 'ㄎㄨㄚ', 'kuai': 'ㄎㄨㄞ', 'kuan': 'ㄎㄨㄢ', 'kuang': 'ㄎㄨㄤ', 'kui': 'ㄎㄨㄟ', 'kun': 'ㄎㄨㄣ', 'kuo': 'ㄎㄨㄛ',
-  'la': 'ㄌㄚ', 'lai': 'ㄌㄞ', 'lan': 'ㄌㄢ', 'lang': 'ㄌㄤ', 'lao': 'ㄌㄠ', 'le': 'ㄌㄜ', 'lei': 'ㄌㄟ', 'len': 'ㄌㄣ', 'leng': 'ㄌㄥ', 'li': 'ㄌㄧ', 'lia': 'ㄌㄧㄚ', 'lian': 'ㄌㄧㄢ', 'liang': 'ㄌㄧㄤ', 'liao': 'ㄌㄧㄠ', 'lie': 'ㄌㄧㄝ', 'lin': 'ㄌㄧㄣ', 'ling': 'ㄌㄧㄥ', 'liu': 'ㄌㄧㄡ', 'lo': 'ㄌㄛ', 'long': 'ㄌㄨㄥ', 'lou': 'ㄌㄡ', 'lu': 'ㄌㄨ', 'luan': 'ㄌㄨㄢ', 'lü': 'ㄌㄩ', 'lüe': 'ㄌㄩㄝ', 'lun': 'ㄌㄨㄣ', 'luo': 'ㄌㄨㄛ',
-  'ma': 'ㄇㄚ', 'mai': 'ㄇㄞ', 'man': 'ㄇㄢ', 'mang': 'ㄇㄤ', 'mao': 'ㄇㄠ', 'me': 'ㄇㄜ', 'mei': 'ㄇㄟ', 'men': 'ㄇㄣ', 'meng': 'ㄇㄥ', 'mi': 'ㄇㄧ', 'mian': 'ㄇㄧㄢ', 'miao': 'ㄇㄧㄠ', 'mie': 'ㄇㄧㄝ', 'min': 'ㄇㄧㄣ', 'ming': 'ㄇㄧㄥ', 'miu': 'ㄇㄧㄡ', 'mo': 'ㄇㄛ', 'mou': 'ㄇㄡ', 'mu': 'ㄇㄨ',
-  'na': 'ㄋㄚ', 'nai': 'ㄋㄞ', 'nan': 'ㄋㄢ', 'nang': 'ㄋㄤ', 'nao': 'ㄋㄠ', 'ne': 'ㄋㄜ', 'nei': 'ㄋㄟ', 'nen': 'ㄋㄣ', 'neng': 'ㄋㄥ', 'ni': 'ㄋㄧ', 'nian': 'ㄋㄧㄢ', 'niang': 'ㄋㄧㄤ', 'niao': 'ㄋㄧㄠ', 'nie': 'ㄋㄧㄝ', 'nin': 'ㄋㄧㄣ', 'ning': 'ㄋㄧㄥ', 'niu': 'ㄋㄧㄡ', 'nong': 'ㄋㄨㄥ', 'nou': 'ㄋㄡ', 'nu': 'ㄋㄨ', 'nü': 'ㄋㄩ', 'nüe': 'ㄋㄩㄝ', 'nuo': 'ㄋㄨㄛ',
-  'o': 'ㄛ', 'ou': 'ㄡ',
-  'pa': 'ㄆㄚ', 'pai': 'ㄆㄞ', 'pan': 'ㄆㄢ', 'pang': 'ㄆㄤ', 'pao': 'ㄆㄠ', 'pei': 'ㄆㄟ', 'pen': 'ㄆㄣ', 'peng': 'ㄆㄥ', 'pi': 'ㄆㄧ', 'pian': 'ㄆㄧㄢ', 'piao': 'ㄆㄧㄠ', 'pie': 'ㄆㄧㄝ', 'pin': 'ㄆㄧㄣ', 'ping': 'ㄆㄧㄥ', 'po': 'ㄆㄛ', 'pou': 'ㄆㄡ', 'pu': 'ㄆㄨ',
-  'qi': 'ㄑ', 'qia': 'ㄑㄧㄚ', 'qian': 'ㄑㄧㄢ', 'qiang': 'ㄑㄧㄤ', 'qiao': 'ㄑㄧㄠ', 'qie': 'ㄑㄧㄝ', 'qin': 'ㄑㄧㄣ', 'qing': 'ㄑㄧㄥ', 'qiong': 'ㄑㄩㄥ', 'qiu': 'ㄑㄧㄡ', 'qu': 'ㄑㄩ', 'quan': 'ㄑㄩㄢ', 'que': 'ㄑㄩㄝ', 'qun': 'ㄑㄩㄣ',
-  'ra': 'ㄖㄚ', 'ran': 'ㄖㄢ', 'rang': 'ㄖㄤ', 'rao': 'ㄖㄠ', 're': 'ㄖㄜ', 'ren': 'ㄖㄣ', 'reng': 'ㄖㄥ', 'ri': 'ㄖ', 'rong': 'ㄖㄨㄥ', 'rou': 'ㄖㄡ', 'ru': 'ㄖㄨ', 'ruan': 'ㄖㄨㄢ', 'rui': 'ㄖㄨㄟ', 'run': 'ㄖㄨㄣ', 'ruo': 'ㄖㄨㄛ',
-  'sa': 'ㄙㄚ', 'sai': 'ㄙㄞ', 'san': 'ㄙㄢ', 'sang': 'ㄙㄤ', 'sao': 'ㄙㄠ', 'se': 'ㄙㄜ', 'sei': 'ㄙㄟ', 'sen': 'ㄙㄣ', 'seng': 'ㄙㄥ', 'sha': 'ㄕㄚ', 'shai': 'ㄕㄞ', 'shan': 'ㄕㄢ', 'shang': 'ㄕㄤ', 'shao': 'ㄕㄠ', 'she': 'ㄕㄜ', 'shei': 'ㄕㄟ', 'shen': 'ㄕㄣ', 'sheng': 'ㄕㄥ', 'shi': 'ㄕ', 'shou': 'ㄕㄡ', 'shu': 'ㄕㄨ', 'shua': 'ㄕㄨㄚ', 'shuai': 'ㄕㄨㄞ', 'shuan': 'ㄕㄨㄢ', 'shuang': 'ㄕㄨㄤ', 'shui': 'ㄕㄨㄟ', 'shun': 'ㄕㄨㄣ', 'shuo': 'ㄕㄨㄛ', 'si': 'ㄙ', 'song': 'ㄙㄨㄥ', 'sou': 'ㄙㄡ', 'su': 'ㄙㄨ', 'suan': 'ㄙㄨㄢ', 'sui': 'ㄙㄨㄟ', 'sun': 'ㄙㄨㄣ', 'suo': 'ㄙㄨㄛ',
-  'ta': 'ㄊㄚ', 'tai': 'ㄊㄞ', 'tan': 'ㄊㄢ', 'tang': 'ㄊㄤ', 'tao': 'ㄊㄠ', 'te': 'ㄊㄜ', 'tei': 'ㄊㄟ', 'ten': 'ㄊㄣ', 'teng': 'ㄊㄥ', 'ti': 'ㄊㄧ', 'tian': 'ㄊㄧㄢ', 'tiao': 'ㄊㄧㄠ', 'tie': 'ㄊㄧㄝ', 'ting': 'ㄊㄧㄥ', 'tong': 'ㄊㄨㄥ', 'tou': 'ㄊㄡ', 'tu': 'ㄊㄨ', 'tuan': 'ㄊㄨㄢ', 'tui': 'ㄊㄨㄟ', 'tun': 'ㄊㄨㄣ', 'tuo': 'ㄊㄨㄛ',
-  'u': 'ㄨ', 'ü': 'ㄩ',
-  'wa': 'ㄨㄚ', 'wai': 'ㄨㄞ', 'wan': 'ㄨㄢ', 'wang': 'ㄨㄤ', 'wei': 'ㄨㄟ', 'wen': 'ㄨㄣ', 'weng': 'ㄨㄥ', 'wo': 'ㄨㄛ', 'wu': 'ㄨ',
-  'xi': 'ㄒ', 'xia': 'ㄒㄧㄚ', 'xian': 'ㄒㄧㄢ', 'xiang': 'ㄒㄧㄤ', 'xiao': 'ㄒㄧㄠ', 'xie': 'ㄒㄧㄝ', 'xin': 'ㄒㄧㄣ', 'xing': 'ㄒㄧㄥ', 'xiong': 'ㄒㄩㄥ', 'xiu': 'ㄒㄧㄡ', 'xu': 'ㄒㄩ', 'xuan': 'ㄒㄩㄢ', 'xue': 'ㄒㄩㄝ', 'xun': 'ㄒㄩㄣ',
-  'ya': 'ㄧㄚ', 'yan': 'ㄧㄢ', 'yang': 'ㄧㄤ', 'yao': 'ㄧㄠ', 'ye': 'ㄧㄝ', 'yi': 'ㄧ', 'yin': 'ㄧㄣ', 'ying': 'ㄧㄥ', 'yo': 'ㄧㄛ', 'yong': 'ㄩㄥ', 'you': 'ㄧㄡ', 'yu': 'ㄩ', 'yuan': 'ㄩㄢ', 'yue': 'ㄩㄝ', 'yun': 'ㄩㄣ',
-  'za': 'ㄗㄚ', 'zai': 'ㄗㄞ', 'zan': 'ㄗㄢ', 'zang': 'ㄗㄤ', 'zao': 'ㄗㄠ', 'ze': 'ㄗㄜ', 'zei': 'ㄗㄟ', 'zen': 'ㄗㄣ', 'zeng': 'ㄗㄥ', 'zha': 'ㄓㄚ', 'zhai': 'ㄓㄞ', 'zhan': 'ㄓㄢ', 'zhang': 'ㄓㄤ', 'zhao': 'ㄓㄠ', 'zhe': 'ㄓㄜ', 'zhei': 'ㄓㄟ', 'zhen': 'ㄓㄣ', 'zheng': 'ㄓㄥ', 'zhi': 'ㄓ', 'zhong': 'ㄓㄨㄥ', 'zhou': 'ㄓㄡ', 'zhu': 'ㄓㄨ', 'zhua': 'ㄓㄨㄚ', 'zhuai': 'ㄓㄨㄞ', 'zhuan': 'ㄓㄨㄢ', 'zhuang': 'ㄓㄨㄤ', 'zhui': 'ㄓㄨㄟ', 'zhun': 'ㄓㄨㄣ', 'zhuo': 'ㄓㄨㄛ', 'zi': 'ㄗ', 'zong': 'ㄗㄨㄥ', 'zou': 'ㄗㄡ', 'zu': 'ㄗㄨ', 'zuan': 'ㄗㄨㄢ', 'zui': 'ㄗㄨㄟ', 'zun': 'ㄗㄨㄣ', 'zuo': 'ㄗㄨㄛ',
-
-  // Tones (聲調)
-  '1': 'ˉ', '2': 'ˊ', '3': 'ˇ', '4': 'ˋ', '5': '˙'
-};
-
-function convertPinyinToZhuyin(pinyinStr){
-  // pinyinStr format: "tian1" or with tone mark
-  const pinyin = pinyinStr.toLowerCase();
-
-  // Remove tone number to get base syllable
-  const basePinyin = pinyin.replace(/[1-5]$/,'');
-
-  // Extract tone number
-  const toneMatch = pinyin.match(/[1-5]$/);
-  const toneNum = toneMatch ? toneMatch[0] : '5';
-
-  // Look up in conversion table
-  if(pinyinToZhuyinMap[basePinyin]){
-    let zhuyinChar = pinyinToZhuyinMap[basePinyin];
-    const toneMark = pinyinToZhuyinMap[toneNum] || '';
-    return zhuyinChar + toneMark;
-  }
-
-  return null; // Not found
+// ========== EMBEDDED ZHUYIN DICTIONARY (1633 common characters) ==========
+function pinyinToZhuyin(pinyinStr) {
+  const syllables = pinyinStr.trim().toLowerCase().split(/\s+/);
+  return syllables.map(s => syllableToZhuyin(s)).join(' ');
 }
 
-function autoGenerateZhuyin(idx){
-  const phrase = tempPhrases[idx].phrase;
+function syllableToZhuyin(s) {
+  if (!s) return '';
+  const accentMap = {
+    'ā':['a',1],'á':['a',2],'ǎ':['a',3],'à':['a',4],
+    'ō':['o',1],'ó':['o',2],'ǒ':['o',3],'ò':['o',4],
+    'ē':['e',1],'é':['e',2],'ě':['e',3],'è':['e',4],
+    'ī':['i',1],'í':['i',2],'ǐ':['i',3],'ì':['i',4],
+    'ū':['u',1],'ú':['u',2],'ǔ':['u',3],'ù':['u',4],
+    'ǖ':['ü',1],'ǘ':['ü',2],'ǚ':['ü',3],'ǜ':['ü',4],
+  };
+  const toneSymbols = { 1: '', 2: 'ˊ', 3: 'ˇ', 4: 'ˋ', 5: '˙' };
+  let tone = 5;
+  let base = s;
+  if (/[1-5]$/.test(base)) {
+    tone = parseInt(base.slice(-1));
+    base = base.slice(0, -1);
+  } else {
+    for (const [mark, [repl, t]] of Object.entries(accentMap)) {
+      if (base.includes(mark)) {
+        base = base.replace(mark, repl);
+        tone = t;
+        break;
+      }
+    }
+  }
+  base = base.replace(/v/g, 'ü');
+  const wholeMap = {
+    'zhi':'ㄓ','chi':'ㄔ','shi':'ㄕ','ri':'ㄖ',
+    'zi':'ㄗ','ci':'ㄘ','si':'ㄙ',
+    'yi':'ㄧ','ya':'ㄧㄚ','ye':'ㄧㄝ','yao':'ㄧㄠ','you':'ㄧㄡ',
+    'yan':'ㄧㄢ','yin':'ㄧㄣ','yang':'ㄧㄤ','ying':'ㄧㄥ','yong':'ㄩㄥ',
+    'yu':'ㄩ','yue':'ㄩㄝ','yuan':'ㄩㄢ','yun':'ㄩㄣ',
+    'wu':'ㄨ','wa':'ㄨㄚ','wo':'ㄨㄛ','wai':'ㄨㄞ','wei':'ㄨㄟ',
+    'wan':'ㄨㄢ','wen':'ㄨㄣ','wang':'ㄨㄤ','weng':'ㄨㄥ',
+    'a':'ㄚ','o':'ㄛ','e':'ㄜ','ai':'ㄞ','ei':'ㄟ',
+    'ao':'ㄠ','ou':'ㄡ','an':'ㄢ','en':'ㄣ','ang':'ㄤ','eng':'ㄥ','er':'ㄦ',
+  };
+  if (wholeMap[base]) return wholeMap[base] + toneSymbols[tone];
+  const initials = ['zh','ch','sh','b','p','m','f','d','t','n','l','g','k','h','j','q','x','r','z','c','s'];
+  const initialZhuyin = {
+    'b':'ㄅ','p':'ㄆ','m':'ㄇ','f':'ㄈ','d':'ㄉ','t':'ㄊ','n':'ㄋ','l':'ㄌ',
+    'g':'ㄍ','k':'ㄎ','h':'ㄏ','j':'ㄐ','q':'ㄑ','x':'ㄒ',
+    'zh':'ㄓ','ch':'ㄔ','sh':'ㄕ','r':'ㄖ','z':'ㄗ','c':'ㄘ','s':'ㄙ',
+  };
+  let ini = '', fin = base;
+  for (const i of initials) {
+    if (base.startsWith(i)) { ini = i; fin = base.slice(i.length); break; }
+  }
+  if (['j','q','x'].includes(ini) && fin.startsWith('u')) {
+    fin = 'ü' + fin.slice(1);
+  }
+  const finalZhuyin = {
+    'a':'ㄚ','o':'ㄛ','e':'ㄜ','i':'ㄧ','u':'ㄨ','ü':'ㄩ',
+    'ai':'ㄞ','ei':'ㄟ','ao':'ㄠ','ou':'ㄡ',
+    'an':'ㄢ','en':'ㄣ','ang':'ㄤ','eng':'ㄥ','ong':'ㄨㄥ','er':'ㄦ',
+    'ia':'ㄧㄚ','ie':'ㄧㄝ','iao':'ㄧㄠ','iu':'ㄧㄡ','iou':'ㄧㄡ',
+    'ian':'ㄧㄢ','in':'ㄧㄣ','iang':'ㄧㄤ','ing':'ㄧㄥ','iong':'ㄩㄥ',
+    'ua':'ㄨㄚ','uo':'ㄨㄛ','uai':'ㄨㄞ','ui':'ㄨㄟ','uei':'ㄨㄟ',
+    'uan':'ㄨㄢ','un':'ㄨㄣ','uen':'ㄨㄣ','uang':'ㄨㄤ',
+    'üe':'ㄩㄝ','üan':'ㄩㄢ','ün':'ㄩㄣ',
+  };
+  return (initialZhuyin[ini] || '') + (finalZhuyin[fin] || fin) + toneSymbols[tone];
+}
 
-  if(!phrase){
+function autoGenerateZhuyin(idx) {
+  const phrase = tempPhrases[idx].phrase;
+  if (!phrase) {
     alert('請先輸入詞句');
     return;
   }
-
-  console.log('autoGenerateZhuyin called for:', phrase);
-  console.log('嘗試使用線上拼音API...');
-
-  // Try multiple API endpoints
-  const apis = [
-    // API 1: Pinyin.info
-    `https://api.pinyin.info/v1/convert/${encodeURIComponent(phrase)}`,
-    // API 2: Alternative API
-    `https://japi.y.qq.com/?g_tk=1&jsonpCallback=jsonp&env=website&u=utf-8&action=GetPinyin&word=${encodeURIComponent(phrase)}`,
-  ];
-
-  // Try first API with timeout
-  tryApi(0, apis, phrase, idx);
-}
-
-function tryApi(apiIndex, apis, phrase, idx, timeout = 3000){
-  if(apiIndex >= apis.length){
-    console.log('所有API均失敗，使用內置字庫');
-    generateZhuyinFromBuiltInMap(phrase, idx);
-    return;
-  }
-
-  const apiUrl = apis[apiIndex];
-  console.log(`嘗試API ${apiIndex + 1}: ${apiUrl.substring(0, 50)}...`);
-
-  // Create timeout promise
-  const timeoutPromise = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error('API timeout')), timeout)
-  );
-
-  Promise.race([
-    fetch(apiUrl, {
-      method: 'GET',
-      headers: {'Accept': 'application/json'}
-    }).then(r => r.json()),
-    timeoutPromise
-  ])
-    .then(data => {
-      console.log('API ' + (apiIndex + 1) + ' 響應:', data);
-
-      let zhuyin = generateZhuyinFromApiResponse(data, phrase);
-
-      if(zhuyin){
-        tempPhrases[idx].zhuyin = zhuyin.trim();
-        renderPhraseEditor();
-        console.log('✓ 線上API生成注音:', tempPhrases[idx].zhuyin);
-        return;
-      }
-
-      // Try next API
-      console.log('API ' + (apiIndex + 1) + ' 無法產生注音，嘗試下一個');
-      tryApi(apiIndex + 1, apis, phrase, idx);
-    })
-    .catch(error => {
-      console.log('API ' + (apiIndex + 1) + ' 錯誤:', error.message);
-      // Try next API
-      tryApi(apiIndex + 1, apis, phrase, idx);
-    });
-}
-
-function generateZhuyinFromApiResponse(data, phrase){
-  // Try to parse different API response formats
-  let zhuyin = '';
-
-  // Format 1: Direct pinyin array
-  if(Array.isArray(data)){
-    for(let item of data){
-      if(typeof item === 'string'){
-        const zhuyinChar = convertPinyinToZhuyin(item);
-        if(zhuyinChar) zhuyin += zhuyinChar + ' ';
-      }
-    }
-  }
-  // Format 2: Object with pinyin property
-  else if(data && data.pinyin){
-    if(typeof data.pinyin === 'string'){
-      const zhuyinChar = convertPinyinToZhuyin(data.pinyin);
-      if(zhuyinChar) zhuyin += zhuyinChar + ' ';
-    } else if(Array.isArray(data.pinyin)){
-      for(let p of data.pinyin){
-        if(typeof p === 'string'){
-          const zhuyinChar = convertPinyinToZhuyin(p);
-          if(zhuyinChar) zhuyin += zhuyinChar + ' ';
-        }
-      }
-    }
-  }
-
-  return zhuyin;
-}
-
-function generateZhuyinFromBuiltInMap(phrase, idx){
-  // Fallback: Use built-in character map
-  let zhuyin = '';
-  let generatedCount = 0;
-
-  // Process each character in the phrase
-  for(let i = 0; i < phrase.length; i++){
-    const char = phrase[i];
-
-    // Skip spaces and punctuation
-    if(/\s|[，。！？；：『』「」（）]/.test(char)){
-      if(char !== ' ') zhuyin += char;
-      continue;
-    }
-
-    // Look up character in built-in map
-    if(charToPinyinMap[char]){
-      const pinyin = charToPinyinMap[char];
-      const zhuyinChar = convertPinyinToZhuyin(pinyin);
-
-      if(zhuyinChar){
-        zhuyin += zhuyinChar + ' ';
-        generatedCount++;
-        console.log('Built-in map: "' + char + '" → ' + zhuyinChar);
-      }
-    } else {
-      // Character not in map
-      console.log('字"' + char + '"不在內置字庫中');
-    }
-  }
-
-  if(generatedCount > 0){
-    tempPhrases[idx].zhuyin = zhuyin.trim();
-    renderPhraseEditor();
-    console.log('✓ 內置字庫生成注音:', tempPhrases[idx].zhuyin);
-    return;
-  }
-
-  // No characters were generated
-  console.log('無法生成注音 - 字不在字庫中');
-
-  alert(`自動注音說明：
-
-詞句：${phrase}
-
-系統無法自動產生注音。
-
-請使用以下方式：
-
-1️⃣ Google搜尋「${phrase} 注音」
-2️⃣ 線上注音查詢：https://www.moedict.tw/
-3️⃣ 手動輸入注音
-
-常見例子：
-• 天氣 → ㄊㄧㄢ ㄑㄧˋ
-• 好棒 → ㄏㄠˇ ㄅㄤˋ
-• 學習 → ㄒㄩㄝˊ ㄒㄧˊ
-• 春天 → ㄔㄨㄣ ㄊㄧㄢ`);
-}
-
-function addPhraseRow(){
-  tempPhrases.push({phrase: '', zhuyin: ''});
+  const chars = phrase.split('');
+  const zhuyinParts = chars.map(ch => {
+    if (!/[一-鿿]/.test(ch)) return ch;
+    if (ZHUYIN_DICT && ZHUYIN_DICT[ch]) return ZHUYIN_DICT[ch];
+    return ch;
+  });
+  tempPhrases[idx].zhuyin = zhuyinParts.join(' ').trim();
   renderPhraseEditor();
 }
-
-function saveCourse(){
-  if(!currentCourse) return;
-  const name = document.getElementById('course-name-input').value.trim();
-
-  if(!name){
-    alert('請輸入課程名稱');
-    return;
-  }
-
-  const validLines = tempPhrases.filter(p => p.phrase.trim());
-  if(!validLines.length){
-    alert('請至少輸入一行詞句');
-    return;
-  }
-
-  currentCourse.name = name;
-  currentCourse.lines = validLines;
-
-  saveData();
-  closeCourseDetail();
-  renderCoursesList();
-  updateCourseSelects();
-  alert('課程已保存！');
-}
-
-function deleteCourse(){
-  if(!currentCourse || !confirm('確定要刪除此課程嗎？')) return;
-
-  courses = courses.filter(c => c.id !== currentCourse.id);
-  saveData();
-  closeCourseDetail();
-  renderCoursesList();
-  updateCourseSelects();
-}
-
-function updateCourseSelects(){
-  let html = '<option value="">請選擇課程...</option>';
-  courses.forEach(c => {
-    html += `<option value="${c.id}">${c.name}</option>`;
-  });
-  document.getElementById('review-course-select').innerHTML = html;
-}
-
-function updateReviewConfig(){
-  const courseId = document.getElementById('review-course-select').value;
-  if(!courseId){
-    alert('請選擇課程');
-  }
-}
-
-function addToSchedule(){
-  const courseId = document.getElementById('review-course-select').value;
-  if(!courseId){
-    alert('請選擇課程');
-    return;
-  }
-
-  const course = courses.find(c => c.id === courseId);
-  if(!course || !course.lines.length){
-    alert('課程無有效詞句');
-    return;
-  }
-
-  const dailyCount = parseInt(document.getElementById('daily-review-count').value) || 5;
-  const selectCount = Math.min(dailyCount, course.lines.length);
-
-  // Random select lines
-  const selected = course.lines.sort(() => Math.random() - 0.5).slice(0, selectCount);
-
-  currentSchedule = {
-    courseId: courseId,
-    courseName: course.name,
-    lines: selected,
-    addedDate: new Date().toISOString()
-  };
-
-  saveData();
-  renderScheduleList();
-
-  // Reload data to ensure it's in memory
-  loadData();
-
-  alert('✓ 已加入行程！點擊「今日學習」中的「國語｜生字複習」開始練習');
-}
-
-function renderScheduleList(){
-  if(!currentSchedule || !currentSchedule.lines || !currentSchedule.lines.length){
-    document.getElementById('schedule-list').innerHTML = '<div style="text-align:center;padding:20px;color:#6b7280">尚未加入行程</div>';
-    return;
-  }
-
-  let html = `<div style="margin-bottom:12px">
-    <div style="font-weight:700;color:#111;margin-bottom:4px">${currentSchedule.courseName}</div>
-    <div style="font-size:12px;color:#6b7280;margin-bottom:12px">共 ${currentSchedule.lines.length} 行待複習</div>
-    <div style="display:grid;gap:8px">`;
-
-  currentSchedule.lines.forEach((line, idx) => {
-    html += `<div style="padding:8px;background:#f8fafc;border-radius:8px;border-left:4px solid #2563eb">
-      <div style="font-weight:700;color:#111;font-size:13px">${line.phrase}</div>
-      ${line.zhuyin ? `<div style="font-size:11px;color:#6b7280;margin-top:2px">${line.zhuyin}</div>` : ''}
-    </div>`;
-  });
-
-  html += '</div><button onclick="clearSchedule()" style="width:100%;margin-top:12px;padding:8px;background:#e5e7eb;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:12px">清除行程</button></div>';
-
-  document.getElementById('schedule-list').innerHTML = html;
-}
-
-function clearSchedule(){
-  currentSchedule = null;
-  saveData();
-  renderScheduleList();
-}
-
-let reviewLineScores = {}; // Store scores for each line
-let isSpeaking = false;
-
-function showNextReviewLine(){
-  console.log('showNextReviewLine called, reviewIndex:', reviewIndex, 'total:', currentReviewLines ? currentReviewLines.length : 'undefined');
-
-  // Safety check
-  if(!currentReviewLines || currentReviewLines.length === 0){
-    console.error('currentReviewLines is empty or undefined!');
-    alert('錯誤：沒有詞句數據');
-    showPage('today');
-    return;
-  }
-
-  if(reviewIndex >= currentReviewLines.length){
-    // All lines shown, go to scoring phase
-    console.log('Going to scoring page');
-    showScoringPage();
-    return;
-  }
-
-  const line = currentReviewLines[reviewIndex];
-  console.log('Showing line:', line);
-
-  // Safety check for line
-  if(!line){
-    console.error('Line is undefined at index:', reviewIndex);
-    return;
-  }
-
-  // Update UI - with error handling
-  try {
-    const zhuyin = line.zhuyin || '(未設定注音)';
-    const phrase = line.phrase || '(未設定詞句)';
-
-    console.log('Updating zhuyin element...');
-    const zhuyinEl = document.getElementById('review-zhuyin');
-    console.log('zhuyin element found:', zhuyinEl);
-    if(zhuyinEl) {
-      zhuyinEl.textContent = zhuyin;
-      zhuyinEl.innerHTML = zhuyin; // Try both methods
-      console.log('zhuyin set to:', zhuyin);
-    }
-
-    console.log('Updating phrase element...');
-    const phraseEl = document.getElementById('review-phrase');
-    console.log('phrase element found:', phraseEl);
-    if(phraseEl) {
-      phraseEl.textContent = phrase;
-      phraseEl.innerHTML = phrase; // Try both methods
-      console.log('phrase set to:', phrase);
-    }
-
-    const indexEl = document.getElementById('review-index');
-    if(indexEl) indexEl.textContent = reviewIndex + 1;
-
-    const totalEl = document.getElementById('review-total');
-    if(totalEl) totalEl.textContent = currentReviewLines.length;
-
-    const progressEl = document.getElementById('review-progress');
-    if(progressEl) {
-      progressEl.style.width = ((reviewIndex + 1) / currentReviewLines.length * 100) + '%';
-    }
-
-    // Update button text
-    const nextBtn = document.getElementById('next-btn');
-    if(nextBtn){
-      if(reviewIndex + 1 >= currentReviewLines.length){
-        nextBtn.textContent = '完成朗讀 ✓';
-      } else {
-        nextBtn.textContent = '下一步 →';
-      }
-    }
-
-    console.log('UI updated successfully');
-
-  } catch(e) {
-    console.error('Error updating UI:', e);
-    console.error('Stack trace:', e.stack);
-    alert('顯示界面出錯：' + e.message);
-    return;
-  }
-
-  // Auto speak after a short delay
-  isSpeaking = true;
-  setTimeout(() => {
-    console.log('Auto-speaking phrase');
-    speakCurrentPhrase();
-  }, 800);
-}
-
-function speakCurrentPhrase(){
-  if(reviewIndex >= currentReviewLines.length){
-    isSpeaking = false;
-    return;
-  }
-
-  const line = currentReviewLines[reviewIndex];
-  const phrase = line.phrase;
-
-  console.log('Speaking phrase:', phrase);
-
-  // Cancel any ongoing speech
-  window.speechSynthesis.cancel();
-
-  // Use Web Speech API
-  const utterance = new SpeechSynthesisUtterance(phrase);
-  utterance.lang = 'zh-TW'; // Traditional Chinese (Taiwan)
-  utterance.rate = 0.9; // Speed
-  utterance.pitch = 1.0; // Pitch
-  utterance.volume = 1.0; // Volume
-
-  utterance.onstart = () => {
-    console.log('Speech started');
-    isSpeaking = true;
-  };
-
-  utterance.onend = () => {
-    console.log('Speech ended');
-    isSpeaking = false;
-  };
-
-  utterance.onerror = (e) => {
-    console.log('Speech error:', e);
-    isSpeaking = false;
-  };
-
-  window.speechSynthesis.speak(utterance);
-}
-
-function completeCurrentPhrase(){
-  reviewIndex++;
-  showNextReviewLine();
-}
-
-function showScoringPage(){
-  showPage('chinese-scoring');
-  renderScoringInterface();
-}
-
-function renderScoringInterface(){
-  let html = '';
-  reviewLineScores = {};
-
-  currentReviewLines.forEach((line, idx) => {
-    reviewLineScores[idx] = 'correct'; // Default to correct
-    html += `
-      <div style="padding:14px;background:#fff;border:2px solid #e5e7eb;border-radius:12px">
-        <div style="font-weight:700;color:#111;margin-bottom:8px;font-size:13px">第 ${idx + 1} 行</div>
-        <div style="margin-bottom:12px">
-          <div style="font-size:14px;color:#111;margin-bottom:2px">${line.phrase}</div>
-          <div style="font-size:12px;color:#6b7280">${line.zhuyin || '(未設定注音)'}</div>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="score-btn" style="flex:1;min-width:80px" onclick="setLineScore(${idx}, 'weak')" data-idx="${idx}">❌ 答錯</button>
-          <button class="score-btn" style="flex:1;min-width:80px" onclick="setLineScore(${idx}, 'unstable')" data-idx="${idx}">⚠️ 不穩</button>
-          <button class="score-btn selected" style="flex:1;min-width:80px" onclick="setLineScore(${idx}, 'correct')" data-idx="${idx}">✓ 正確</button>
-        </div>
-      </div>
-    `;
-  });
-
-  document.getElementById('scoring-list').innerHTML = html;
-}
-
-function setLineScore(lineIdx, score){
-  reviewLineScores[lineIdx] = score;
-
-  // Update button styles
-  const buttons = document.querySelectorAll(`[data-idx="${lineIdx}"]`);
-  buttons.forEach(btn => btn.classList.remove('selected'));
-
-  const selectedBtn = event.target;
-  selectedBtn.classList.add('selected');
-}
-
-function completeScoringAndFinish(){
-  const now = new Date();
-
-  // Save scores for each line
-  currentReviewLines.forEach((line, idx) => {
-    const lineKey = line.phrase;
-    const score = reviewLineScores[idx];
-
-    if(!charHistory[lineKey]){
-      charHistory[lineKey] = {
-        status: 'new',
-        nextReview: now.toISOString(),
-        history: [],
-        weakCount: 0
-      };
-    }
-
-    let status, nextReview;
-    switch(score){
-      case 'weak':
-        status = 'weak';
-        charHistory[lineKey].weakCount = (charHistory[lineKey].weakCount || 0) + 1;
-        nextReview = new Date(now.getTime() + 1 * 24 * 60 * 60 * 1000);
-        break;
-      case 'unstable':
-        status = 'unstable';
-        nextReview = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
-        break;
-      case 'correct':
-        const prevStatus = charHistory[lineKey].status;
-        if(prevStatus === 'new' || prevStatus === 'weak'){
-          status = 'unstable';
-          nextReview = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
-        } else if(prevStatus === 'unstable'){
-          status = 'proficient';
-          nextReview = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-        } else if(prevStatus === 'proficient'){
-          status = 'very-proficient';
-          nextReview = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
-        } else {
-          status = 'very-proficient';
-          nextReview = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-        }
-        break;
-    }
-
-    charHistory[lineKey].status = status;
-    charHistory[lineKey].nextReview = nextReview.toISOString();
-    charHistory[lineKey].history.push({
-      date: now.toISOString(),
-      score: score,
-      status: status
-    });
-  });
-
-  saveData();
-  alert('完成今日複習！太棒了！🎉');
-  clearSchedule();
-  showPage('today');
-}
-
-function startChineseReview(taskId){
-  console.log('startChineseReview called with taskId:', taskId);
-  console.log('currentSchedule:', currentSchedule);
-
-  if(taskId !== 0 && taskId !== '0'){
-    openTask(taskId);
-    return;
-  }
-
-  // Check if schedule exists
-  if(!currentSchedule || !currentSchedule.lines || !currentSchedule.lines.length){
-    console.log('No schedule found');
-    alert('請先在「課程設定」中加入行程\n\n步驟：\n1. 點擊左邊「⚙️ 課程設定」\n2. 選擇課程\n3. 設定複習行數\n4. 點擊「✓ 加入行程」');
-    showPage('course-setting');
-    return;
-  }
-
-  console.log('Starting review with lines:', currentSchedule.lines);
-
-  // Set up review lines
-  currentReviewLines = [...currentSchedule.lines];
-  reviewIndex = 0;
-  reviewLineScores = {};
-
-  // Verify data
-  if(!currentReviewLines || currentReviewLines.length === 0){
-    console.error('currentReviewLines is empty!');
-    alert('錯誤：沒有詞句數據');
-    return;
-  }
-
-  console.log('Review setup complete. Lines count:', currentReviewLines.length);
-
-  // Clear any ongoing speech
-  window.speechSynthesis.cancel();
-
-  // Switch to review page
-  showPage('chinese-review');
-
-  console.log('Page switched to chinese-review');
-
-  // Ensure the page is rendered before starting
-  setTimeout(() => {
-    console.log('Calling showNextReviewLine, reviewIndex:', reviewIndex);
-    showNextReviewLine();
-  }, 500);
-}
-
-window.addEventListener('load', () => {
-  document.getElementById('kid-name-input').focus();
-});
 </script>
 
-</body>
+<script>
+const ZHUYIN_DICT={"一": "ㄧ", "七": "ㄑㄧ", "三": "ㄙㄢ", "上": "ㄕㄤˋ", "下": "ㄒㄧㄚˋ", "不": "ㄅㄨˋ", "且": "ㄑㄧㄝˇ", "世": "ㄕˋ", "丘": "ㄑㄧㄡ", "丟": "ㄉㄧㄡ", "中": "ㄓㄨㄥ", "串": "ㄔㄨㄢˋ", "主": "ㄓㄨˇ", "乘": "ㄔㄥˊ", "九": "ㄐㄧㄡˇ", "也": "ㄧㄝˇ", "乾": "ㄍㄢ", "亂": "ㄌㄨㄢˋ", "了": "ㄌㄜ", "二": "ㄦˋ", "互": "ㄏㄨˋ", "五": "ㄨˇ", "些": "ㄒㄧㄝ", "亡": "ㄨㄤˊ", "交": "ㄐㄧㄠ", "京": "ㄐㄧㄥ", "亮": "ㄌㄧㄤˋ", "人": "ㄖㄣˊ", "什": "ㄕㄣˊ", "仁": "ㄖㄣˊ", "今": "ㄐㄧㄣ", "他": "ㄊㄚ", "以": "ㄧˇ", "仰": "ㄧㄤˇ", "件": "ㄐㄧㄢˋ", "任": "ㄖㄣˋ", "伏": "ㄈㄨˊ", "休": "ㄒㄧ", "伯": "ㄅㄛˊ", "伴": "ㄅㄢˋ", "伸": "ㄕㄣ", "但": "ㄉㄢˋ", "佈": "ㄅㄨˋ", "位": "ㄨㄟˋ", "低": "ㄉㄧ", "住": "ㄓㄨˋ", "何": "ㄏㄜˊ", "作": "ㄗㄨㄛˋ", "你": "ㄋㄧˇ", "佳": "ㄐㄧㄚ", "侄": "ㄓˊ", "來": "ㄌㄞˊ", "便": "ㄆㄧㄢˊ", "促": "ㄘㄨˋ", "俊": "ㄐㄩㄣˋ", "俗": "ㄙㄨˊ", "保": "ㄅㄠˇ", "信": "ㄒㄧㄣˋ", "修": "ㄒㄧㄡ", "俯": "ㄈㄨˇ", "個": "ㄍㄜˋ", "倍": "ㄅㄟˋ", "們": "ㄇㄣˊ", "倒": "ㄉㄠˇ", "候": "ㄏㄡˋ", "借": "ㄐㄧㄝˋ", "假": "ㄐㄧㄚˋ", "偉": "ㄩㄝˇ", "做": "ㄗㄨㄛˋ", "停": "ㄊㄧㄥˊ", "健": "ㄐㄧㄢˋ", "側": "ㄘㄜˋ", "傑": "ㄐㄧㄝˊ", "備": "ㄅㄟˋ", "催": "ㄘㄨㄟ", "傲": "ㄠˋ", "傳": "ㄔㄨㄢˊ", "傷": "ㄕㄤ", "傻": "ㄕㄚˇ", "傾": "ㄑㄧㄥ", "價": "ㄐㄧㄚˋ", "億": "ㄧˋ", "儉": "ㄐㄧㄢˇ", "償": "ㄔㄤˊ", "優": "ㄧ", "元": "ㄩㄢˊ", "兄": "ㄒㄩㄥ", "兆": "ㄓㄠˋ", "先": "ㄒㄧㄢ", "光": "ㄍㄨㄤ", "克": "ㄎㄜˋ", "兒": "ㄦˊ", "兔": "ㄊㄨˋ", "入": "ㄖㄨˋ", "內": "ㄋㄟˋ", "全": "ㄑㄩㄢˊ", "八": "ㄅㄚ", "公": "ㄍㄨㄥ", "六": "ㄌㄧㄡˋ", "共": "ㄍㄨㄥˋ", "其": "ㄑㄧˊ", "具": "ㄐㄩˋ", "典": "ㄉㄧㄢˇ", "再": "ㄗㄞˋ", "冢": "ㄓㄨㄥˇ", "冥": "ㄇㄧㄥˊ", "冬": "ㄉㄨㄥ", "冰": "ㄅㄧㄥ", "冷": "ㄌㄥˇ", "凋": "ㄉㄧㄠ", "凍": "ㄉㄨㄥˋ", "凝": "ㄋㄧㄥˊ", "出": "ㄔㄨ", "刀": "ㄉㄠ", "分": "ㄈㄣ", "切": "ㄑㄧㄝ", "刑": "ㄒㄧㄥˊ", "列": "ㄌㄧㄝˋ", "初": "ㄔㄨ", "判": "ㄆㄢˋ", "別": "ㄅㄧㄝˊ", "刨": "ㄆㄠˊ", "利": "ㄌㄧˋ", "到": "ㄉㄠˋ", "制": "ㄓˋ", "刷": "ㄕㄨㄚ", "刺": "ㄘˋ", "刻": "ㄎㄜˋ", "則": "ㄗㄜˊ", "削": "ㄒㄩㄝ", "前": "ㄑㄧㄢˊ", "剎": "ㄕㄚ", "剔": "ㄊㄧ", "剛": "ㄍㄤ", "剪": "ㄐㄧㄢˇ", "割": "ㄍㄜ", "創": "ㄔㄨㄤˋ", "劃": "ㄏㄨㄚˋ", "劇": "ㄐㄩˋ", "劈": "ㄆㄧ", "劉": "ㄌㄧㄡˊ", "劍": "ㄐㄧㄢˋ", "力": "ㄌㄧˋ", "功": "ㄍㄨㄥ", "加": "ㄐㄧㄚ", "劣": "ㄌㄧㄝˋ", "助": "ㄓㄨˋ", "努": "ㄋㄨˇ", "勇": "ㄩㄥˇ", "動": "ㄉㄨㄥˋ", "務": "ㄨˋ", "勝": "ㄕㄥˋ", "勞": "ㄌㄠˊ", "勤": "ㄑㄧㄣˊ", "勺": "ㄕㄠˊ", "勻": "ㄩㄣˊ", "包": "ㄅㄠ", "化": "ㄏㄨㄚˋ", "北": "ㄅㄟˇ", "匙": "ㄕ", "匾": "ㄅㄧㄢˇ", "區": "ㄑㄩ", "十": "ㄕˊ", "千": "ㄑㄧㄢ", "升": "ㄕㄥ", "午": "ㄨˇ", "半": "ㄅㄢˋ", "卑": "ㄅㄟ", "南": "ㄋㄢˊ", "卡": "ㄎㄚˇ", "印": "ㄧㄣˋ", "危": "ㄨㄟ", "卸": "ㄒㄧㄝˋ", "卻": "ㄑㄩㄝˋ", "厚": "ㄏㄡˋ", "厭": "ㄧㄢˋ", "去": "ㄑㄩˋ", "又": "ㄧˋ", "叉": "ㄔㄚ", "及": "ㄐㄧˊ", "友": "ㄧˇ", "叔": "ㄕㄨ", "取": "ㄑㄩˇ", "受": "ㄕㄡˋ", "口": "ㄎㄡˇ", "句": "ㄐㄩˋ", "叨": "ㄉㄠ", "只": "ㄓˇ", "叫": "ㄐㄧㄠˋ", "召": "ㄓㄠˋ", "可": "ㄎㄜˇ", "台": "ㄊㄞˊ", "史": "ㄕˇ", "右": "ㄧˋ", "吃": "ㄔ", "各": "ㄍㄜˋ", "合": "ㄏㄜˊ", "吉": "ㄐㄧˊ", "吊": "ㄉㄧㄠˋ", "同": "ㄊㄨㄥˊ", "名": "ㄇㄧㄥˊ", "向": "ㄒㄧㄤˋ", "吟": "ㄧㄣˊ", "吧": "ㄅㄚ", "吳": "ㄨˊ", "吵": "ㄔㄠˇ", "吸": "ㄒㄧ", "吹": "ㄔㄨㄟ", "吼": "ㄏㄡˇ", "呀": "ㄧㄚ", "呆": "ㄉㄞ", "告": "ㄍㄠˋ", "呢": "ㄋㄜ", "周": "ㄓㄡ", "味": "ㄩㄝˋ", "呸": "ㄆㄟ", "呻": "ㄕㄣ", "呼": "ㄏㄨ", "和": "ㄏㄜˊ", "咚": "ㄉㄨㄥ", "咦": "ㄧˊ", "哀": "ㄞ", "品": "ㄆㄧㄣˇ", "哇": "ㄨㄚ", "哈": "ㄏㄚ", "哦": "ㄛˊ", "哪": "ㄋㄚˇ", "哭": "ㄎㄨ", "哲": "ㄓㄜˊ", "哼": "ㄏㄥ", "唇": "ㄔㄨㄣˊ", "唉": "ㄞ", "唱": "ㄔㄤˋ", "唷": "ㄧ", "商": "ㄕㄤ", "啊": "ㄚ", "問": "ㄩㄝˋ", "啦": "ㄌㄚ", "啪": "ㄆㄚ", "喂": "ㄩㄝˋ", "善": "ㄕㄢˋ", "喊": "ㄏㄢˇ", "喔": "ㄛ", "喚": "ㄏㄨㄢˋ", "喜": "ㄒㄧˇ", "喝": "ㄏㄜ", "喧": "ㄒㄩㄢ", "單": "ㄉㄢ", "嗆": "ㄑㄧㄤ", "嗎": "ㄇㄚ", "嗝": "ㄍㄜˊ", "嗨": "ㄏㄞ", "嗯": "ㄣ", "嘆": "ㄊㄢˋ", "嘔": "ㄡˇ", "嘖": "ㄗㄜˊ", "嘗": "ㄔㄤˊ", "嘩": "ㄏㄨㄚ", "嘮": "ㄌㄠˊ", "嘴": "ㄗㄨㄟˇ", "嘶": "ㄙ", "嘻": "ㄒㄧ", "嘿": "ㄏㄟ", "噎": "ㄧㄝ", "噓": "ㄒㄩ", "噢": "ㄛ", "器": "ㄑㄧˋ", "噴": "ㄆㄣ", "嚥": "ㄧㄢˋ", "嚴": "ㄧㄢˊ", "嚷": "ㄖㄤˇ", "囂": "ㄒㄧㄠ", "囉": "ㄌㄨㄛ", "四": "ㄙˋ", "回": "ㄏㄨㄟˊ", "因": "ㄧㄣ", "困": "ㄎㄨㄣˋ", "圈": "ㄑㄩㄢ", "國": "ㄍㄨㄛˊ", "圍": "ㄩㄝˊ", "園": "ㄩㄢˊ", "圓": "ㄩㄢˊ", "圖": "ㄊㄨˊ", "團": "ㄊㄨㄢˊ", "土": "ㄊㄨˇ", "在": "ㄗㄞˋ", "地": "ㄉㄧˋ", "址": "ㄓˇ", "坐": "ㄗㄨㄛˋ", "坡": "ㄆㄛ", "型": "ㄒㄧㄥˊ", "垢": "ㄍㄡˋ", "城": "ㄔㄥˊ", "堅": "ㄐㄧㄢ", "堆": "ㄉㄨㄟ", "報": "ㄅㄠˋ", "場": "ㄔㄤˇ", "塊": "ㄎㄨㄞˋ", "塑": "ㄙㄨˋ", "塔": "ㄊㄚˇ", "塘": "ㄊㄤˊ", "塚": "ㄓㄨㄥˇ", "填": "ㄊㄧㄢˊ", "塵": "ㄔㄣˊ", "境": "ㄐㄧㄥˋ", "墓": "ㄇㄨˋ", "墜": "ㄓㄨㄟˋ", "增": "ㄗㄥ", "墨": "ㄇㄛˋ", "墾": "ㄎㄣˇ", "壁": "ㄅㄧˋ", "壓": "ㄧㄚ", "壘": "ㄌㄟˇ", "壞": "ㄏㄨㄞˋ", "壯": "ㄓㄨㄤˋ", "壺": "ㄏㄨˊ", "壽": "ㄕㄡˋ", "夏": "ㄒㄧㄚˋ", "夕": "ㄒㄧ", "外": "ㄨㄞˋ", "多": "ㄉㄨㄛ", "夜": "ㄧㄝˋ", "夠": "ㄍㄡˋ", "夢": "ㄇㄥˋ", "大": "ㄉㄚˋ", "天": "ㄊㄧㄢ", "太": "ㄊㄞˋ", "夫": "ㄈㄨ", "失": "ㄕ", "奇": "ㄑㄧˊ", "奏": "ㄗㄡˋ", "奐": "ㄏㄨㄢˋ", "契": "ㄑㄧˋ", "奔": "ㄅㄣ", "套": "ㄊㄠˋ", "奢": "ㄕㄜ", "奧": "ㄠˋ", "奪": "ㄉㄨㄛˊ", "女": "ㄋㄩˇ", "奶": "ㄋㄞˇ", "她": "ㄊㄚ", "好": "ㄏㄠˇ", "如": "ㄖㄨˊ", "妍": "ㄧㄢˊ", "妒": "ㄉㄨˋ", "妙": "ㄇㄧㄠˋ", "妹": "ㄇㄟˋ", "妻": "ㄑㄧ", "始": "ㄕˇ", "姐": "ㄐㄧㄝˇ", "姑": "ㄍㄨ", "姨": "ㄧˊ", "姿": "ㄗ", "娃": "ㄨㄚˊ", "婆": "ㄆㄛˊ", "婉": "ㄨㄢˇ", "婿": "ㄒㄩˋ", "媚": "ㄇㄟˋ", "媽": "ㄇㄚ", "嫂": "ㄙㄠˇ", "嫉": "ㄐㄧˊ", "嫌": "ㄒㄧㄢˊ", "嫣": "ㄧㄢ", "嫩": "ㄋㄣˋ", "嫻": "ㄒㄧㄢˊ", "嬈": "ㄖㄠˊ", "嬌": "ㄐㄧㄠ", "嬰": "ㄧㄥ", "嬸": "ㄕㄣˇ", "子": "ㄗˇ", "字": "ㄗˋ", "存": "ㄘㄨㄣˊ", "孝": "ㄒㄧㄠˋ", "孤": "ㄍㄨ", "孩": "ㄏㄞˊ", "孫": "ㄙㄨㄣ", "學": "ㄒㄩㄝˊ", "它": "ㄊㄚ", "守": "ㄕㄡˇ", "安": "ㄢ", "完": "ㄨㄢˊ", "定": "ㄉㄧㄥˋ", "宜": "ㄧˊ", "室": "ㄕˋ", "宵": "ㄒㄧㄠ", "家": "ㄐㄧㄚ", "容": "ㄖㄨㄥˊ", "寂": "ㄐㄧˋ", "密": "ㄇㄧˋ", "寞": "ㄇㄛˋ", "察": "ㄔㄚˊ", "實": "ㄕˊ", "寧": "ㄋㄧㄥˊ", "審": "ㄕㄣˇ", "寫": "ㄒㄧㄝˇ", "寬": "ㄎㄨㄢ", "寶": "ㄅㄠˇ", "將": "ㄐㄧㄤ", "尊": "ㄗㄨㄣ", "尋": "ㄒㄩㄣˊ", "對": "ㄉㄨㄟˋ", "導": "ㄉㄠˇ", "小": "ㄒㄧㄠˇ", "少": "ㄕㄠˇ", "就": "ㄐㄧㄡˋ", "尺": "ㄔˇ", "局": "ㄐㄩˊ", "居": "ㄐㄩ", "屋": "ㄨ", "屏": "ㄆㄧㄥˊ", "展": "ㄓㄢˇ", "層": "ㄘㄥˊ", "山": "ㄕㄢ", "岩": "ㄧㄢˊ", "岸": "ㄢˋ", "峰": "ㄈㄥ", "島": "ㄉㄠˇ", "峽": "ㄒㄧㄚˊ", "崖": "ㄧㄚˊ", "崗": "ㄍㄤˇ", "嵐": "ㄌㄢˊ", "嶺": "ㄌㄧㄥˇ", "嶼": "ㄩˇ", "巖": "ㄧㄢˊ", "巢": "ㄔㄠˊ", "工": "ㄍㄨㄥ", "左": "ㄗㄨㄛˇ", "巧": "ㄑㄧㄠˇ", "己": "ㄐㄧˇ", "已": "ㄧˇ", "市": "ㄕˋ", "布": "ㄅㄨˋ", "帆": "ㄈㄢ", "希": "ㄒㄧ", "帛": "ㄅㄛˊ", "師": "ㄕ", "帳": "ㄓㄤˋ", "帶": "ㄉㄞˋ", "常": "ㄔㄤˊ", "帽": "ㄇㄠˋ", "幕": "ㄇㄨˋ", "幟": "ㄓˋ", "幡": "ㄈㄢ", "幫": "ㄅㄤ", "平": "ㄆㄧㄥˊ", "年": "ㄋㄧㄢˊ", "幻": "ㄏㄨㄢˋ", "幼": "ㄧˋ", "幽": "ㄧ", "幾": "ㄐㄧˇ", "床": "ㄔㄨㄤˊ", "序": "ㄒㄩˋ", "底": "ㄉㄧˇ", "店": "ㄉㄧㄢˋ", "府": "ㄈㄨˇ", "度": "ㄉㄨˋ", "座": "ㄗㄨㄛˋ", "康": "ㄎㄤ", "廚": "ㄔㄨˊ", "廳": "ㄊㄧㄥ", "延": "ㄧㄢˊ", "建": "ㄐㄧㄢˋ", "式": "ㄕˋ", "引": "ㄧㄣˇ", "弟": "ㄉㄧˋ", "弦": "ㄒㄧㄢˊ", "張": "ㄓㄤ", "彈": "ㄊㄢˊ", "彎": "ㄨㄢ", "形": "ㄒㄧㄥˊ", "彩": "ㄘㄞˇ", "影": "ㄧㄥˇ", "往": "ㄨㄤˇ", "很": "ㄏㄣˇ", "律": "ㄌㄩˋ", "後": "ㄏㄡˋ", "徐": "ㄒㄩˊ", "徑": "ㄐㄧㄥˋ", "得": "ㄉㄜˊ", "從": "ㄘㄨㄥˊ", "復": "ㄈㄨˋ", "德": "ㄉㄜˊ", "徽": "ㄏㄨㄟ", "心": "ㄒㄧㄣ", "必": "ㄅㄧˋ", "忘": "ㄨㄤˋ", "忙": "ㄇㄤˊ", "忠": "ㄓㄨㄥ", "快": "ㄎㄨㄞˋ", "念": "ㄋㄧㄢˋ", "忽": "ㄏㄨ", "怎": "ㄗㄣˇ", "怒": "ㄋㄨˋ", "怕": "ㄆㄚˋ", "思": "ㄙ", "急": "ㄐㄧˊ", "怪": "ㄍㄨㄞˋ", "怯": "ㄑㄧㄝˋ", "恐": "ㄎㄨㄥˇ", "恕": "ㄕㄨˋ", "恢": "ㄏㄨㄟ", "恥": "ㄔˇ", "恩": "ㄣ", "恬": "ㄊㄧㄢˊ", "恭": "ㄍㄨㄥ", "息": "ㄒㄧ", "悄": "ㄑㄧㄠˇ", "悟": "ㄨˋ", "悲": "ㄅㄟ", "悶": "ㄇㄣˋ", "情": "ㄑㄧㄥˊ", "惑": "ㄏㄨㄛˋ", "惜": "ㄒㄧ", "惡": "ㄜˋ", "惰": "ㄉㄨㄛˋ", "惱": "ㄋㄠˇ", "想": "ㄒㄧㄤˇ", "愁": "ㄔㄡˊ", "意": "ㄧˋ", "愚": "ㄩˊ", "愛": "ㄞˋ", "感": "ㄍㄢˇ", "慈": "ㄘˊ", "慌": "ㄏㄨㄤ", "慢": "ㄇㄢˋ", "慧": "ㄏㄨㄟˋ", "慶": "ㄑㄧㄥˋ", "憂": "ㄧ", "憤": "ㄈㄣˋ", "憶": "ㄧˋ", "應": "ㄧㄥ", "懲": "ㄔㄥˊ", "懶": "ㄌㄢˇ", "懷": "ㄏㄨㄞˊ", "懸": "ㄒㄩㄢˊ", "成": "ㄔㄥˊ", "我": "ㄨㄛˇ", "或": "ㄏㄨㄛˋ", "截": "ㄐㄧㄝˊ", "戰": "ㄓㄢˋ", "戲": "ㄒㄧˋ", "房": "ㄈㄤˊ", "所": "ㄙㄨㄛˇ", "扇": "ㄕㄢˋ", "手": "ㄕㄡˇ", "才": "ㄘㄞˊ", "打": "ㄉㄚˇ", "扔": "ㄖㄥ", "扛": "ㄎㄤˊ", "扣": "ㄎㄡˋ", "扭": "ㄋㄧㄡˇ", "扶": "ㄈㄨˊ", "批": "ㄆㄧ", "找": "ㄓㄠˇ", "技": "ㄐㄧˋ", "把": "ㄅㄚˇ", "抓": "ㄓㄨㄚ", "投": "ㄊㄡˊ", "折": "ㄓㄜˊ", "抱": "ㄅㄠˋ", "押": "ㄧㄚ", "拂": "ㄈㄨˊ", "拈": "ㄋㄧㄢ", "拉": "ㄌㄚ", "拋": "ㄆㄠ", "拍": "ㄆㄞ", "拒": "ㄐㄩˋ", "拓": "ㄊㄨㄛˋ", "拖": "ㄊㄨㄛ", "拙": "ㄓㄨㄛ", "拳": "ㄑㄩㄢˊ", "拽": "ㄓㄨㄞˋ", "拿": "ㄋㄚˊ", "持": "ㄔˊ", "指": "ㄓˇ", "挑": "ㄊㄧㄠ", "挖": "ㄨㄚ", "振": "ㄓㄣˋ", "挺": "ㄊㄧㄥˇ", "捉": "ㄓㄨㄛ", "捏": "ㄋㄧㄝ", "捕": "ㄅㄨˇ", "捨": "ㄕㄜˇ", "捶": "ㄔㄨㄟˊ", "掃": "ㄙㄠˇ", "掉": "ㄉㄧㄠˋ", "掌": "ㄓㄤˇ", "掏": "ㄊㄠ", "掐": "ㄑㄧㄚ", "排": "ㄆㄞˊ", "掘": "ㄐㄩㄝˊ", "掛": "ㄍㄨㄚˋ", "接": "ㄐㄧㄝ", "控": "ㄎㄨㄥˋ", "推": "ㄊㄨㄟ", "掩": "ㄧㄢˇ", "揉": "ㄖㄡˊ", "提": "ㄊㄧˊ", "揚": "ㄧㄤˊ", "換": "ㄏㄨㄢˋ", "握": "ㄨㄛˋ", "揮": "ㄏㄨㄟ", "搓": "ㄘㄨㄛ", "搖": "ㄧㄠˊ", "搗": "ㄉㄠˇ", "搜": "ㄙㄡ", "搬": "ㄅㄢ", "搭": "ㄉㄚ", "摔": "ㄕㄨㄞ", "摩": "ㄇㄛˊ", "撈": "ㄌㄠ", "撞": "ㄓㄨㄤˋ", "撥": "ㄅㄛ", "播": "ㄅㄛ", "撿": "ㄐㄧㄢˇ", "擇": "ㄗㄜˊ", "擊": "ㄐㄧ", "擋": "ㄉㄤˇ", "操": "ㄘㄠ", "擠": "ㄐㄧˇ", "擦": "ㄘㄚ", "擴": "ㄎㄨㄛˋ", "擺": "ㄅㄞˇ", "攀": "ㄆㄢ", "攙": "ㄔㄢ", "收": "ㄕㄡ", "改": "ㄍㄞˇ", "攻": "ㄍㄨㄥ", "放": "ㄈㄤˋ", "政": "ㄓㄥˋ", "敏": "ㄇㄧㄣˇ", "救": "ㄐㄧㄡˋ", "敗": "ㄅㄞˋ", "教": "ㄐㄧㄠˋ", "敢": "ㄍㄢˇ", "散": "ㄙㄢˋ", "敬": "ㄐㄧㄥˋ", "敲": "ㄑㄧㄠ", "整": "ㄓㄥˇ", "數": "ㄕㄨˋ", "文": "ㄩㄝˊ", "斑": "ㄅㄢ", "斕": "ㄌㄢˊ", "料": "ㄌㄧㄠˋ", "斜": "ㄒㄧㄝˊ", "新": "ㄒㄧㄣ", "斷": "ㄉㄨㄢˋ", "方": "ㄈㄤ", "於": "ㄩˊ", "旁": "ㄆㄤˊ", "旅": "ㄌㄩˇ", "旗": "ㄑㄧˊ", "日": "ㄖˋ", "旦": "ㄉㄢˋ", "早": "ㄗㄠˇ", "旺": "ㄨㄤˋ", "昇": "ㄕㄥ", "昌": "ㄔㄤ", "明": "ㄇㄧㄥˊ", "昏": "ㄏㄨㄣ", "易": "ㄧˋ", "星": "ㄒㄧㄥ", "映": "ㄧㄥˋ", "春": "ㄔㄨㄣ", "昨": "ㄗㄨㄛˊ", "是": "ㄕˋ", "時": "ㄕˊ", "晃": "ㄏㄨㄤˋ", "晚": "ㄨㄢˇ", "晝": "ㄓㄡˋ", "晨": "ㄔㄣˊ", "晰": "ㄒㄧ", "晴": "ㄑㄧㄥˊ", "智": "ㄓˋ", "暖": "ㄋㄨㄢˇ", "暗": "ㄢˋ", "暮": "ㄇㄨˋ", "暴": "ㄅㄠˋ", "曉": "ㄒㄧㄠˇ", "曬": "ㄕㄞˋ", "曲": "ㄑㄩˇ", "更": "ㄍㄥˋ", "書": "ㄕㄨ", "曾": "ㄘㄥˊ", "最": "ㄗㄨㄟˋ", "會": "ㄏㄨㄟˋ", "月": "ㄩㄝˋ", "有": "ㄧˇ", "朋": "ㄆㄥˊ", "服": "ㄈㄨˊ", "朗": "ㄌㄤˇ", "望": "ㄨㄤˋ", "朦": "ㄇㄥˊ", "朧": "ㄌㄨㄥˊ", "木": "ㄇㄨˋ", "本": "ㄅㄣˇ", "朽": "ㄒㄧㄡˇ", "李": "ㄌㄧˇ", "杏": "ㄒㄧㄥˋ", "材": "ㄘㄞˊ", "村": "ㄘㄨㄣ", "杜": "ㄉㄨˋ", "束": "ㄕㄨˋ", "杯": "ㄅㄟ", "東": "ㄉㄨㄥ", "松": "ㄙㄨㄥ", "林": "ㄌㄧㄣˊ", "果": "ㄍㄨㄛˇ", "枯": "ㄎㄨ", "架": "ㄐㄧㄚˋ", "柏": "ㄅㄞˇ", "染": "ㄖㄢˇ", "柔": "ㄖㄡˊ", "柳": "ㄌㄧㄡˇ", "柿": "ㄕˋ", "校": "ㄒㄧㄠˋ", "根": "ㄍㄣ", "格": "ㄍㄜˊ", "桂": "ㄍㄨㄟˋ", "桃": "ㄊㄠˊ", "桌": "ㄓㄨㄛ", "桶": "ㄊㄨㄥˇ", "梅": "ㄇㄟˊ", "條": "ㄊㄧㄠˊ", "梨": "ㄌㄧˊ", "梯": "ㄊㄧ", "棄": "ㄑㄧˋ", "棉": "ㄇㄧㄢˊ", "棋": "ㄑㄧˊ", "棕": "ㄗㄨㄥ", "森": "ㄙㄣ", "棵": "ㄎㄜ", "椅": "ㄧˇ", "植": "ㄓˊ", "椿": "ㄔㄨㄣ", "楊": "ㄧㄤˊ", "楓": "ㄈㄥ", "楚": "ㄔㄨˇ", "業": "ㄧㄝˋ", "極": "ㄐㄧˊ", "概": "ㄍㄞˋ", "榆": "ㄩˊ", "榕": "ㄖㄨㄥˊ", "榮": "ㄖㄨㄥˊ", "構": "ㄍㄡˋ", "樂": "ㄌㄜˋ", "樓": "ㄌㄡˊ", "標": "ㄅㄧㄠ", "樟": "ㄓㄤ", "模": "ㄇㄛˊ", "樣": "ㄧㄤˋ", "樸": "ㄆㄨˇ", "樹": "ㄕㄨˋ", "橋": "ㄑㄧㄠˊ", "橘": "ㄐㄩˊ", "橙": "ㄔㄥˊ", "機": "ㄐㄧ", "檜": "ㄍㄨㄟˋ", "權": "ㄑㄩㄢˊ", "欠": "ㄑㄧㄢˋ", "次": "ㄘˋ", "欣": "ㄒㄧㄣ", "歌": "ㄍㄜ", "歡": "ㄏㄨㄢ", "正": "ㄓㄥˋ", "步": "ㄅㄨˋ", "歪": "ㄨㄞ", "歲": "ㄙㄨㄟˋ", "歷": "ㄌㄧˋ", "死": "ㄙˇ", "殘": "ㄘㄢˊ", "段": "ㄉㄨㄢˋ", "母": "ㄇㄨˇ", "每": "ㄇㄟˇ", "比": "ㄅㄧˇ", "毛": "ㄇㄠˊ", "氈": "ㄓㄢ", "民": "ㄇㄧㄣˊ", "氣": "ㄑㄧˋ", "水": "ㄕㄨㄟˇ", "汙": "ㄨ", "江": "ㄐㄧㄤ", "池": "ㄔˊ", "污": "ㄨ", "決": "ㄐㄩㄝˊ", "沃": "ㄨㄛˋ", "沈": "ㄔㄣˊ", "沉": "ㄔㄣˊ", "沒": "ㄇㄟˊ", "沖": "ㄔㄨㄥ", "沙": "ㄕㄚ", "河": "ㄏㄜˊ", "治": "ㄓˋ", "沼": "ㄓㄠˇ", "泉": "ㄑㄩㄢˊ", "法": "ㄈㄚˇ", "泡": "ㄆㄠˋ", "波": "ㄅㄛ", "泥": "ㄋㄧˊ", "注": "ㄓㄨˋ", "泳": "ㄩㄥˇ", "洗": "ㄒㄧˇ", "洞": "ㄉㄨㄥˋ", "洲": "ㄓㄡ", "派": "ㄆㄞˋ", "流": "ㄌㄧㄡˊ", "浪": "ㄌㄤˋ", "浮": "ㄈㄨˊ", "浴": "ㄩˋ", "海": "ㄏㄞˇ", "浸": "ㄐㄧㄣˋ", "消": "ㄒㄧㄠ", "涵": "ㄏㄢˊ", "涼": "ㄌㄧㄤˊ", "淋": "ㄌㄧㄣˊ", "淘": "ㄊㄠˊ", "淡": "ㄉㄢˋ", "淨": "ㄐㄧㄥˋ", "深": "ㄕㄣ", "淵": "ㄩㄢ", "混": "ㄏㄨㄣˋ", "淺": "ㄑㄧㄢˇ", "清": "ㄑㄧㄥ", "減": "ㄐㄧㄢˇ", "渠": "ㄑㄩˊ", "測": "ㄘㄜˋ", "港": "ㄍㄤˇ", "渴": "ㄎㄜˇ", "游": "ㄧˊ", "渺": "ㄇㄧㄠˇ", "渾": "ㄏㄨㄣˊ", "湖": "ㄏㄨˊ", "湯": "ㄊㄤ", "溉": "ㄍㄞˋ", "準": "ㄓㄨㄣˇ", "溜": "ㄌㄧㄡ", "溝": "ㄍㄡ", "溪": "ㄒㄧ", "溫": "ㄩㄝ", "溼": "ㄕ", "滅": "ㄇㄧㄝˋ", "滋": "ㄗ", "滑": "ㄏㄨㄚˊ", "滷": "ㄌㄨˇ", "滾": "ㄍㄨㄣˇ", "滿": "ㄇㄢˇ", "漂": "ㄆㄧㄠˋ", "漠": "ㄇㄛˋ", "漸": "ㄐㄧㄢˋ", "潔": "ㄐㄧㄝˊ", "潤": "ㄖㄨㄣˋ", "潮": "ㄔㄠˊ", "澆": "ㄐㄧㄠ", "澈": "ㄔㄜˋ", "澗": "ㄐㄧㄢˋ", "澤": "ㄗㄜˊ", "濁": "ㄓㄨㄛˊ", "濃": "ㄋㄨㄥˊ", "濛": "ㄇㄥˊ", "濟": "ㄐㄧˋ", "濾": "ㄌㄩˋ", "瀑": "ㄆㄨˋ", "灌": "ㄍㄨㄢˋ", "灑": "ㄙㄚˇ", "灘": "ㄊㄢ", "灣": "ㄨㄢ", "火": "ㄏㄨㄛˇ", "灰": "ㄏㄨㄟ", "炒": "ㄔㄠˇ", "炫": "ㄒㄩㄢˋ", "炸": "ㄓㄚˊ", "為": "ㄨㄟˋ", "烈": "ㄌㄧㄝˋ", "烘": "ㄏㄨㄥ", "烤": "ㄎㄠˇ", "烹": "ㄆㄥ", "無": "ㄨˊ", "焦": "ㄐㄧㄠ", "然": "ㄖㄢˊ", "煌": "ㄏㄨㄤˊ", "煎": "ㄐㄧㄢ", "照": "ㄓㄠˋ", "煩": "ㄈㄢˊ", "煮": "ㄓㄨˇ", "熠": "ㄧˋ", "熱": "ㄖㄜˋ", "燈": "ㄉㄥ", "燉": "ㄉㄨㄣˋ", "燒": "ㄕㄠ", "燕": "ㄧㄢˋ", "燙": "ㄊㄤˋ", "燜": "ㄇㄣˋ", "燦": "ㄘㄢˋ", "爍": "ㄕㄨㄛˋ", "爛": "ㄌㄢˋ", "爬": "ㄆㄚˊ", "父": "ㄈㄨˋ", "爸": "ㄅㄚˋ", "爺": "ㄧㄝˊ", "牆": "ㄑㄧㄤˊ", "片": "ㄆㄧㄢˋ", "版": "ㄅㄢˇ", "牌": "ㄆㄞˊ", "牙": "ㄧㄚˊ", "牛": "ㄋㄧㄡˊ", "牢": "ㄌㄠˊ", "牧": "ㄇㄨˋ", "物": "ㄨˋ", "特": "ㄊㄜˋ", "牽": "ㄑㄧㄢ", "犁": "ㄌㄧˊ", "狂": "ㄎㄨㄤˊ", "狗": "ㄍㄡˇ", "猖": "ㄔㄤ", "猛": "ㄇㄥˇ", "猴": "ㄏㄡˊ", "獎": "ㄐㄧㄤˇ", "獨": "ㄉㄨˊ", "獲": "ㄏㄨㄛˋ", "獵": "ㄌㄧㄝˋ", "玄": "ㄒㄩㄢˊ", "率": "ㄕㄨㄞˋ", "玉": "ㄩˋ", "王": "ㄨㄤˊ", "玩": "ㄨㄢˊ", "玻": "ㄅㄛ", "珠": "ㄓㄨ", "班": "ㄅㄢ", "現": "ㄒㄧㄢˋ", "球": "ㄑㄧㄡˊ", "理": "ㄌㄧˇ", "琴": "ㄑㄧㄣˊ", "琶": "ㄆㄚˊ", "瑞": "ㄖㄨㄟˋ", "璀": "ㄘㄨㄟˇ", "璃": "ㄌㄧˊ", "璨": "ㄘㄢˋ", "環": "ㄏㄨㄢˊ", "瓜": "ㄍㄨㄚ", "瓶": "ㄆㄧㄥˊ", "瓷": "ㄘˊ", "甜": "ㄊㄧㄢˊ", "生": "ㄕㄥ", "甥": "ㄕㄥ", "用": "ㄩㄥˋ", "田": "ㄊㄧㄢˊ", "由": "ㄧㄡˊ", "界": "ㄐㄧㄝˋ", "留": "ㄌㄧㄡˊ", "畜": "ㄔㄨˋ", "略": "ㄌˋ", "畫": "ㄏㄨㄚˋ", "異": "ㄧˋ", "當": "ㄉㄤ", "疾": "ㄐㄧˊ", "病": "ㄅㄧㄥˋ", "痕": "ㄏㄣˊ", "痛": "ㄊㄨㄥˋ", "瘠": "ㄐㄧˊ", "瘦": "ㄕㄡˋ", "癒": "ㄩˋ", "登": "ㄉㄥ", "發": "ㄈㄚ", "白": "ㄅㄞˊ", "百": "ㄅㄞˇ", "的": "ㄉㄜ", "皎": "ㄐㄧㄠˇ", "皮": "ㄆㄧˊ", "盈": "ㄧㄥˊ", "盒": "ㄏㄜˊ", "盛": "ㄕㄥˋ", "盟": "ㄇㄥˊ", "盡": "ㄐㄧㄣˋ", "盤": "ㄆㄢˊ", "盪": "ㄉㄤˋ", "目": "ㄇㄨˋ", "直": "ㄓˊ", "相": "ㄒㄧㄤˋ", "盼": "ㄆㄢˋ", "省": "ㄕㄥˇ", "眉": "ㄇㄟˊ", "看": "ㄎㄢˋ", "真": "ㄓㄣ", "眨": "ㄓㄚˇ", "眩": "ㄒㄩㄢˋ", "眼": "ㄧㄢˇ", "睛": "ㄐㄧㄥ", "睜": "ㄓㄥ", "睡": "ㄕㄨㄟˋ", "睹": "ㄉㄨˇ", "瞄": "ㄇㄧㄠˊ", "瞥": "ㄆㄧㄝ", "瞧": "ㄑㄧㄠˊ", "瞪": "ㄉㄥˋ", "矚": "ㄓㄨˇ", "知": "ㄓ", "短": "ㄉㄨㄢˇ", "矮": "ㄞˇ", "石": "ㄕˊ", "砌": "ㄑㄧˋ", "砍": "ㄎㄢˇ", "研": "ㄧㄢˊ", "砰": "ㄆㄥ", "破": "ㄆㄛˋ", "硬": "ㄧㄥˋ", "碑": "ㄅㄟ", "碗": "ㄨㄢˇ", "碧": "ㄅㄧˋ", "碩": "ㄕㄨㄛˋ", "碰": "ㄆㄥˋ", "確": "ㄑㄩㄝˋ", "碼": "ㄇㄚˇ", "磨": "ㄇㄛˊ", "礁": "ㄐㄧㄠ", "示": "ㄕˋ", "社": "ㄕㄜˋ", "祈": "ㄑㄧˊ", "祕": "ㄇㄧˋ", "祝": "ㄓㄨˋ", "神": "ㄕㄣˊ", "祥": "ㄒㄧㄤˊ", "票": "ㄆㄧㄠˋ", "禁": "ㄐㄧㄣˋ", "福": "ㄈㄨˊ", "禮": "ㄌㄧˇ", "禱": "ㄉㄠˇ", "禾": "ㄏㄜˊ", "秀": "ㄒㄧㄡˋ", "秋": "ㄑㄧㄡ", "科": "ㄎㄜ", "秒": "ㄇㄧㄠˇ", "移": "ㄧˊ", "程": "ㄔㄥˊ", "稚": "ㄓˋ", "種": "ㄓㄨㄥˇ", "稱": "ㄔㄥ", "稻": "ㄉㄠˋ", "穀": "ㄍㄨˇ", "積": "ㄐㄧ", "穗": "ㄙㄨㄟˋ", "穴": "ㄒㄩㄝˋ", "究": "ㄐㄧㄡ", "空": "ㄎㄨㄥ", "穿": "ㄔㄨㄢ", "突": "ㄊㄨ", "窄": "ㄓㄞˇ", "窗": "ㄔㄨㄤ", "窩": "ㄨㄛ", "窺": "ㄎㄨㄟ", "竄": "ㄘㄨㄢˋ", "立": "ㄌㄧˋ", "站": "ㄓㄢˋ", "章": "ㄓㄤ", "童": "ㄊㄨㄥˊ", "端": "ㄉㄨㄢ", "竹": "ㄓㄨˊ", "笑": "ㄒㄧㄠˋ", "笛": "ㄉㄧˊ", "笨": "ㄅㄣˋ", "第": "ㄉㄧˋ", "筆": "ㄅㄧˇ", "等": "ㄉㄥˇ", "答": "ㄉㄚˊ", "算": "ㄙㄨㄢˋ", "管": "ㄍㄨㄢˇ", "箱": "ㄒㄧㄤ", "節": "ㄐㄧㄝˊ", "篇": "ㄆㄧㄢ", "築": "ㄓㄨˊ", "篩": "ㄕㄞ", "簡": "ㄐㄧㄢˇ", "簽": "ㄑㄧㄢ", "簾": "ㄌㄧㄢˊ", "米": "ㄇㄧˇ", "粉": "ㄈㄣˇ", "粗": "ㄘㄨ", "精": "ㄐㄧㄥ", "糊": "ㄏㄨˊ", "糖": "ㄊㄤˊ", "糜": "ㄇㄧˊ", "約": "ㄩㄝ", "紅": "ㄏㄨㄥˊ", "紋": "ㄩㄝˊ", "紗": "ㄕㄚ", "紙": "ㄓˇ", "級": "ㄐㄧˊ", "紛": "ㄈㄣ", "素": "ㄙㄨˋ", "索": "ㄙㄨㄛˇ", "紫": "ㄗˇ", "累": "ㄌㄟˋ", "細": "ㄒㄧˋ", "終": "ㄓㄨㄥ", "組": "ㄗㄨˇ", "結": "ㄐㄧㄝˊ", "絕": "ㄐㄩㄝˊ", "絢": "ㄒㄩㄢˋ", "給": "ㄍㄟˇ", "絲": "ㄙ", "綁": "ㄅㄤˇ", "經": "ㄐㄧㄥ", "綠": "ㄌㄩˋ", "綢": "ㄔㄡˊ", "網": "ㄨㄤˇ", "緊": "ㄐㄧㄣˇ", "線": "ㄒㄧㄢˋ", "緞": "ㄉㄨㄢˋ", "編": "ㄅㄧㄢ", "緩": "ㄏㄨㄢˇ", "縣": "ㄒㄧㄢˋ", "縫": "ㄈㄥˊ", "縮": "ㄙㄨㄛ", "總": "ㄗㄨㄥˇ", "績": "ㄐㄧ", "繁": "ㄈㄢˊ", "織": "ㄓ", "繡": "ㄒㄧㄡˋ", "繩": "ㄕㄥˊ", "繽": "ㄅㄧㄣ", "纏": "ㄔㄢˊ", "罩": "ㄓㄠˋ", "罪": "ㄗㄨㄟˋ", "置": "ㄓˋ", "罰": "ㄈㄚˊ", "羅": "ㄌㄨㄛˊ", "羊": "ㄧㄤˊ", "美": "ㄇㄟˇ", "羞": "ㄒㄧㄡ", "群": "ㄑㄩㄣˊ", "義": "ㄧˋ", "羽": "ㄩˇ", "翁": "ㄩㄝ", "翅": "ㄔˋ", "翎": "ㄌㄧㄥˊ", "翔": "ㄒㄧㄤˊ", "翠": "ㄘㄨㄟˋ", "翩": "ㄆㄧㄢ", "翱": "ㄠˊ", "翹": "ㄑㄧㄠˋ", "翻": "ㄈㄢ", "翼": "ㄧˋ", "耀": "ㄧㄠˋ", "老": "ㄌㄠˇ", "考": "ㄎㄠˇ", "而": "ㄦˊ", "耐": "ㄋㄞˋ", "耕": "ㄍㄥ", "耙": "ㄅㄚˋ", "耳": "ㄦˇ", "聊": "ㄌㄧㄠˊ", "聖": "ㄕㄥˋ", "聘": "ㄆㄧㄣˋ", "聚": "ㄐㄩˋ", "聰": "ㄘㄨㄥ", "聲": "ㄕㄥ", "聽": "ㄊㄧㄥ", "肉": "ㄖㄡˋ", "肘": "ㄓㄡˇ", "肚": "ㄉㄨˋ", "肝": "ㄍㄢ", "肥": "ㄈㄟˊ", "肩": "ㄐㄧㄢ", "育": "ㄩˋ", "肺": "ㄈㄟˋ", "胃": "ㄩㄝˋ", "背": "ㄅㄟˋ", "胎": "ㄊㄞ", "胖": "ㄆㄤˋ", "胡": "ㄏㄨˊ", "胸": "ㄒㄩㄥ", "能": "ㄋㄥˊ", "脆": "ㄘㄨㄟˋ", "脊": "ㄐㄧˇ", "脹": "ㄓㄤˋ", "腎": "ㄕㄣˋ", "腐": "ㄈㄨˇ", "腕": "ㄨㄢˋ", "腦": "ㄋㄠˇ", "腰": "ㄧㄠ", "腳": "ㄐㄧㄠˇ", "腸": "ㄔㄤˊ", "腹": "ㄈㄨˋ", "腿": "ㄊㄨㄟˇ", "膀": "ㄅㄤˇ", "膝": "ㄒㄧ", "膠": "ㄐㄧㄠ", "膨": "ㄆㄥˊ", "膩": "ㄋㄧˋ", "膽": "ㄉㄢˇ", "臂": "ㄅㄧˋ", "臉": "ㄌㄧㄢˇ", "臥": "ㄨㄛˋ", "自": "ㄗˋ", "臭": "ㄔㄡˋ", "臺": "ㄊㄞˊ", "舅": "ㄐㄧㄡˋ", "與": "ㄩˇ", "興": "ㄒㄧㄥ", "舉": "ㄐㄩˇ", "舊": "ㄐㄧㄡˋ", "舌": "ㄕㄜˊ", "舞": "ㄨˇ", "航": "ㄏㄤˊ", "船": "ㄔㄨㄢˊ", "良": "ㄌㄧㄤˊ", "色": "ㄙㄜˋ", "花": "ㄏㄨㄚ", "芽": "ㄧㄚˊ", "苗": "ㄇㄧㄠˊ", "苦": "ㄎㄨˇ", "英": "ㄧㄥ", "茁": "ㄓㄨㄛˊ", "茂": "ㄇㄠˋ", "茫": "ㄇㄤˊ", "茶": "ㄔㄚˊ", "草": "ㄘㄠˇ", "荒": "ㄏㄨㄤ", "荷": "ㄏㄜˊ", "莊": "ㄓㄨㄤ", "莖": "ㄐㄧㄥ", "菊": "ㄐㄩˊ", "菜": "ㄘㄞˋ", "華": "ㄏㄨㄚˊ", "萎": "ㄩㄝˇ", "萬": "ㄨㄢˋ", "落": "ㄌㄨㄛˋ", "葉": "ㄧㄝˋ", "蒜": "ㄙㄨㄢˋ", "蒸": "ㄓㄥ", "蒼": "ㄘㄤ", "蓋": "ㄍㄞˋ", "蓮": "ㄌㄧㄢˊ", "蔑": "ㄇㄧㄝˋ", "蔡": "ㄘㄞˋ", "蔥": "ㄘㄨㄥ", "蔽": "ㄅㄧˋ", "蕩": "ㄉㄤˋ", "蕪": "ㄨˊ", "薄": "ㄅㄠˊ", "薑": "ㄐㄧㄤ", "薪": "ㄒㄧㄣ", "藍": "ㄌㄢˊ", "藏": "ㄘㄤˊ", "藐": "ㄇㄧㄠˇ", "藝": "ㄧˋ", "藤": "ㄊㄥˊ", "藥": "ㄧㄠˋ", "蘭": "ㄌㄢˊ", "虎": "ㄏㄨˇ", "虔": "ㄑㄧㄢˊ", "處": "ㄔㄨˋ", "虛": "ㄒㄩ", "號": "ㄏㄠˋ", "虹": "ㄏㄨㄥˊ", "蚊": "ㄩㄝˊ", "蛇": "ㄕㄜˊ", "蛋": "ㄉㄢˋ", "蜂": "ㄈㄥ", "蜓": "ㄊㄧㄥˊ", "蜜": "ㄇㄧˋ", "蜻": "ㄑㄧㄥ", "蝴": "ㄏㄨˊ", "蝶": "ㄉㄧㄝˊ", "蝸": "ㄍㄨㄚ", "融": "ㄖㄨㄥˊ", "蟲": "ㄔㄨㄥˊ", "蟻": "ㄧˇ", "蠅": "ㄧㄥˊ", "蠻": "ㄇㄢˊ", "血": "ㄒㄩㄝˋ", "行": "ㄒㄧㄥˊ", "術": "ㄕㄨˋ", "街": "ㄐㄧㄝ", "衛": "ㄨㄟˋ", "衝": "ㄔㄨㄥ", "衡": "ㄏㄥˊ", "衣": "ㄧ", "表": "ㄅㄧㄠˇ", "衰": "ㄕㄨㄞ", "袋": "ㄉㄞˋ", "被": "ㄅㄟˋ", "裙": "ㄑㄩㄣˊ", "補": "ㄅㄨˇ", "裝": "ㄓㄨㄤ", "裡": "ㄌㄧˇ", "裹": "ㄍㄨㄛˇ", "製": "ㄓˋ", "複": "ㄈㄨˋ", "褐": "ㄏㄜˋ", "褲": "ㄎㄨˋ", "襪": "ㄨㄚˋ", "西": "ㄒㄧ", "要": "ㄧㄠˋ", "見": "ㄐㄧㄢˋ", "規": "ㄍㄨㄟ", "覓": "ㄇㄧˋ", "視": "ㄕˋ", "覺": "ㄐㄩㄝˊ", "觀": "ㄍㄨㄢ", "角": "ㄐㄧㄠˇ", "解": "ㄐㄧㄝˇ", "訂": "ㄉㄧㄥˋ", "計": "ㄐㄧˋ", "訊": "ㄒㄩㄣˋ", "記": "ㄐㄧˋ", "設": "ㄕㄜˋ", "訴": "ㄙㄨˋ", "評": "ㄆㄧㄥˊ", "詞": "ㄘˊ", "試": "ㄕˋ", "詩": "ㄕ", "話": "ㄏㄨㄚˋ", "該": "ㄍㄞ", "詳": "ㄒㄧㄤˊ", "認": "ㄖㄣˋ", "誓": "ㄕˋ", "誕": "ㄉㄢˋ", "語": "ㄩˇ", "誠": "ㄔㄥˊ", "說": "ㄕㄨㄛ", "誰": "ㄕㄨㄟˊ", "課": "ㄎㄜˋ", "調": "ㄊㄧㄠˊ", "談": "ㄊㄢˊ", "請": "ㄑㄧㄥˇ", "諒": "ㄌㄧㄤˋ", "論": "ㄌㄨㄣˋ", "諾": "ㄋㄨㄛˋ", "謙": "ㄑㄧㄢ", "講": "ㄐㄧㄤˇ", "謝": "ㄒㄧㄝˋ", "證": "ㄓㄥˋ", "識": "ㄕˊ", "警": "ㄐㄧㄥˇ", "譯": "ㄧˋ", "議": "ㄧˋ", "護": "ㄏㄨˋ", "讀": "ㄉㄨˊ", "變": "ㄅㄧㄢˋ", "讓": "ㄖㄤˋ", "谷": "ㄍㄨˇ", "豆": "ㄉㄡˋ", "豐": "ㄈㄥ", "豔": "ㄧㄢˋ", "象": "ㄒㄧㄤˋ", "豪": "ㄏㄠˊ", "豬": "ㄓㄨ", "貓": "ㄇㄠ", "貝": "ㄅㄟˋ", "負": "ㄈㄨˋ", "貧": "ㄆㄧㄣˊ", "責": "ㄗㄜˊ", "貴": "ㄍㄨㄟˋ", "買": "ㄇㄞˇ", "貸": "ㄉㄞˋ", "貼": "ㄊㄧㄝ", "貿": "ㄇㄠˋ", "賀": "ㄏㄜˋ", "資": "ㄗ", "賞": "ㄕㄤˇ", "賠": "ㄆㄟˊ", "賢": "ㄒㄧㄢˊ", "賣": "ㄇㄞˋ", "質": "ㄓˋ", "賺": "ㄓㄨㄢˋ", "賽": "ㄙㄞˋ", "贏": "ㄧㄥˊ", "赦": "ㄕㄜˋ", "走": "ㄗㄡˇ", "起": "ㄑㄧˇ", "超": "ㄔㄠ", "越": "ㄩㄝˋ", "趕": "ㄍㄢˇ", "趙": "ㄓㄠˋ", "趟": "ㄊㄤˋ", "足": "ㄗㄨˊ", "跑": "ㄆㄠˇ", "跟": "ㄍㄣ", "跡": "ㄐㄧˋ", "跨": "ㄎㄨㄚˋ", "跪": "ㄍㄨㄟˋ", "路": "ㄌㄨˋ", "跳": "ㄊㄧㄠˋ", "踏": "ㄊㄚˋ", "踝": "ㄏㄨㄞˊ", "踩": "ㄘㄞˇ", "蹤": "ㄗㄨㄥ", "蹦": "ㄅㄥˋ", "蹬": "ㄉㄥ", "蹲": "ㄉㄨㄣ", "躁": "ㄗㄠˋ", "身": "ㄕㄣ", "躲": "ㄉㄨㄛˇ", "躺": "ㄊㄤˇ", "車": "ㄔㄜ", "軌": "ㄍㄨㄟˇ", "軍": "ㄐㄩㄣ", "軟": "ㄖㄨㄢˇ", "較": "ㄐㄧㄠˋ", "載": "ㄗㄞˋ", "輕": "ㄑㄧㄥ", "輝": "ㄏㄨㄟ", "輪": "ㄌㄨㄣˊ", "輸": "ㄕㄨ", "轉": "ㄓㄨㄢˇ", "辣": "ㄌㄚˋ", "辦": "ㄅㄢˋ", "辯": "ㄅㄧㄢˋ", "辱": "ㄖㄨˇ", "農": "ㄋㄨㄥˊ", "迅": "ㄒㄩㄣˋ", "近": "ㄐㄧㄣˋ", "迷": "ㄇㄧˊ", "追": "ㄓㄨㄟ", "退": "ㄊㄨㄟˋ", "送": "ㄙㄨㄥˋ", "逃": "ㄊㄠˊ", "逐": "ㄓㄨˊ", "途": "ㄊㄨˊ", "這": "ㄓㄜˋ", "通": "ㄊㄨㄥ", "逛": "ㄍㄨㄤˋ", "速": "ㄙㄨˋ", "造": "ㄗㄠˋ", "連": "ㄌㄧㄢˊ", "進": "ㄐㄧㄣˋ", "遊": "ㄧㄡˊ", "運": "ㄩㄣˋ", "過": "ㄍㄨㄛˋ", "道": "ㄉㄠˋ", "達": "ㄉㄚˊ", "遛": "ㄌㄧㄡˋ", "遞": "ㄉㄧˋ", "遠": "ㄩㄢˇ", "遣": "ㄑㄧㄢˇ", "遮": "ㄓㄜ", "遲": "ㄔˊ", "選": "ㄒㄩㄢˇ", "遺": "ㄧˊ", "避": "ㄅㄧˋ", "邀": "ㄧㄠ", "邁": "ㄇㄞˋ", "還": "ㄏㄞˊ", "邊": "ㄅㄧㄢ", "那": "ㄋㄚˋ", "部": "ㄅㄨˋ", "郭": "ㄍㄨㄛ", "都": "ㄉㄡ", "鄉": "ㄒㄧㄤ", "鄙": "ㄅㄧˇ", "鄭": "ㄓㄥˋ", "鄰": "ㄌㄧㄣˊ", "配": "ㄆㄟˋ", "酒": "ㄐㄧㄡˇ", "酬": "ㄔㄡˊ", "酸": "ㄙㄨㄢ", "醃": "ㄧㄢ", "醋": "ㄘㄨˋ", "醒": "ㄒㄧㄥˇ", "醜": "ㄔㄡˇ", "醫": "ㄧ", "醬": "ㄐㄧㄤˋ", "釋": "ㄕˋ", "重": "ㄓㄨㄥˋ", "野": "ㄧㄝˇ", "量": "ㄌㄧㄤˋ", "金": "ㄐㄧㄣ", "釘": "ㄉㄧㄥ", "釣": "ㄉㄧㄠˋ", "鈍": "ㄉㄨㄣˋ", "鉤": "ㄍㄡ", "銀": "ㄧㄣˊ", "銅": "ㄊㄨㄥˊ", "鋁": "ㄌㄩˇ", "鋤": "ㄔㄨˊ", "鋼": "ㄍㄤ", "錄": "ㄌㄨˋ", "錢": "ㄑㄧㄢˊ", "錯": "ㄘㄨㄛˋ", "鍋": "ㄍㄨㄛ", "鍵": "ㄐㄧㄢˋ", "鎖": "ㄙㄨㄛˇ", "鎮": "ㄓㄣˋ", "�const ZHUYIN_DICT={"一": "ㄧ", "七": "ㄑㄧ", "三": "ㄙㄢ", "上": "ㄕㄤˋ", "下": "ㄒㄧㄚˋ", "不": "ㄅㄨˋ", "且": "ㄑㄧㄝˇ", "世": "ㄕˋ", "丘": "ㄑㄧㄡ", "丟": "ㄉㄧㄡ", "中": "ㄓㄨㄥ", "串": "ㄔㄨㄢˋ", "主": "ㄓㄨˇ", "乘": "ㄔㄥˊ", "九": "ㄐㄧㄡˇ", "也": "ㄧㄝˇ", "乾": "ㄍㄢ", "亂": "ㄌㄨㄢˋ", "了": "ㄌㄜ", "二": "ㄦˋ", "互": "ㄏㄨˋ", "五": "ㄨˇ", "些": "ㄒㄧㄝ", "亡": "ㄨㄤˊ", "交": "ㄐㄧㄠ", "京": "ㄐㄧㄥ", "亮": "ㄌㄧㄤˋ", "人": "ㄖㄣˊ", "什": "ㄕㄣˊ", "仁": "ㄖㄣˊ", "今": "ㄐㄧㄣ", "他": "ㄊㄚ", "以": "ㄧˇ", "仰": "ㄧㄤˇ", "件": "ㄐㄧㄢˋ", "任": "ㄖㄣˋ", "伏": "ㄈㄨˊ", "休": "ㄒㄧ", "伯": "ㄅㄛˊ", "伴": "ㄅㄢˋ", "伸": "ㄕㄣ", "但": "ㄉㄢˋ", "佈": "ㄅㄨˋ", "位": "ㄨㄟˋ", "低": "ㄉㄧ", "住": "ㄓㄨˋ", "何": "ㄏㄜˊ", "作": "ㄗㄨㄛˋ", "你": "ㄋㄧˇ", "佳": "ㄐㄧㄚ", "侄": "ㄓˊ", "來": "ㄌㄞˊ", "便": "ㄆㄧㄢˊ", "促": "ㄘㄨˋ", "俊": "ㄐㄩㄣˋ", "俗": "ㄙㄨˊ", "保": "ㄅㄠˇ", "信": "ㄒㄧㄣˋ", "修": "ㄒㄧㄡ", "俯": "ㄈㄨˇ", "個": "ㄍㄜˋ", "倍": "ㄅㄟˋ", "們": "ㄇㄣˊ", "倒": "ㄉㄠˇ", "候": "ㄏㄡˋ", "借": "ㄐㄧㄝˋ", "假": "ㄐㄧㄚˋ", "偉": "ㄩㄝˇ", "做": "ㄗㄨㄛˋ", "停": "ㄊㄧㄥˊ", "健": "ㄐㄧㄢˋ", "側": "ㄘㄜˋ", "傑": "ㄐㄧㄝˊ", "備": "ㄅㄟˋ", "催": "ㄘㄨㄟ", "傲": "ㄠˋ", "傳": "ㄔㄨㄢˊ", "傷": "ㄕㄤ", "傻": "ㄕㄚˇ", "傾": "ㄑㄧㄥ", "價": "ㄐㄧㄚˋ", "億": "ㄧˋ", "儉": "ㄐㄧㄢˇ", "償": "ㄔㄤˊ", "優": "ㄧ", "元": "ㄩㄢˊ", "兄": "ㄒㄩㄥ", "兆": "ㄓㄠˋ", "先": "ㄒㄧㄢ", "光": "ㄍㄨㄤ", "克": "ㄎㄜˋ", "兒": "ㄦˊ", "兔": "ㄊㄨˋ", "入": "ㄖㄨˋ", "內": "ㄋㄟˋ", "全": "ㄑㄩㄢˊ", "八": "ㄅㄚ", "公": "ㄍㄨㄥ", "六": "ㄌㄧㄡˋ", "共": "ㄍㄨㄥˋ", "其": "ㄑㄧˊ", "具": "ㄐㄩˋ", "典": "ㄉㄧㄢˇ", "再": "ㄗㄞˋ", "冢": "ㄓㄨㄥˇ", "冥": "ㄇㄧㄥˊ", "冬": "ㄉㄨㄥ", "冰": "ㄅㄧㄥ", "冷": "ㄌㄥˇ", "凋": "ㄉㄧㄠ", "凍": "ㄉㄨㄥˋ", "凝": "ㄋㄧㄥˊ", "出": "ㄔㄨ", "刀": "ㄉㄠ", "分": "ㄈㄣ", "切": "ㄑㄧㄝ", "刑": "ㄒㄧㄥˊ", "列": "ㄌㄧㄝˋ", "初": "ㄔㄨ", "判": "ㄆㄢˋ", "別": "ㄅㄧㄝˊ", "刨": "ㄆㄠˊ", "利": "ㄌㄧˋ", "到": "ㄉㄠˋ", "制": "ㄓˋ", "刷": "ㄕㄨㄚ", "刺": "ㄘˋ", "刻": "ㄎㄜˋ", "則": "ㄗㄜˊ", "削": "ㄒㄩㄝ", "前": "ㄑㄧㄢˊ", "剎": "ㄕㄚ", "剔": "ㄊㄧ", "剛": "ㄍㄤ", "剪": "ㄐㄧㄢˇ", "割": "ㄍㄜ", "創": "ㄔㄨㄤˋ", "劃": "ㄏㄨㄚˋ", "劇": "ㄐㄩˋ", "劈": "ㄆㄧ", "劉": "ㄌㄧㄡˊ", "劍": "ㄐㄧㄢˋ", "力": "ㄌㄧˋ", "功": "ㄍㄨㄥ", "加": "ㄐㄧㄚ", "劣": "ㄌㄧㄝˋ", "助": "ㄓㄨˋ", "努": "ㄋㄨˇ", "勇": "ㄩㄥˇ", "動": "ㄉㄨㄥˋ", "務": "ㄨˋ", "勝": "ㄕㄥˋ", "勞": "ㄌㄠˊ", "勤": "ㄑㄧㄣˊ", "勺": "ㄕㄠˊ", "勻": "ㄩㄣˊ", "包": "ㄅㄠ", "化": "ㄏㄨㄚˋ", "北": "ㄅㄟˇ", "匙": "ㄕ", "匾": "ㄅㄧㄢˇ", "區": "ㄑㄩ", "十": "ㄕˊ", "千": "ㄑㄧㄢ", "升": "ㄕㄥ", "午": "ㄨˇ", "半": "ㄅㄢˋ", "卑": "ㄅㄟ", "南": "ㄋㄢˊ", "卡": "ㄎㄚˇ", "印": "ㄧㄣˋ", "危": "ㄨㄟ", "卸": "ㄒㄧㄝˋ", "卻": "ㄑㄩㄝˋ", "厚": "ㄏㄡˋ", "厭": "ㄧㄢˋ", "去": "ㄑㄩˋ", "又": "ㄧˋ", "叉": "ㄔㄚ", "及": "ㄐㄧˊ", "友": "ㄧˇ", "叔": "ㄕㄨ", "取": "ㄑㄩˇ", "受": "ㄕㄡˋ", "口": "ㄎㄡˇ", "句": "ㄐㄩˋ", "叨": "ㄉㄠ", "只": "ㄓˇ", "叫": "ㄐㄧㄠˋ", "召": "ㄓㄠˋ", "可": "ㄎㄜˇ", "台": "ㄊㄞˊ", "史": "ㄕˇ", "右": "ㄧˋ", "吃": "ㄔ", "各": "ㄍㄜˋ", "合": "ㄏㄜˊ", "吉": "ㄐㄧˊ", "吊": "ㄉㄧㄠˋ", "同": "ㄊㄨㄥˊ", "名": "ㄇㄧㄥˊ", "向": "ㄒㄧㄤˋ", "吟": "ㄧㄣˊ", "吧": "ㄅㄚ", "吳": "ㄨˊ", "吵": "ㄔㄠˇ", "吸": "ㄒㄧ", "吹": "ㄔㄨㄟ", "吼": "ㄏㄡˇ", "呀": "ㄧㄚ", "呆": "ㄉㄞ", "告": "ㄍㄠˋ", "呢": "ㄋㄜ", "周": "ㄓㄡ", "味": "ㄩㄝˋ", "呸": "ㄆㄟ", "呻": "ㄕㄣ", "呼": "ㄏㄨ", "和": "ㄏㄜˊ", "咚": "ㄉㄨㄥ", "咦": "ㄧˊ", "哀": "ㄞ", "品": "ㄆㄧㄣˇ", "哇": "ㄨㄚ", "哈": "ㄏㄚ", "哦": "ㄛˊ", "哪": "ㄋㄚˇ", "哭": "ㄎㄨ", "哲": "ㄓㄜˊ", "哼": "ㄏㄥ", "唇": "ㄔㄨㄣˊ", "唉": "ㄞ", "唱": "ㄔㄤˋ", "唷": "ㄧ", "商": "ㄕㄤ", "啊": "ㄚ", "問": "ㄩㄝˋ", "啦": "ㄌㄚ", "啪": "ㄆㄚ", "喂": "ㄩㄝˋ", "善": "ㄕㄢˋ", "喊": "ㄏㄢˇ", "喔": "ㄛ", "喚": "ㄏㄨㄢˋ", "喜": "ㄒㄧˇ", "喝": "ㄏㄜ", "喧": "ㄒㄩㄢ", "單": "ㄉㄢ", "嗆": "ㄑㄧㄤ", "嗎": "ㄇㄚ", "嗝": "ㄍㄜˊ", "嗨": "ㄏㄞ", "嗯": "ㄣ", "嘆": "ㄊㄢˋ", "嘔": "ㄡˇ", "嘖": "ㄗㄜˊ", "嘗": "ㄔㄤˊ", "嘩": "ㄏㄨㄚ", "嘮": "ㄌㄠˊ", "嘴": "ㄗㄨㄟˇ", "嘶": "ㄙ", "嘻": "ㄒㄧ", "嘿": "ㄏㄟ", "噎": "ㄧㄝ", "噓": "ㄒㄩ", "噢": "ㄛ", "器": "ㄑㄧˋ", "噴": "ㄆㄣ", "嚥": "ㄧㄢˋ", "嚴": "ㄧㄢˊ", "嚷": "ㄖㄤˇ", "囂": "ㄒㄧㄠ", "囉": "ㄌㄨㄛ", "四": "ㄙˋ", "回": "ㄏㄨㄟˊ", "因": "ㄧㄣ", "困": "ㄎㄨㄣˋ", "圈": "ㄑㄩㄢ", "國": "ㄍㄨㄛˊ", "圍": "ㄩㄝˊ", "園": "ㄩㄢˊ", "圓": "ㄩㄢˊ", "圖": "ㄊㄨˊ", "團": "ㄊㄨㄢˊ", "土": "ㄊㄨˇ", "在": "ㄗㄞˋ", "地": "ㄉㄧˋ", "址": "ㄓˇ", "坐": "ㄗㄨㄛˋ", "坡": "ㄆㄛ", "型": "ㄒㄧㄥˊ", "垢": "ㄍㄡˋ", "城": "ㄔㄥˊ", "堅": "ㄐㄧㄢ", "堆": "ㄉㄨㄟ", "報": "ㄅㄠˋ", "場": "ㄔㄤˇ", "塊": "ㄎㄨㄞˋ", "塑": "ㄙㄨˋ", "塔": "ㄊㄚˇ", "塘": "ㄊㄤˊ", "塚": "ㄓㄨㄥˇ", "填": "ㄊㄧㄢˊ", "塵": "ㄔㄣˊ", "境": "ㄐㄧㄥˋ", "墓": "ㄇㄨˋ", "墜": "ㄓㄨㄟˋ", "增": "ㄗㄥ", "墨": "ㄇㄛˋ", "墾": "ㄎㄣˇ", "壁": "ㄅㄧˋ", "壓": "ㄧㄚ", "壘": "ㄌㄟˇ", "壞": "ㄏㄨㄞˋ", "壯": "ㄓㄨㄤˋ", "壺": "ㄏㄨˊ", "壽": "ㄕㄡˋ", "夏": "ㄒㄧㄚˋ", "夕": "ㄒㄧ", "外": "ㄨㄞˋ", "多": "ㄉㄨㄛ", "夜": "ㄧㄝˋ", "夠": "ㄍㄡˋ", "夢": "ㄇㄥˋ", "大": "ㄉㄚˋ", "天": "ㄊㄧㄢ", "太": "ㄊㄞˋ", "夫": "ㄈㄨ", "失": "ㄕ", "奇": "ㄑㄧˊ", "奏": "ㄗㄡˋ", "奐": "ㄏㄨㄢˋ", "契": "ㄑㄧˋ", "奔": "ㄅㄣ", "套": "ㄊㄠˋ", "奢": "ㄕㄜ", "奧": "ㄠˋ", "奪": "ㄉㄨㄛˊ", "女": "ㄋㄩˇ", "奶": "ㄋㄞˇ", "她": "ㄊㄚ", "好": "ㄏㄠˇ", "如": "ㄖㄨˊ", "妍": "ㄧㄢˊ", "妒": "ㄉㄨˋ", "妙": "ㄇㄧㄠˋ", "妹": "ㄇㄟˋ", "妻": "ㄑㄧ", "始": "ㄕˇ", "姐": "ㄐㄧㄝˇ", "姑": "ㄍㄨ", "姨": "ㄧˊ", "姿": "ㄗ", "娃": "ㄨㄚˊ", "婆": "ㄆㄛˊ", "婉": "ㄨㄢˇ", "婿": "ㄒㄩˋ", "媚": "ㄇㄟˋ", "媽": "ㄇㄚ", "嫂": "ㄙㄠˇ", "嫉": "ㄐㄧˊ", "嫌": "ㄒㄧㄢˊ", "嫣": "ㄧㄢ", "嫩": "ㄋㄣˋ", "嫻": "ㄒㄧㄢˊ", "嬈": "ㄖㄠˊ", "嬌": "ㄐㄧㄠ", "嬰": "ㄧㄥ", "嬸": "ㄕㄣˇ", "子": "ㄗˇ", "字": "ㄗˋ", "存": "ㄘㄨㄣˊ", "孝": "ㄒㄧㄠˋ", "孤": "ㄍㄨ", "孩": "ㄏㄞˊ", "孫": "ㄙㄨㄣ", "學": "ㄒㄩㄝˊ", "它": "ㄊㄚ", "守": "ㄕㄡˇ", "安": "ㄢ", "完": "ㄨㄢˊ", "定": "ㄉㄧㄥˋ", "宜": "ㄧˊ", "室": "ㄕˋ", "宵": "ㄒㄧㄠ", "家": "ㄐㄧㄚ", "容": "ㄖㄨㄥˊ", "寂": "ㄐㄧˋ", "密": "ㄇㄧˋ", "寞": "ㄇㄛˋ", "察": "ㄔㄚˊ", "實": "ㄕˊ", "寧": "ㄋㄧㄥˊ", "審": "ㄕㄣˇ", "寫": "ㄒㄧㄝˇ", "寬": "ㄎㄨㄢ", "寶": "ㄅㄠˇ", "將": "ㄐㄧㄤ", "尊": "ㄗㄨㄣ", "尋": "ㄒㄩㄣˊ", "對": "ㄉㄨㄟˋ", "導": "ㄉㄠˇ", "小": "ㄒㄧㄠˇ", "少": "ㄕㄠˇ", "就": "ㄐㄧㄡˋ", "尺": "ㄔˇ", "局": "ㄐㄩˊ", "居": "ㄐㄩ", "屋": "ㄨ", "屏": "ㄆㄧㄥˊ", "展": "ㄓㄢˇ", "層": "ㄘㄥˊ", "山": "ㄕㄢ", "岩": "ㄧㄢˊ", "岸": "ㄢˋ", "峰": "ㄈㄥ", "島": "ㄉㄠˇ", "峽": "ㄒㄧㄚˊ", "崖": "ㄧㄚˊ", "崗": "ㄍㄤˇ", "嵐": "ㄌㄢˊ", "嶺": "ㄌㄧㄥˇ", "嶼": "ㄩˇ", "巖": "ㄧㄢˊ", "巢": "ㄔㄠˊ", "工": "ㄍㄨㄥ", "左": "ㄗㄨㄛˇ", "巧": "ㄑㄧㄠˇ", "己": "ㄐㄧˇ", "已": "ㄧˇ", "市": "ㄕˋ", "布": "ㄅㄨˋ", "帆": "ㄈㄢ", "希": "ㄒㄧ", "帛": "ㄅㄛˊ", "師": "ㄕ", "帳": "ㄓㄤˋ", "帶": "ㄉㄞˋ", "常": "ㄔㄤˊ", "帽": "ㄇㄠˋ", "幕": "ㄇㄨˋ", "幟": "ㄓˋ", "幡": "ㄈㄢ", "幫": "ㄅㄤ", "平": "ㄆㄧㄥˊ", "年": "ㄋㄧㄢˊ", "幻": "ㄏㄨㄢˋ", "幼": "ㄧˋ", "幽": "ㄧ", "幾": "ㄐㄧˇ", "床": "ㄔㄨㄤˊ", "序": "ㄒㄩˋ", "底": "ㄉㄧˇ", "店": "ㄉㄧㄢˋ", "府": "ㄈㄨˇ", "度": "ㄉㄨˋ", "座": "ㄗㄨㄛˋ", "康": "ㄎㄤ", "廚": "ㄔㄨˊ", "廳": "ㄊㄧㄥ", "延": "ㄧㄢˊ", "建": "ㄐㄧㄢˋ", "式": "ㄕˋ", "引": "ㄧㄣˇ", "弟": "ㄉㄧˋ", "弦": "ㄒㄧㄢˊ", "張": "ㄓㄤ", "彈": "ㄊㄢˊ", "彎": "ㄨㄢ", "形": "ㄒㄧㄥˊ", "彩": "ㄘㄞˇ", "影": "ㄧㄥˇ", "往": "ㄨㄤˇ", "很": "ㄏㄣˇ", "律": "ㄌㄩˋ", "後": "ㄏㄡˋ", "徐": "ㄒㄩˊ", "徑": "ㄐㄧㄥˋ", "得": "ㄉㄜˊ", "從": "ㄘㄨㄥˊ", "復": "ㄈㄨˋ", "德": "ㄉㄜˊ", "徽": "ㄏㄨㄟ", "心": "ㄒㄧㄣ", "必": "ㄅㄧˋ", "忘": "ㄨㄤˋ", "忙": "ㄇㄤˊ", "忠": "ㄓㄨㄥ", "快": "ㄎㄨㄞˋ", "念": "ㄋㄧㄢˋ", "忽": "ㄏㄨ", "怎": "ㄗㄣˇ", "怒": "ㄋㄨˋ", "怕": "ㄆㄚˋ", "思": "ㄙ", "急": "ㄐㄧˊ", "怪": "ㄍㄨㄞˋ", "怯": "ㄑㄧㄝˋ", "恐": "ㄎㄨㄥˇ", "恕": "ㄕㄨˋ", "恢": "ㄏㄨㄟ", "恥": "ㄔˇ", "恩": "ㄣ", "恬": "ㄊㄧㄢˊ", "恭": "ㄍㄨㄥ", "息": "ㄒㄧ", "悄": "ㄑㄧㄠˇ", "悟": "ㄨˋ", "悲": "ㄅㄟ", "悶": "ㄇㄣˋ", "情": "ㄑㄧㄥˊ", "惑": "ㄏㄨㄛˋ", "惜": "ㄒㄧ", "惡": "ㄜˋ", "惰": "ㄉㄨㄛˋ", "惱": "ㄋㄠˇ", "想": "ㄒㄧㄤˇ", "愁": "ㄔㄡˊ", "意": "ㄧˋ", "愚": "ㄩˊ", "愛": "ㄞˋ", "感": "ㄍㄢˇ", "慈": "ㄘˊ", "慌": "ㄏㄨㄤ", "慢": "ㄇㄢˋ", "慧": "ㄏㄨㄟˋ", "慶": "ㄑㄧㄥˋ", "憂": "ㄧ", "憤": "ㄈㄣˋ", "憶": "ㄧˋ", "應": "ㄧㄥ", "懲": "ㄔㄥˊ", "懶": "ㄌㄢˇ", "懷": "ㄏㄨㄞˊ", "懸": "ㄒㄩㄢˊ", "成": "ㄔㄥˊ", "我": "ㄨㄛˇ", "或": "ㄏㄨㄛˋ", "截": "ㄐㄧㄝˊ", "戰": "ㄓㄢˋ", "戲": "ㄒㄧˋ", "房": "ㄈㄤˊ", "所": "ㄙㄨㄛˇ", "扇": "ㄕㄢˋ", "手": "ㄕㄡˇ", "才": "ㄘㄞˊ", "打": "ㄉㄚˇ", "扔": "ㄖㄥ", "扛": "ㄎㄤˊ", "扣": "ㄎㄡˋ", "扭": "ㄋㄧㄡˇ", "扶": "ㄈㄨˊ", "批": "ㄆㄧ", "找": "ㄓㄠˇ", "技": "ㄐㄧˋ", "把": "ㄅㄚˇ", "抓": "ㄓㄨㄚ", "投": "ㄊㄡˊ", "折": "ㄓㄜˊ", "抱": "ㄅㄠˋ", "押": "ㄧㄚ", "拂": "ㄈㄨˊ", "拈": "ㄋㄧㄢ", "拉": "ㄌㄚ", "拋": "ㄆㄠ", "拍": "ㄆㄞ", "拒": "ㄐㄩˋ", "拓": "ㄊㄨㄛˋ", "拖": "ㄊㄨㄛ", "拙": "ㄓㄨㄛ", "拳": "ㄑㄩㄢˊ", "拽": "ㄓㄨㄞˋ", "拿": "ㄋㄚˊ", "持": "ㄔˊ", "指": "ㄓˇ", "挑": "ㄊㄧㄠ", "挖": "ㄨㄚ", "振": "ㄓㄣˋ", "挺": "ㄊㄧㄥˇ", "捉": "ㄓㄨㄛ", "捏": "ㄋㄧㄝ", "捕": "ㄅㄨˇ", "捨": "ㄕㄜˇ", "捶": "ㄔㄨㄟˊ", "掃": "ㄙㄠˇ", "掉": "ㄉㄧㄠˋ", "掌": "ㄓㄤˇ", "掏": "ㄊㄠ", "掐": "ㄑㄧㄚ", "排": "ㄆㄞˊ", "掘": "ㄐㄩㄝˊ", "掛": "ㄍㄨㄚˋ", "接": "ㄐㄧㄝ", "控": "ㄎㄨㄥˋ", "推": "ㄊㄨㄟ", "掩": "ㄧㄢˇ", "揉": "ㄖㄡˊ", "提": "ㄊㄧˊ", "揚": "ㄧㄤˊ", "換": "ㄏㄨㄢˋ", "握": "ㄨㄛˋ", "揮": "ㄏㄨㄟ", "搓": "ㄘㄨㄛ", "搖": "ㄧㄠˊ", "搗": "ㄉㄠˇ", "搜": "ㄙㄡ", "搬": "ㄅㄢ", "搭": "ㄉㄚ", "摔": "ㄕㄨㄞ", "摩": "ㄇㄛˊ", "撈": "ㄌㄠ", "撞": "ㄓㄨㄤˋ", "撥": "ㄅㄛ", "播": "ㄅㄛ", "撿": "ㄐㄧㄢˇ", "擇": "ㄗㄜˊ", "擊": "ㄐㄧ", "擋": "ㄉㄤˇ", "操": "ㄘㄠ", "擠": "ㄐㄧˇ", "擦": "ㄘㄚ", "擴": "ㄎㄨㄛˋ", "擺": "ㄅㄞˇ", "攀": "ㄆㄢ", "攙": "ㄔㄢ", "收": "ㄕㄡ", "改": "ㄍㄞˇ", "攻": "ㄍㄨㄥ", "放": "ㄈㄤˋ", "政": "ㄓㄥˋ", "敏": "ㄇㄧㄣˇ", "救": "ㄐㄧㄡˋ", "敗": "ㄅㄞˋ", "教": "ㄐㄧㄠˋ", "敢": "ㄍㄢˇ", "散": "ㄙㄢˋ", "敬": "ㄐㄧㄥˋ", "敲": "ㄑㄧㄠ", "整": "ㄓㄥˇ", "數": "ㄕㄨˋ", "文": "ㄩㄝˊ", "斑": "ㄅㄢ", "斕": "ㄌㄢˊ", "料": "ㄌㄧㄠˋ", "斜": "ㄒㄧㄝˊ", "新": "ㄒㄧㄣ", "斷": "ㄉㄨㄢˋ", "方": "ㄈㄤ", "於": "ㄩˊ", "旁": "ㄆㄤˊ", "旅": "ㄌㄩˇ", "旗": "ㄑㄧˊ", "日": "ㄖˋ", "旦": "ㄉㄢˋ", "早": "ㄗㄠˇ", "旺": "ㄨㄤˋ", "昇": "ㄕㄥ", "昌": "ㄔㄤ", "明": "ㄇㄧㄥˊ", "昏": "ㄏㄨㄣ", "易": "ㄧˋ", "星": "ㄒㄧㄥ", "映": "ㄧㄥˋ", "春": "ㄔㄨㄣ", "昨": "ㄗㄨㄛˊ", "是": "ㄕˋ", "時": "ㄕˊ", "晃": "ㄏㄨㄤˋ", "晚": "ㄨㄢˇ", "晝": "ㄓㄡˋ", "晨": "ㄔㄣˊ", "晰": "ㄒㄧ", "晴": "ㄑㄧㄥˊ", "智": "ㄓˋ", "暖": "ㄋㄨㄢˇ", "暗": "ㄢˋ", "暮": "ㄇㄨˋ", "暴": "ㄅㄠˋ", "曉": "ㄒㄧㄠˇ", "曬": "ㄕㄞˋ", "曲": "ㄑㄩˇ", "更": "ㄍㄥˋ", "書": "ㄕㄨ", "曾": "ㄘㄥˊ", "最": "ㄗㄨㄟˋ", "會": "ㄏㄨㄟˋ", "月": "ㄩㄝˋ", "有": "ㄧˇ", "朋": "ㄆㄥˊ", "服": "ㄈㄨˊ", "朗": "ㄌㄤˇ", "望": "ㄨㄤˋ", "朦": "ㄇㄥˊ", "朧": "ㄌㄨㄥˊ", "木": "ㄇㄨˋ", "本": "ㄅㄣˇ", "朽": "ㄒㄧㄡˇ", "李": "ㄌㄧˇ", "杏": "ㄒㄧㄥˋ", "材": "ㄘㄞˊ", "村": "ㄘㄨㄣ", "杜": "ㄉㄨˋ", "束": "ㄕㄨˋ", "杯": "ㄅㄟ", "東": "ㄉㄨㄥ", "松": "ㄙㄨㄥ", "林": "ㄌㄧㄣˊ", "果": "ㄍㄨㄛˇ", "枯": "ㄎㄨ", "架": "ㄐㄧㄚˋ", "柏": "ㄅㄞˇ", "染": "ㄖㄢˇ", "柔": "ㄖㄡˊ", "柳": "ㄌㄧㄡˇ", "柿": "ㄕˋ", "校": "ㄒㄧㄠˋ", "根": "ㄍㄣ", "格": "ㄍㄜˊ", "桂": "ㄍㄨㄟˋ", "桃": "ㄊㄠˊ", "桌": "ㄓㄨㄛ", "桶": "ㄊㄨㄥˇ", "梅": "ㄇㄟˊ", "條": "ㄊㄧㄠˊ", "梨": "ㄌㄧˊ", "梯": "ㄊㄧ", "棄": "ㄑㄧˋ", "棉": "ㄇㄧㄢˊ", "棋": "ㄑㄧˊ", "棕": "ㄗㄨㄥ", "森": "ㄙㄣ", "棵": "ㄎㄜ", "椅": "ㄧˇ", "植": "ㄓˊ", "椿": "ㄔㄨㄣ", "楊": "ㄧㄤˊ", "楓": "ㄈㄥ", "楚": "ㄔㄨˇ", "業": "ㄧㄝˋ", "極": "ㄐㄧˊ", "概": "ㄍㄞˋ", "榆": "ㄩˊ", "榕": "ㄖㄨㄥˊ", "榮": "ㄖㄨㄥˊ", "構": "ㄍㄡˋ", "樂": "ㄌㄜˋ", "樓": "ㄌㄡˊ", "標": "ㄅㄧㄠ", "樟": "ㄓㄤ", "模": "ㄇㄛˊ", "樣": "ㄧㄤˋ", "樸": "ㄆㄨˇ", "樹": "ㄕㄨˋ", "橋": "ㄑㄧㄠˊ", "橘": "ㄐㄩˊ", "橙": "ㄔㄥˊ", "機": "ㄐㄧ", "檜": "ㄍㄨㄟˋ", "權": "ㄑㄩㄢˊ", "欠": "ㄑㄧㄢˋ", "次": "ㄘˋ", "欣": "ㄒㄧㄣ", "歌": "ㄍㄜ", "歡": "ㄏㄨㄢ", "正": "ㄓㄥˋ", "步": "ㄅㄨˋ", "歪": "ㄨㄞ", "歲": "ㄙㄨㄟˋ", "歷": "ㄌㄧˋ", "死": "ㄙˇ", "殘": "ㄘㄢˊ", "段": "ㄉㄨㄢˋ", "母": "ㄇㄨˇ", "每": "ㄇㄟˇ", "比": "ㄅㄧˇ", "毛": "ㄇㄠˊ", "氈": "ㄓㄢ", "民": "ㄇㄧㄣˊ", "氣": "ㄑㄧˋ", "水": "ㄕㄨㄟˇ", "汙": "ㄨ", "江": "ㄐㄧㄤ", "池": "ㄔˊ", "污": "ㄨ", "決": "ㄐㄩㄝˊ", "沃": "ㄨㄛˋ", "沈": "ㄔㄣˊ", "沉": "ㄔㄣˊ", "沒": "ㄇㄟˊ", "沖": "ㄔㄨㄥ", "沙": "ㄕㄚ", "河": "ㄏㄜˊ", "治": "ㄓˋ", "沼": "ㄓㄠˇ", "泉": "ㄑㄩㄢˊ", "法": "ㄈㄚˇ", "泡": "ㄆㄠˋ", "波": "ㄅㄛ", "泥": "ㄋㄧˊ", "注": "ㄓㄨˋ", "泳": "ㄩㄥˇ", "洗": "ㄒㄧˇ", "洞": "ㄉㄨㄥˋ", "洲": "ㄓㄡ", "派": "ㄆㄞˋ", "流": "ㄌㄧㄡˊ", "浪": "ㄌㄤˋ", "浮": "ㄈㄨˊ", "浴": "ㄩˋ", "海": "ㄏㄞˇ", "浸": "ㄐㄧㄣˋ", "消": "ㄒㄧㄠ", "涵": "ㄏㄢˊ", "涼": "ㄌㄧㄤˊ", "淋": "ㄌㄧㄣˊ", "淘": "ㄊㄠˊ", "淡": "ㄉㄢˋ", "淨": "ㄐㄧㄥˋ", "深": "ㄕㄣ", "淵": "ㄩㄢ", "混": "ㄏㄨㄣˋ", "淺": "ㄑㄧㄢˇ", "清": "ㄑㄧㄥ", "減": "ㄐㄧㄢˇ", "渠": "ㄑㄩˊ", "測": "ㄘㄜˋ", "港": "ㄍㄤˇ", "渴": "ㄎㄜˇ", "游": "ㄧˊ", "渺": "ㄇㄧㄠˇ", "渾": "ㄏㄨㄣˊ", "湖": "ㄏㄨˊ", "湯": "ㄊㄤ", "溉": "ㄍㄞˋ", "準": "ㄓㄨㄣˇ", "溜": "ㄌㄧㄡ", "溝": "ㄍㄡ", "溪": "ㄒㄧ", "溫": "ㄩㄝ", "溼": "ㄕ", "滅": "ㄇㄧㄝˋ", "滋": "ㄗ", "滑": "ㄏㄨㄚˊ", "滷": "ㄌㄨˇ", "滾": "ㄍㄨㄣˇ", "滿": "ㄇㄢˇ", "漂": "ㄆㄧㄠˋ", "漠": "ㄇㄛˋ", "漸": "ㄐㄧㄢˋ", "潔": "ㄐㄧㄝˊ", "潤": "ㄖㄨㄣˋ", "潮": "ㄔㄠˊ", "澆": "ㄐㄧㄠ", "澈": "ㄔㄜˋ", "澗": "ㄐㄧㄢˋ", "澤": "ㄗㄜˊ", "濁": "ㄓㄨㄛˊ", "濃": "ㄋㄨㄥˊ", "濛": "ㄇㄥˊ", "濟": "ㄐㄧˋ", "濾": "ㄌㄩˋ", "瀑": "ㄆㄨˋ", "灌": "ㄍㄨㄢˋ", "灑": "ㄙㄚˇ", "灘": "ㄊㄢ", "灣": "ㄨㄢ", "火": "ㄏㄨㄛˇ", "灰": "ㄏㄨㄟ", "炒": "ㄔㄠˇ", "炫": "ㄒㄩㄢˋ", "炸": "ㄓㄚˊ", "為": "ㄨㄟˋ", "烈": "ㄌㄧㄝˋ", "烘": "ㄏㄨㄥ", "烤": "ㄎㄠˇ", "烹": "ㄆㄥ", "無": "ㄨˊ", "焦": "ㄐㄧㄠ", "然": "ㄖㄢˊ", "煌": "ㄏㄨㄤˊ", "煎": "ㄐㄧㄢ", "照": "ㄓㄠˋ", "煩": "ㄈㄢˊ", "煮": "ㄓㄨˇ", "熠": "ㄧˋ", "熱": "ㄖㄜˋ", "燈": "ㄉㄥ", "燉": "ㄉㄨㄣˋ", "燒": "ㄕㄠ", "燕": "ㄧㄢˋ", "燙": "ㄊㄤˋ", "燜": "ㄇㄣˋ", "燦": "ㄘㄢˋ", "爍": "ㄕㄨㄛˋ", "爛": "ㄌㄢˋ", "爬": "ㄆㄚˊ", "父": "ㄈㄨˋ", "爸": "ㄅㄚˋ", "爺": "ㄧㄝˊ", "牆": "ㄑㄧㄤˊ", "片": "ㄆㄧㄢˋ", "版": "ㄅㄢˇ", "牌": "ㄆㄞˊ", "牙": "ㄧㄚˊ", "牛": "ㄋㄧㄡˊ", "牢": "ㄌㄠˊ", "牧": "ㄇㄨˋ", "物": "ㄨˋ", "特": "ㄊㄜˋ", "牽": "ㄑㄧㄢ", "犁": "ㄌㄧˊ", "狂": "ㄎㄨㄤˊ", "狗": "ㄍㄡˇ", "猖": "ㄔㄤ", "猛": "ㄇㄥˇ", "猴": "ㄏㄡˊ", "獎": "ㄐㄧㄤˇ", "獨": "ㄉㄨˊ", "獲": "ㄏㄨㄛˋ", "獵": "ㄌㄧㄝˋ", "玄": "ㄒㄩㄢˊ", "率": "ㄕㄨㄞˋ", "玉": "ㄩˋ", "王": "ㄨㄤˊ", "玩": "ㄨㄢˊ", "玻": "ㄅㄛ", "珠": "ㄓㄨ", "班": "ㄅㄢ", "現": "ㄒㄧㄢˋ", "球": "ㄑㄧㄡˊ", "理": "ㄌㄧˇ", "琴": "ㄑㄧㄣˊ", "琶": "ㄆㄚˊ", "瑞": "ㄖㄨㄟˋ", "璀": "ㄘㄨㄟˇ", "璃": "ㄌㄧˊ", "璨": "ㄘㄢˋ", "環": "ㄏㄨㄢˊ", "瓜": "ㄍㄨㄚ", "瓶": "ㄆㄧㄥˊ", "瓷": "ㄘˊ", "甜": "ㄊㄧㄢˊ", "生": "ㄕㄥ", "甥": "ㄕㄥ", "用": "ㄩㄥˋ", "田": "ㄊㄧㄢˊ", "由": "ㄧㄡˊ", "界": "ㄐㄧㄝˋ", "留": "ㄌㄧㄡˊ", "畜": "ㄔㄨˋ", "略": "ㄌˋ", "畫": "ㄏㄨㄚˋ", "異": "ㄧˋ", "當": "ㄉㄤ", "疾": "ㄐㄧˊ", "病": "ㄅㄧㄥˋ", "痕": "ㄏㄣˊ", "痛": "ㄊㄨㄥˋ", "瘠": "ㄐㄧˊ", "瘦": "ㄕㄡˋ", "癒": "ㄩˋ", "登": "ㄉㄥ", "發": "ㄈㄚ", "白": "ㄅㄞˊ", "百": "ㄅㄞˇ", "的": "ㄉㄜ", "皎": "ㄐㄧㄠˇ", "皮": "ㄆㄧˊ", "盈": "ㄧㄥˊ", "盒": "ㄏㄜˊ", "盛": "ㄕㄥˋ", "盟": "ㄇㄥˊ", "盡": "ㄐㄧㄣˋ", "盤": "ㄆㄢˊ", "盪": "ㄉㄤˋ", "目": "ㄇㄨˋ", "直": "ㄓˊ", "相": "ㄒㄧㄤˋ", "盼": "ㄆㄢˋ", "省": "ㄕㄥˇ", "眉": "ㄇㄟˊ", "看": "ㄎㄢˋ", "真": "ㄓㄣ", "眨": "ㄓㄚˇ", "眩": "ㄒㄩㄢˋ", "眼": "ㄧㄢˇ", "睛": "ㄐㄧㄥ", "睜": "ㄓㄥ", "睡": "ㄕㄨㄟˋ", "睹": "ㄉㄨˇ", "瞄": "ㄇㄧㄠˊ", "瞥": "ㄆㄧㄝ", "瞧": "ㄑㄧㄠˊ", "瞪": "ㄉㄥˋ", "矚": "ㄓㄨˇ", "知": "ㄓ", "短": "ㄉㄨㄢˇ", "矮": "ㄞˇ", "石": "ㄕˊ", "砌": "ㄑㄧˋ", "砍": "ㄎㄢˇ", "研": "ㄧㄢˊ", "砰": "ㄆㄥ", "破": "ㄆㄛˋ", "硬": "ㄧㄥˋ", "碑": "ㄅㄟ", "碗": "ㄨㄢˇ", "碧": "ㄅㄧˋ", "碩": "ㄕㄨㄛˋ", "碰": "ㄆㄥˋ", "確": "ㄑㄩㄝˋ", "碼": "ㄇㄚˇ", "磨": "ㄇㄛˊ", "礁": "ㄐㄧㄠ", "示": "ㄕˋ", "社": "ㄕㄜˋ", "祈": "ㄑㄧˊ", "祕": "ㄇㄧˋ", "祝": "ㄓㄨˋ", "神": "ㄕㄣˊ", "祥": "ㄒㄧㄤˊ", "票": "ㄆㄧㄠˋ", "禁": "ㄐㄧㄣˋ", "福": "ㄈㄨˊ", "禮": "ㄌㄧˇ", "禱": "ㄉㄠˇ", "禾": "ㄏㄜˊ", "秀": "ㄒㄧㄡˋ", "秋": "ㄑㄧㄡ", "科": "ㄎㄜ", "秒": "ㄇㄧㄠˇ", "移": "ㄧˊ", "程": "ㄔㄥˊ", "稚": "ㄓˋ", "種": "ㄓㄨㄥˇ", "稱": "ㄔㄥ", "稻": "ㄉㄠˋ", "穀": "ㄍㄨˇ", "積": "ㄐㄧ", "穗": "ㄙㄨㄟˋ", "穴": "ㄒㄩㄝˋ", "究": "ㄐㄧㄡ", "空": "ㄎㄨㄥ", "穿": "ㄔㄨㄢ", "突": "ㄊㄨ", "窄": "ㄓㄞˇ", "窗": "ㄔㄨㄤ", "窩": "ㄨㄛ", "窺": "ㄎㄨㄟ", "竄": "ㄘㄨㄢˋ", "立": "ㄌㄧˋ", "站": "ㄓㄢˋ", "章": "ㄓㄤ", "童": "ㄊㄨㄥˊ", "端": "ㄉㄨㄢ", "竹": "ㄓㄨˊ", "笑": "ㄒㄧㄠˋ", "笛": "ㄉㄧˊ", "笨": "ㄅㄣˋ", "第": "ㄉㄧˋ", "筆": "ㄅㄧˇ", "等": "ㄉㄥˇ", "答": "ㄉㄚˊ", "算": "ㄙㄨㄢˋ", "管": "ㄍㄨㄢˇ", "箱": "ㄒㄧㄤ", "節": "ㄐㄧㄝˊ", "篇": "ㄆㄧㄢ", "築": "ㄓㄨˊ", "篩": "ㄕㄞ", "簡": "ㄐㄧㄢˇ", "簽": "ㄑㄧㄢ", "簾": "ㄌㄧㄢˊ", "米": "ㄇㄧˇ", "粉": "ㄈㄣˇ", "粗": "ㄘㄨ", "精": "ㄐㄧㄥ", "糊": "ㄏㄨˊ", "糖": "ㄊㄤˊ", "糜": "ㄇㄧˊ", "約": "ㄩㄝ", "紅": "ㄏㄨㄥˊ", "紋": "ㄩㄝˊ", "紗": "ㄕㄚ", "紙": "ㄓˇ", "級": "ㄐㄧˊ", "紛": "ㄈㄣ", "素": "ㄙㄨˋ", "索": "ㄙㄨㄛˇ", "紫": "ㄗˇ", "累": "ㄌㄟˋ", "細": "ㄒㄧˋ", "終": "ㄓㄨㄥ", "組": "ㄗㄨˇ", "結": "ㄐㄧㄝˊ", "絕": "ㄐㄩㄝˊ", "絢": "ㄒㄩㄢˋ", "給": "ㄍㄟˇ", "絲": "ㄙ", "綁": "ㄅㄤˇ", "經": "ㄐㄧㄥ", "綠": "ㄌㄩˋ", "綢": "ㄔㄡˊ", "網": "ㄨㄤˇ", "緊": "ㄐㄧㄣˇ", "線": "ㄒㄧㄢˋ", "緞": "ㄉㄨㄢˋ", "編": "ㄅㄧㄢ", "緩": "ㄏㄨㄢˇ", "縣": "ㄒㄧㄢˋ", "縫": "ㄈㄥˊ", "縮": "ㄙㄨㄛ", "總": "ㄗㄨㄥˇ", "績": "ㄐㄧ", "繁": "ㄈㄢˊ", "織": "ㄓ", "繡": "ㄒㄧㄡˋ", "繩": "ㄕㄥˊ", "繽": "ㄅㄧㄣ", "纏": "ㄔㄢˊ", "罩": "ㄓㄠˋ", "罪": "ㄗㄨㄟˋ", "置": "ㄓˋ", "罰": "ㄈㄚˊ", "羅": "ㄌㄨㄛˊ", "羊": "ㄧㄤˊ", "美": "ㄇㄟˇ", "羞": "ㄒㄧㄡ", "群": "ㄑㄩㄣˊ", "義": "ㄧˋ", "羽": "ㄩˇ", "翁": "ㄩㄝ", "翅": "ㄔˋ", "翎": "ㄌㄧㄥˊ", "翔": "ㄒㄧㄤˊ", "翠": "ㄘㄨㄟˋ", "翩": "ㄆㄧㄢ", "翱": "ㄠˊ", "翹": "ㄑㄧㄠˋ", "翻": "ㄈㄢ", "翼": "ㄧˋ", "耀": "ㄧㄠˋ", "老": "ㄌㄠˇ", "考": "ㄎㄠˇ", "而": "ㄦˊ", "耐": "ㄋㄞˋ", "耕": "ㄍㄥ", "耙": "ㄅㄚˋ", "耳": "ㄦˇ", "聊": "ㄌㄧㄠˊ", "聖": "ㄕㄥˋ", "聘": "ㄆㄧㄣˋ", "聚": "ㄐㄩˋ", "聰": "ㄘㄨㄥ", "聲": "ㄕㄥ", "聽": "ㄊㄧㄥ", "肉": "ㄖㄡˋ", "肘": "ㄓㄡˇ", "肚": "ㄉㄨˋ", "肝": "ㄍㄢ", "肥": "ㄈㄟˊ", "肩": "ㄐㄧㄢ", "育": "ㄩˋ", "肺": "ㄈㄟˋ", "胃": "ㄩㄝˋ", "背": "ㄅㄟˋ", "胎": "ㄊㄞ", "胖": "ㄆㄤˋ", "胡": "ㄏㄨˊ", "胸": "ㄒㄩㄥ", "能": "ㄋㄥˊ", "脆": "ㄘㄨㄟˋ", "脊": "ㄐㄧˇ", "脹": "ㄓㄤˋ", "腎": "ㄕㄣˋ", "腐": "ㄈㄨˇ", "腕": "ㄨㄢˋ", "腦": "ㄋㄠˇ", "腰": "ㄧㄠ", "腳": "ㄐㄧㄠˇ", "腸": "ㄔㄤˊ", "腹": "ㄈㄨˋ", "腿": "ㄊㄨㄟˇ", "膀": "ㄅㄤˇ", "膝": "ㄒㄧ", "膠": "ㄐㄧㄠ", "膨": "ㄆㄥˊ", "膩": "ㄋㄧˋ", "膽": "ㄉㄢˇ", "臂": "ㄅㄧˋ", "臉": "ㄌㄧㄢˇ", "臥": "ㄨㄛˋ", "自": "ㄗˋ", "臭": "ㄔㄡˋ", "臺": "ㄊㄞˊ", "舅": "ㄐㄧㄡˋ", "與": "ㄩˇ", "興": "ㄒㄧㄥ", "舉": "ㄐㄩˇ", "舊": "ㄐㄧㄡˋ", "舌": "ㄕㄜˊ", "舞": "ㄨˇ", "航": "ㄏㄤˊ", "船": "ㄔㄨㄢˊ", "良": "ㄌㄧㄤˊ", "色": "ㄙㄜˋ", "花": "ㄏㄨㄚ", "芽": "ㄧㄚˊ", "苗": "ㄇㄧㄠˊ", "苦": "ㄎㄨˇ", "英": "ㄧㄥ", "茁": "ㄓㄨㄛˊ", "茂": "ㄇㄠˋ", "茫": "ㄇㄤˊ", "茶": "ㄔㄚˊ", "草": "ㄘㄠˇ", "荒": "ㄏㄨㄤ", "荷": "ㄏㄜˊ", "莊": "ㄓㄨㄤ", "莖": "ㄐㄧㄥ", "菊": "ㄐㄩˊ", "菜": "ㄘㄞˋ", "華": "ㄏㄨㄚˊ", "萎": "ㄩㄝˇ", "萬": "ㄨㄢˋ", "落": "ㄌㄨㄛˋ", "葉": "ㄧㄝˋ", "蒜": "ㄙㄨㄢˋ", "蒸": "ㄓㄥ", "蒼": "ㄘㄤ", "蓋": "ㄍㄞˋ", "蓮": "ㄌㄧㄢˊ", "蔑": "ㄇㄧㄝˋ", "蔡": "ㄘㄞˋ", "蔥": "ㄘㄨㄥ", "蔽": "ㄅㄧˋ", "蕩": "ㄉㄤˋ", "蕪": "ㄨˊ", "薄": "ㄅㄠˊ", "薑": "ㄐㄧㄤ", "薪": "ㄒㄧㄣ", "藍": "ㄌㄢˊ", "藏": "ㄘㄤˊ", "藐": "ㄇㄧㄠˇ", "藝": "ㄧˋ", "藤": "ㄊㄥˊ", "藥": "ㄧㄠˋ", "蘭": "ㄌㄢˊ", "虎": "ㄏㄨˇ", "虔": "ㄑㄧㄢˊ", "處": "ㄔㄨˋ", "虛": "ㄒㄩ", "號": "ㄏㄠˋ", "虹": "ㄏㄨㄥˊ", "蚊": "ㄩㄝˊ", "蛇": "ㄕㄜˊ", "蛋": "ㄉㄢˋ", "蜂": "ㄈㄥ", "蜓": "ㄊㄧㄥˊ", "蜜": "ㄇㄧˋ", "蜻": "ㄑㄧㄥ", "蝴": "ㄏㄨˊ", "蝶": "ㄉㄧㄝˊ", "蝸": "ㄍㄨㄚ", "融": "ㄖㄨㄥˊ", "蟲": "ㄔㄨㄥˊ", "蟻": "ㄧˇ", "蠅": "ㄧㄥˊ", "蠻": "ㄇㄢˊ", "血": "ㄒㄩㄝˋ", "行": "ㄒㄧㄥˊ", "術": "ㄕㄨˋ", "街": "ㄐㄧㄝ", "衛": "ㄨㄟˋ", "衝": "ㄔㄨㄥ", "衡": "ㄏㄥˊ", "衣": "ㄧ", "表": "ㄅㄧㄠˇ", "衰": "ㄕㄨㄞ", "袋": "ㄉㄞˋ", "被": "ㄅㄟˋ", "裙": "ㄑㄩㄣˊ", "補": "ㄅㄨˇ", "裝": "ㄓㄨㄤ", "裡": "ㄌㄧˇ", "裹": "ㄍㄨㄛˇ", "製": "ㄓˋ", "複": "ㄈㄨˋ", "褐": "ㄏㄜˋ", "褲": "ㄎㄨˋ", "襪": "ㄨㄚˋ", "西": "ㄒㄧ", "要": "ㄧㄠˋ", "見": "ㄐㄧㄢˋ", "規": "ㄍㄨㄟ", "覓": "ㄇㄧˋ", "視": "ㄕˋ", "覺": "ㄐㄩㄝˊ", "觀": "ㄍㄨㄢ", "角": "ㄐㄧㄠˇ", "解": "ㄐㄧㄝˇ", "訂": "ㄉㄧㄥˋ", "計": "ㄐㄧˋ", "訊": "ㄒㄩㄣˋ", "記": "ㄐㄧˋ", "設": "ㄕㄜˋ", "訴": "ㄙㄨˋ", "評": "ㄆㄧㄥˊ", "詞": "ㄘˊ", "試": "ㄕˋ", "詩": "ㄕ", "話": "ㄏㄨㄚˋ", "該": "ㄍㄞ", "詳": "ㄒㄧㄤˊ", "認": "ㄖㄣˋ", "誓": "ㄕˋ", "誕": "ㄉㄢˋ", "語": "ㄩˇ", "誠": "ㄔㄥˊ", "說": "ㄕㄨㄛ", "誰": "ㄕㄨㄟˊ", "課": "ㄎㄜˋ", "調": "ㄊㄧㄠˊ", "談": "ㄊㄢˊ", "請": "ㄑㄧㄥˇ", "諒": "ㄌㄧㄤˋ", "論": "ㄌㄨㄣˋ", "諾": "ㄋㄨㄛˋ", "謙": "ㄑㄧㄢ", "講": "ㄐㄧㄤˇ", "謝": "ㄒㄧㄝˋ", "證": "ㄓㄥˋ", "識": "ㄕˊ", "警": "ㄐㄧㄥˇ", "譯": "ㄧˋ", "議": "ㄧˋ", "護": "ㄏㄨˋ", "讀": "ㄉㄨˊ", "變": "ㄅㄧㄢˋ", "讓": "ㄖㄤˋ", "谷": "ㄍㄨˇ", "豆": "ㄉㄡˋ", "豐": "ㄈㄥ", "豔": "ㄧㄢˋ", "象": "ㄒㄧㄤˋ", "豪": "ㄏㄠˊ", "豬": "ㄓㄨ", "貓": "ㄇㄠ", "貝": "ㄅㄟˋ", "負": "ㄈㄨˋ", "貧": "ㄆㄧㄣˊ", "責": "ㄗㄜˊ", "貴": "ㄍㄨㄟˋ", "買": "ㄇㄞˇ", "貸": "ㄉㄞˋ", "貼": "ㄊㄧㄝ", "貿": "ㄇㄠˋ", "賀": "ㄏㄜˋ", "資": "ㄗ", "賞": "ㄕㄤˇ", "賠": "ㄆㄟˊ", "賢": "ㄒㄧㄢˊ", "賣": "ㄇㄞˋ", "質": "ㄓˋ", "賺": "ㄓㄨㄢˋ", "賽": "ㄙㄞˋ", "贏": "ㄧㄥˊ", "赦": "ㄕㄜˋ", "走": "ㄗㄡˇ", "起": "ㄑㄧˇ", "超": "ㄔㄠ", "越": "ㄩㄝˋ", "趕": "ㄍㄢˇ", "趙": "ㄓㄠˋ", "趟": "ㄊㄤˋ", "足": "ㄗㄨˊ", "跑": "ㄆㄠˇ", "跟": "ㄍㄣ", "跡": "ㄐㄧˋ", "跨": "ㄎㄨㄚˋ", "跪": "ㄍㄨㄟˋ", "路": "ㄌㄨˋ", "跳": "ㄊㄧㄠˋ", "踏": "ㄊㄚˋ", "踝": "ㄏㄨㄞˊ", "踩": "ㄘㄞˇ", "蹤": "ㄗㄨㄥ", "蹦": "ㄅㄥˋ", "蹬": "ㄉㄥ", "蹲": "ㄉㄨㄣ", "躁": "ㄗㄠˋ", "身": "ㄕㄣ", "躲": "ㄉㄨㄛˇ", "躺": "ㄊㄤˇ", "車": "ㄔㄜ", "軌": "ㄍㄨㄟˇ", "軍": "ㄐㄩㄣ", "軟": "ㄖㄨㄢˇ", "較": "ㄐㄧㄠˋ", "載": "ㄗㄞˋ", "輕": "ㄑㄧㄥ", "輝": "ㄏㄨㄟ", "輪": "ㄌㄨㄣˊ", "輸": "ㄕㄨ", "轉": "ㄓㄨㄢˇ", "辣": "ㄌㄚˋ", "辦": "ㄅㄢˋ", "辯": "ㄅㄧㄢˋ", "辱": "ㄖㄨˇ", "農": "ㄋㄨㄥˊ", "迅": "ㄒㄩㄣˋ", "近": "ㄐㄧㄣˋ", "迷": "ㄇㄧˊ", "追": "ㄓㄨㄟ", "退": "ㄊㄨㄟˋ", "送": "ㄙㄨㄥˋ", "逃": "ㄊㄠˊ", "逐": "ㄓㄨˊ", "途": "ㄊㄨˊ", "這": "ㄓㄜˋ", "通": "ㄊㄨㄥ", "逛": "ㄍㄨㄤˋ", "速": "ㄙㄨˋ", "造": "ㄗㄠˋ", "連": "ㄌㄧㄢˊ", "進": "ㄐㄧㄣˋ", "遊": "ㄧㄡˊ", "運": "ㄩㄣˋ", "過": "ㄍㄨㄛˋ", "道": "ㄉㄠˋ", "達": "ㄉㄚˊ", "遛": "ㄌㄧㄡˋ", "遞": "ㄉㄧˋ", "遠": "ㄩㄢˇ", "遣": "ㄑㄧㄢˇ", "遮": "ㄓㄜ", "遲": "ㄔˊ", "選": "ㄒㄩㄢˇ", "遺": "ㄧˊ", "避": "ㄅㄧˋ", "邀": "ㄧㄠ", "邁": "ㄇㄞˋ", "還": "ㄏㄞˊ", "邊": "ㄅㄧㄢ", "那": "ㄋㄚˋ", "部": "ㄅㄨˋ", "郭": "ㄍㄨㄛ", "都": "ㄉㄡ", "鄉": "ㄒㄧㄤ", "鄙": "ㄅㄧˇ", "鄭": "ㄓㄥˋ", "鄰": "ㄌㄧㄣˊ", "配": "ㄆㄟˋ", "酒": "ㄐㄧㄡˇ", "酬": "ㄔㄡˊ", "酸": "ㄙㄨㄢ", "醃": "ㄧㄢ", "醋": "ㄘㄨˋ", "醒": "ㄒㄧㄥˇ", "醜": "ㄔㄡˇ", "醫": "ㄧ", "醬": "ㄐㄧㄤˋ", "釋": "ㄕˋ", "重": "ㄓㄨㄥˋ", "野": "ㄧㄝˇ", "量": "ㄌㄧㄤˋ", "金": "ㄐㄧㄣ", "釘": "ㄉㄧㄥ", "釣": "ㄉㄧㄠˋ", "鈍": "ㄉㄨㄣˋ", "鉤": "ㄍㄡ", "銀": "ㄧㄣˊ", "銅": "ㄊㄨㄥˊ", "鋁": "ㄌㄩˇ", "鋤": "ㄔㄨˊ", "鋼": "ㄍㄤ", "錄": "ㄌㄨˋ", "錢": "ㄑㄧㄢˊ", "錯": "ㄘㄨㄛˋ", "鍋": "ㄍㄨㄛ", "鍵": "ㄐㄧㄢˋ", "鎖": "ㄙㄨㄛˇ", "鎮": "ㄓㄣˋ", "鏟": "ㄔㄢˇ", "鏡": "ㄐㄧㄥˋ", "鐘": "ㄓㄨㄥ", "鐮": "ㄌㄧㄢˊ", "鐵": "ㄊㄧㄝˇ", "鑑": "ㄐㄧㄢˋ", "鑒": "ㄐㄧㄢˋ", "鑰": "ㄧㄠˋ", "鑿": "ㄗㄠˊ", "長": "ㄓㄤˇ", "門": "ㄇㄣˊ", "閃": "ㄕㄢˇ", "閉": "ㄅㄧˋ", "開": "ㄎㄞ", "閒": "ㄒㄧㄢˊ", "間": "ㄐㄧㄢ", "關": "ㄍㄨㄢ", "防": "ㄈㄤˊ", "陋": "ㄌㄡˋ", "降": "ㄐㄧㄤˋ", "院": "ㄩㄢˋ", "除": "ㄔㄨˊ", "陰": "ㄧㄣ", "陳": "ㄔㄣˊ", "陵": "ㄌㄧㄥˊ", "陶": "ㄊㄠˊ", "陸": "ㄌㄨˋ", "陽": "ㄧㄤˊ", "隊": "ㄉㄨㄟˋ", "際": "ㄐㄧˋ", "障": "ㄓㄤˋ", "隨": "ㄙㄨㄟˊ", "險": "ㄒㄧㄢˇ", "隱": "ㄧㄣˇ", "隻": "ㄓ", "雀": "ㄑㄩㄝˋ", "雁": "ㄧㄢˋ", "雄": "ㄒㄩㄥˊ", "雅": "ㄧㄚˇ", "集": "ㄐㄧˊ", "雇": "ㄍㄨˋ", "雖": "ㄙㄨㄟ", "雙": "ㄕㄨㄤ", "雜": "ㄗㄚˊ", "雞": "ㄐㄧ", "離": "ㄌㄧˊ", "難": "ㄋㄢˊ", "雨": "ㄩˇ", "雪": "ㄒㄩㄝˇ", "雲": "ㄩㄣˊ", "零": "ㄌㄧㄥˊ", "雷": "ㄌㄟˊ", "電": "ㄉㄧㄢˋ", "需": "ㄒㄩ", "霓": "ㄋㄧˊ", "霜": "ㄕㄨㄤ", "霞": "ㄒㄧㄚˊ", "霧": "ㄨˋ", "露": "ㄌㄨˋ", "霾": "ㄇㄞˊ", "靄": "ㄞˇ", "靈": "ㄌㄧㄥˊ", "青": "ㄑㄧㄥ", "靜": "ㄐㄧㄥˋ", "非": "ㄈㄟ", "靠": "ㄎㄠˋ", "面": "ㄇㄧㄢˋ", "鞋": "ㄒㄧㄝˊ", "鞍": "ㄢ", "音": "ㄧㄣ", "響": "ㄒㄧㄤˇ", "頂": "ㄉㄧㄥˇ", "須": "ㄒㄩ", "頑": "ㄨㄢˊ", "領": "ㄌㄧㄥˇ", "頭": "ㄊㄡˊ", "頸": "ㄐㄧㄥˇ", "頹": "ㄊㄨㄟˊ", "頻": "ㄆㄧㄣˊ", "題": "ㄊㄧˊ", "額": "ㄜˊ", "類": "ㄌㄟˋ", "風": "ㄈㄥ", "飄": "ㄆㄧㄠ", "飛": "ㄈㄟ", "食": "ㄕˊ", "飢": "ㄐㄧ", "飯": "ㄈㄢˋ", "飼": "ㄙˋ", "飽": "ㄅㄠˇ", "飾": "ㄕˋ", "餅": "ㄅㄧㄥˇ", "養": "ㄧㄤˇ", "餓": "ㄜˋ", "館": "ㄍㄨㄢˇ", "饒": "ㄖㄠˊ", "首": "ㄕㄡˇ", "香": "ㄒㄧㄤ", "馬": "ㄇㄚˇ", "馱": "ㄊㄨㄛˊ", "馴": "ㄒㄩㄣˋ", "駕": "ㄐㄧㄚˋ", "騎": "ㄑㄧˊ", "騰": "ㄊㄥˊ", "驅": "ㄑㄩ", "驕": "ㄐㄧㄠ", "驗": "ㄧㄢˋ", "驚": "ㄐㄧㄥ", "骨": "ㄍㄨˇ", "髒": "ㄗㄤ", "體": "ㄊㄧˇ", "高": "ㄍㄠ", "髮": "ㄈㄚˋ", "鬆": "ㄙㄨㄥ", "鬧": "ㄋㄠˋ", "鬱": "ㄩˋ", "魚": "ㄩˊ", "鮮": "ㄒㄧㄢ", "鯨": "ㄐㄧㄥ", "鳥": "ㄋㄧㄠˇ", "鴉": "ㄧㄚ", "鴨": "ㄧㄚ", "鴿": "ㄍㄜ", "鵑": "ㄐㄩㄢ", "鵝": "ㄜˊ", "鵡": "ㄨˇ", "鵲": "ㄑㄩㄝˋ", "鶯": "ㄧㄥ", "鶴": "ㄏㄜˋ", "鷄": "ㄐㄧ", "鷹": "ㄧㄥ", "鸚": "ㄧㄥ", "鹹": "ㄒㄧㄢˊ", "鹿": "ㄌㄨˋ", "麗": "ㄌㄧˋ", "麥": "ㄇㄞˋ", "麵": "ㄇㄧㄢˋ", "麻": "ㄇㄚˊ", "麼": "ㄇㄜ", "黃": "ㄏㄨㄤˊ", "黎": "ㄌㄧˊ", "黑": "ㄏㄟ", "默": "ㄇㄛˋ", "點": "ㄉㄧㄢˇ", "鼓": "ㄍㄨˇ", "鼠": "ㄕㄨˇ", "鼻": "ㄅㄧˊ", "齊": "ㄑㄧˊ", "齒": "ㄔˇ", "龍": "ㄌㄨㄥˊ"};
+
+// ========== EMBEDDED RADICAL DICTIONARY (2254 characters) ==========
+const RADICAL_DICT={"一": "一", "丁": "一", "七": "一", "丈": "一", "三": "一", "上": "一", "下": "一", "不": "一", "且": "一", "世": "一", "丘": "一", "丙": "一", "丞": "一", "丟": "一", "並": "一", "中": "一", "丰": "丨", "串": "一", "乃": "丿", "久": "丿", "之": "丿", "乎": "丿", "乏": "丿", "乘": "丿", "九": "乙", "也": "乙", "乾": "乙", "亂": "乙", "了": "亅", "予": "亅", "事": "亅", "二": "二", "云": "二", "互": "二", "五": "二", "井": "二", "些": "二", "亞": "二", "亡": "亠", "交": "亠", "亦": "亠", "享": "亠", "京": "亠", "亮": "亠", "人": "人", "什": "人", "仁": "人", "仇": "人", "今": "人", "介": "人", "他": "人", "付": "人", "仙": "人", "代": "人", "令": "人", "以": "人", "件": "人", "任": "人", "份": "人", "仿": "人", "企": "人", "伏": "人", "休": "人", "伙": "人", "伯": "人", "估": "人", "伴": "人", "伸": "人", "似": "人", "但": "人", "佈": "人", "位": "人", "住": "人", "佐": "人", "佔": "人", "何": "人", "佛": "人", "作": "人", "你": "人", "佳": "人", "使": "人", "來": "人", "供": "人", "依": "人", "侵": "人", "便": "人", "俊": "人", "俗": "人", "保": "人", "信": "人", "修": "人", "俯": "人", "倆": "人", "個": "人", "倍": "人", "們": "人", "倒": "人", "候": "人", "借": "人", "值": "人", "假": "人", "偉": "人", "停": "人", "健": "人", "側": "人", "偵": "人", "偶": "人", "傑": "人", "傲": "人", "傳": "人", "傷": "人", "傻": "人", "僅": "人", "像": "人", "僧": "人", "價": "人", "儀": "人", "億": "人", "儉": "人", "償": "人", "優": "人", "元": "儿", "兄": "儿", "先": "儿", "光": "儿", "克": "儿", "免": "儿", "兒": "儿", "兔": "儿", "入": "入", "內": "入", "全": "入", "兩": "入", "八": "八", "公": "八", "六": "八", "共": "八", "兵": "八", "其": "八", "具": "八", "典": "八", "兼": "八", "冊": "冂", "再": "冂", "冒": "冖", "冠": "冖", "冤": "冖", "冥": "冖", "冬": "冫", "冰": "冫", "冷": "冫", "准": "冫", "凌": "冫", "凍": "冫", "凜": "冫", "凝": "冫", "几": "几", "凡": "冫", "凱": "几", "刀": "刀", "刃": "刀", "分": "刀", "切": "刀", "刊": "刀", "列": "刀", "初": "刀", "判": "刀", "別": "刀", "利": "刀", "到": "刀", "制": "刀", "刷": "刀", "刺": "刀", "削": "刀", "前": "刀", "剛": "刀", "剝": "刀", "剩": "刀", "剪": "刀", "割": "刀", "創": "刀", "劃": "刀", "劇": "刀", "劈": "刀", "劉": "刀", "劍": "刀", "力": "力", "功": "力", "加": "力", "劣": "刀", "助": "力", "努": "力", "勇": "力", "勉": "力", "勒": "力", "動": "力", "勝": "力", "勞": "力", "勢": "力", "勤": "力", "勵": "力", "勻": "力", "勾": "勹", "勿": "勹", "包": "勹", "匆": "勹", "匕": "匕", "北": "匕", "匙": "匕", "匠": "匚", "匹": "匚", "匾": "匚", "區": "匚", "十": "十", "千": "十", "升": "十", "午": "十", "半": "十", "卒": "十", "卓": "十", "協": "十", "南": "十", "博": "十", "卜": "十", "即": "卩", "卵": "卩", "卻": "卩", "厚": "厂", "原": "厂", "厭": "厂", "厲": "厂", "去": "厶", "參": "厶", "又": "又", "及": "又", "友": "又", "反": "又", "叔": "又", "取": "又", "受": "又", "叛": "又", "叢": "又", "口": "口", "古": "口", "句": "口", "另": "口", "只": "口", "叫": "口", "召": "口", "叮": "口", "可": "口", "台": "口", "史": "口", "右": "口", "司": "口", "吃": "口", "各": "口", "合": "口", "吉": "口", "同": "口", "名": "口", "吐": "口", "向": "口", "吞": "口", "吧": "口", "吩": "口", "吳": "口", "吸": "口", "吹": "口", "呀": "口", "呂": "口", "呆": "口", "呈": "口", "告": "口", "呢": "口", "周": "口", "呼": "口", "命": "口", "和": "口", "咖": "口", "咬": "口", "品": "口", "哇": "口", "哈": "口", "哥": "口", "哦": "口", "哪": "口", "哭": "口", "唇": "口", "唐": "口", "唯": "口", "唱": "口", "商": "口", "啊": "口", "問": "口", "啟": "口", "啦": "口", "喂": "口", "善": "口", "喊": "口", "喚": "口", "喜": "口", "喝": "口", "喪": "口", "喬": "口", "單": "口", "嗆": "口", "嗎": "口", "嗝": "口", "嗨": "口", "嘆": "口", "嘔": "口", "嘗": "口", "嘛": "口", "嘴": "口", "嘻": "口", "嘿": "口", "噎": "口", "噓": "口", "噢": "口", "器": "口", "嚇": "口", "嚥": "口", "嚴": "口", "囂": "口", "四": "囗", "回": "囗", "因": "囗", "困": "囗", "固": "囗", "圈": "囗", "國": "囗", "圍": "囗", "園": "囗", "圓": "囗", "圖": "囗", "團": "囗", "土": "土", "在": "土", "地": "土", "坐": "土", "坡": "土", "坤": "土", "坦": "土", "坪": "土", "坷": "土", "垃": "土", "城": "土", "域": "土", "執": "土", "培": "土", "基": "土", "堂": "土", "堅": "土", "堆": "土", "堡": "土", "報": "土", "場": "土", "塊": "土", "塑": "土", "塔": "土", "塘": "土", "填": "土", "塵": "土", "境": "土", "墊": "土", "墓": "土", "墜": "土", "增": "土", "墨": "土", "壁": "土", "壓": "土", "壘": "土", "壞": "土", "壟": "土", "士": "士", "壯": "土", "壺": "土", "壽": "士", "夏": "夂", "夕": "夕", "外": "夕", "多": "夕", "夜": "夕", "夠": "夕", "夢": "夕", "夥": "夕", "大": "大", "天": "大", "太": "大", "夫": "大", "央": "大", "失": "大", "奇": "大", "奈": "大", "奉": "大", "奏": "大", "奔": "大", "套": "大", "奧": "大", "奪": "大", "奮": "大", "女": "女", "奶": "女", "她": "女", "好": "女", "如": "女", "妒": "女", "妖": "女", "妙": "女", "妝": "女", "妥": "女", "妨": "女", "妹": "女", "妻": "女", "姆": "女", "姊": "女", "始": "女", "姐": "女", "姑": "女", "姓": "女", "委": "女", "姻": "女", "姿": "女", "威": "女", "娃": "女", "娘": "女", "娛": "女", "婆": "女", "婉": "女", "婚": "女", "婦": "女", "婷": "女", "媒": "女", "媚": "女", "媽": "女", "嫁": "女", "嫌": "女", "嫩": "女", "嫻": "女", "嬈": "女", "嬌": "女", "嬰": "女", "嬸": "女", "子": "子", "孔": "子", "孕": "女", "字": "子", "存": "子", "孝": "子", "孟": "子", "季": "子", "孤": "子", "孩": "子", "孫": "子", "學": "子", "宀": "宀", "它": "宀", "宅": "宀", "宇": "宀", "安": "宀", "宋": "宀", "完": "宀", "宗": "宀", "官": "宀", "定": "宀", "宜": "宀", "客": "宀", "宣": "宀", "室": "宀", "宮": "宀", "害": "宀", "家": "宀", "容": "宀", "宿": "宀", "寄": "宀", "密": "宀", "富": "宀", "寒": "宀", "寓": "宀", "寞": "宀", "實": "宀", "寧": "宀", "寨": "宀", "審": "宀", "寫": "宀", "寬": "宀", "寵": "宀", "寶": "宀", "寸": "寸", "寺": "寸", "封": "寸", "射": "寸", "將": "寸", "尊": "寸", "尋": "寸", "對": "寸", "導": "寸", "小": "小", "少": "小", "尖": "小", "尚": "小", "尸": "尸", "尺": "尸", "尾": "尸", "局": "尸", "居": "尸", "屆": "尸", "屈": "尸", "屋": "尸", "屏": "尸", "展": "尸", "屠": "尸", "層": "尸", "履": "尸", "屬": "尸", "山": "山", "岩": "山", "岸": "山", "峰": "山", "島": "山", "峽": "山", "崇": "山", "崖": "山", "崗": "山", "崩": "山", "嵐": "山", "嶄": "山", "嶺": "山", "嶼": "山", "巖": "山", "川": "巛", "州": "巛", "巡": "巛", "巢": "巛", "工": "工", "左": "工", "巧": "工", "巨": "工", "差": "工", "己": "己", "已": "己", "巳": "己", "巾": "巾", "市": "巾", "布": "巾", "帆": "巾", "希": "巾", "帛": "巾", "帝": "巾", "帥": "巾", "師": "巾", "席": "巾", "帳": "巾", "帶": "巾", "常": "巾", "帽": "巾", "幅": "巾", "幕": "巾", "幟": "巾", "幡": "巾", "幢": "巾", "幣": "巾", "幫": "巾", "干": "干", "平": "干", "年": "干", "幸": "干", "幹": "干", "幻": "幺", "幼": "幺", "幽": "幺", "幾": "幺", "广": "广", "床": "广", "序": "广", "底": "广", "店": "广", "府": "广", "度": "广", "座": "广", "庫": "广", "庭": "广", "康": "广", "庸": "广", "廉": "广", "廊": "广", "廚": "广", "廟": "广", "廠": "广", "廢": "广", "廣": "广", "廳": "广", "延": "廴", "建": "廴", "式": "弋", "弓": "弓", "引": "弓", "弟": "弓", "弦": "弓", "弧": "弓", "弱": "弓", "張": "弓", "強": "弓", "彈": "弓", "彎": "弓", "形": "彡", "彩": "彡", "彫": "彡", "影": "彡", "彳": "彳", "往": "彳", "征": "彳", "待": "彳", "很": "彳", "律": "彳", "後": "彳", "徐": "彳", "徒": "彳", "得": "彳", "從": "彳", "復": "彳", "循": "彳", "微": "彳", "徵": "彳", "德": "彳", "徽": "彳", "心": "心", "必": "心", "忍": "心", "志": "心", "忘": "心", "忙": "心", "快": "心", "念": "心", "忽": "心", "怎": "心", "怒": "心", "怕": "心", "思": "心", "急": "心", "性": "心", "怪": "心", "恆": "心", "恐": "心", "恢": "心", "恥": "心", "恨": "心", "恩": "心", "恬": "心", "息": "心", "悄": "心", "悅": "心", "悉": "心", "悔": "心", "悟": "心", "悠": "心", "患": "心", "悲": "心", "悶": "心", "情": "心", "惑": "心", "惜": "心", "惠": "心", "惡": "心", "惰": "心", "想": "心", "愁": "心", "愈": "心", "愉": "心", "意": "心", "愛": "心", "感": "心", "慈": "心", "態": "心", "慌": "心", "慎": "心", "慕": "心", "慘": "心", "慢": "心", "慣": "心", "慧": "心", "慮": "心", "慰": "心", "慶": "心", "憂": "心", "憎": "心", "憐": "心", "憑": "心", "憤": "心", "憲": "心", "憶": "心", "懂": "心", "懇": "心", "應": "心", "懶": "心", "懷": "心", "懼": "心", "戈": "戈", "成": "戈", "我": "戈", "戒": "戈", "或": "戈", "截": "戈", "戰": "戈", "戲": "戈", "戳": "戈", "戴": "戈", "戶": "戶", "房": "戶", "所": "戶", "扁": "戶", "扇": "戶", "手": "手", "才": "手", "打": "手", "扔": "手", "托": "手", "扣": "手", "扭": "手", "扮": "手", "扯": "手", "批": "手", "找": "手", "承": "手", "技": "手", "抄": "手", "抉": "手", "把": "手", "抓": "手", "投": "手", "抗": "手", "折": "手", "抱": "手", "抹": "手", "抽": "手", "拂": "手", "拆": "手", "拇": "手", "拈": "手", "拉": "手", "拋": "手", "拍": "手", "拒": "手", "拓": "手", "拔": "手", "拖": "手", "拘": "手", "招": "手", "拜": "手", "拳": "手", "拼": "手", "拽": "手", "拾": "手", "拿": "手", "持": "手", "指": "手", "按": "手", "挑": "手", "挖": "手", "挨": "手", "振": "手", "挺": "手", "捉": "手", "捏": "手", "捐": "手", "捕": "手", "捧": "手", "捨": "手", "捶": "手", "掃": "手", "掉": "手", "掌": "手", "排": "手", "掘": "手", "掙": "手", "掛": "手", "採": "手", "探": "手", "接": "手", "控": "手", "推": "手", "掩": "手", "措": "手", "揉": "手", "描": "手", "提": "手", "插": "手", "揚": "手", "換": "手", "握": "手", "揮": "手", "搓": "手", "搖": "手", "搜": "手", "搞": "手", "搬": "手", "搭": "手", "搶": "手", "摔": "手", "摘": "手", "摧": "手", "摸": "手", "撈": "手", "撐": "手", "撒": "手", "撞": "手", "撥": "手", "撫": "手", "播": "手", "撰": "手", "撿": "手", "擁": "手", "擅": "手", "擊": "手", "操": "手", "擔": "手", "擠": "手", "擦": "手", "擬": "手", "擴": "手", "擺": "手", "攀": "手", "攙": "手", "攤": "手", "攪": "手", "收": "攴", "改": "攴", "攻": "攴", "放": "攴", "政": "攴", "故": "攴", "效": "攴", "敏": "攴", "救": "攴", "敗": "攴", "敘": "攴", "教": "攴", "敢": "攴", "散": "攴", "敬": "攴", "整": "攴", "敵": "攴", "敷": "攴", "數": "攴", "文": "文", "斑": "文", "斕": "文", "斗": "斗", "料": "斗", "斜": "斗", "斤": "斤", "斥": "斤", "新": "斤", "斷": "斤", "方": "方", "於": "方", "施": "方", "旅": "方", "旋": "方", "族": "方", "旗": "方", "日": "日", "旦": "日", "旨": "日", "早": "日", "旬": "日", "旭": "日", "昂": "日", "昆": "日", "昌": "日", "明": "日", "昏": "日", "易": "日", "星": "日", "映": "日", "春": "日", "昨": "日", "是": "日", "時": "日", "晃": "日", "晉": "日", "晒": "日", "晚": "日", "晨": "日", "普": "日", "景": "日", "晰": "日", "晴": "日", "智": "日", "暑": "日", "暖": "日", "暗": "日", "暢": "日", "暫": "日", "暮": "日", "暴": "日", "曆": "日", "曉": "日", "曙": "日", "曝": "日", "曠": "日", "曬": "日", "曰": "曰", "曲": "曰", "更": "曰", "書": "曰", "曹": "曰", "曾": "曰", "替": "曰", "最": "曰", "會": "曰", "月": "月", "有": "月", "朋": "月", "服": "月", "朗": "曰", "望": "月", "朝": "月", "期": "月", "朦": "月", "朧": "月", "木": "木", "未": "木", "末": "木", "本": "木", "朱": "木", "朴": "木", "杉": "木", "李": "木", "材": "木", "村": "木", "杜": "木", "束": "木", "杯": "木", "東": "木", "杵": "木", "松": "木", "板": "木", "林": "木", "果": "木", "枝": "木", "枯": "木", "架": "木", "柏": "木", "柔": "木", "柚": "木", "柱": "木", "柳": "木", "柿": "木", "校": "木", "株": "木", "根": "木", "格": "木", "桂": "木", "桃": "木", "框": "木", "案": "木", "桌": "木", "桐": "木", "桑": "木", "梁": "木", "梅": "木", "條": "木", "梨": "木", "梯": "木", "械": "木", "棄": "木", "棉": "木", "棋": "木", "棒": "木", "棕": "木", "棚": "木", "棟": "木", "森": "木", "棵": "木", "椅": "木", "植": "木", "椎": "木", "椿": "木", "楊": "木", "楓": "木", "楚": "木", "業": "木", "極": "木", "概": "木", "榆": "木", "榕": "木", "榜": "木", "榮": "木", "榴": "木", "構": "木", "槍": "木", "樂": "木", "樓": "木", "標": "木", "樟": "木", "樣": "木", "樸": "木", "樹": "木", "橋": "木", "橘": "木", "橙": "木", "機": "木", "檀": "木", "檔": "木", "檜": "木", "檢": "木", "櫃": "木", "櫻": "木", "欄": "木", "權": "木", "欠": "欠", "次": "欠", "欣": "欠", "欲": "欠", "款": "欠", "歉": "欠", "歌": "欠", "歎": "欠", "歐": "欠", "歡": "欠", "止": "止", "正": "止", "此": "止", "步": "止", "武": "止", "歪": "止", "歲": "止", "歷": "止", "歸": "止", "歹": "歹", "死": "歹", "殘": "歹", "殺": "歹", "殿": "歹", "母": "毋", "每": "毋", "毒": "毋", "比": "比", "毛": "毛", "毫": "毛", "毯": "毛", "氅": "衣", "氈": "巾", "氏": "氏", "民": "氏", "氛": "气", "氣": "气", "氧": "气", "水": "水", "永": "水", "汁": "水", "汗": "水", "汙": "水", "江": "水", "池": "水", "汽": "水", "沃": "水", "沈": "水", "沉": "水", "沒": "水", "沙": "水", "河": "水", "油": "水", "治": "水", "沼": "水", "沿": "水", "泉": "水", "泊": "水", "法": "水", "泡": "水", "波": "水", "泣": "水", "泥": "水", "注": "水", "泳": "水", "洋": "水", "洗": "水", "洛": "水", "洞": "水", "洩": "水", "洪": "水", "洲": "水", "活": "水", "流": "水", "浮": "水", "浴": "水", "海": "水", "浸": "水", "涉": "水", "涯": "水", "液": "水", "涵": "水", "涼": "冫", "淋": "水", "淚": "水", "淡": "水", "淨": "水", "深": "水", "淵": "水", "混": "水", "淺": "水", "清": "水", "減": "水", "渠": "水", "渡": "水", "測": "水", "港": "水", "游": "水", "湖": "水", "湧": "水", "湯": "水", "溉": "水", "源": "水", "準": "水", "溝": "水", "溪": "水", "溫": "水", "溶": "水", "溼": "水", "滋": "水", "滑": "水", "滴": "水", "滷": "水", "滾": "水", "滿": "水", "漂": "水", "漆": "水", "漏": "水", "漠": "水", "漢": "水", "漫": "水", "漬": "水", "漲": "水", "漸": "水", "潔": "水", "潛": "水", "潤": "水", "潮": "水", "澄": "水", "澆": "水", "澈": "水", "澗": "水", "澤": "水", "濃": "水", "濕": "水", "濛": "水", "濟": "水", "濤": "水", "濫": "水", "濾": "水", "瀑": "水", "瀕": "水", "灌": "水", "灘": "水", "灣": "水", "火": "火", "灰": "火", "灶": "火", "災": "火", "炎": "火", "炒": "火", "炮": "火", "炸": "火", "為": "火", "烈": "火", "烘": "火", "烤": "火", "烹": "火", "焦": "火", "焰": "火", "然": "火", "煎": "火", "煙": "火", "照": "火", "煩": "火", "煮": "火", "熄": "火", "熊": "火", "熟": "火", "熱": "火", "燃": "火", "燈": "火", "燉": "火", "燒": "火", "燙": "火", "燜": "火", "燥": "火", "燦": "火", "燭": "火", "燻": "火", "爆": "火", "爍": "火", "爐": "火", "爛": "火", "爪": "爪", "爬": "爪", "爭": "爪", "父": "父", "爸": "火", "爺": "父", "片": "片", "版": "片", "牌": "片", "牙": "牙", "牛": "牛", "牡": "牛", "牧": "牛", "物": "牛", "牲": "牛", "特": "牛", "犧": "牛", "犬": "犬", "犯": "犬", "狀": "犬", "狂": "犬", "狐": "犬", "狗": "犬", "狠": "犬", "狡": "犬", "狼": "犬", "猖": "犬", "猛": "犬", "猜": "犬", "猴": "犬", "猶": "犬", "獅": "犬", "獎": "犬", "獨": "犬", "獲": "犬", "獸": "犬", "獻": "犬", "玉": "玉", "王": "玉", "玩": "玉", "玫": "玉", "珍": "玉", "珠": "玉", "班": "玉", "現": "玉", "球": "玉", "理": "玉", "琴": "玉", "琶": "玉", "瑞": "玉", "瑟": "玉", "瑰": "玉", "璀": "玉", "璃": "玉", "璨": "玉", "環": "玉", "瓊": "玉", "瓜": "瓜", "瓦": "瓦", "瓶": "瓦", "瓷": "瓦", "甘": "甘", "甜": "甘", "生": "生", "產": "生", "甥": "生", "用": "用", "田": "田", "由": "田", "甲": "田", "申": "田", "男": "田", "界": "田", "留": "田", "畜": "田", "畝": "田", "畢": "田", "略": "田", "番": "田", "畫": "田", "當": "田", "疑": "疋", "疫": "疒", "病": "疒", "症": "疒", "痕": "疒", "痛": "疒", "痰": "疒", "痲": "疒", "瘋": "疒", "瘟": "疒", "瘠": "疒", "瘦": "疒", "療": "疒", "癒": "疒", "癡": "疒", "登": "癶", "發": "癶", "白": "白", "百": "白", "的": "白", "皆": "白", "皇": "白", "皎": "白", "皮": "皮", "盆": "皿", "盈": "皿", "益": "皿", "盒": "皿", "盛": "皿", "盜": "皿", "盟": "皿", "盡": "皿", "監": "皿", "盤": "皿", "盧": "皿", "目": "目", "盲": "目", "直": "目", "相": "目", "盼": "目", "省": "目", "眉": "目", "看": "目", "真": "目", "眨": "目", "眩": "目", "眺": "目", "眼": "目", "眾": "目", "睛": "目", "睜": "目", "睡": "目", "督": "目", "睹": "目", "瞄": "目", "瞇": "目", "瞥": "目", "瞧": "目", "瞪": "目", "矚": "目", "矛": "矛", "矢": "矢", "知": "矢", "短": "矢", "矮": "矢", "石": "石", "砌": "石", "砍": "石", "研": "石", "砰": "石", "破": "石", "硬": "石", "碎": "石", "碑": "石", "碗": "石", "碧": "石", "碩": "石", "碰": "石", "確": "石", "磁": "石", "磚": "石", "磨": "石", "礁": "石", "礦": "石", "示": "示", "社": "示", "祈": "示", "祖": "示", "祝": "示", "神": "示", "祥": "示", "票": "示", "祭": "示", "禁": "示", "禍": "示", "福": "示", "禮": "示", "禱": "示", "禾": "禾", "秀": "禾", "私": "禾", "秋": "禾", "科": "禾", "秒": "禾", "秘": "禾", "租": "禾", "秤": "禾", "移": "禾", "稀": "禾", "稅": "禾", "程": "禾", "稍": "禾", "稚": "禾", "種": "禾", "稱": "禾", "稻": "禾", "稼": "禾", "稿": "禾", "穀": "禾", "積": "禾", "穗": "禾", "穩": "禾", "穫": "禾", "穴": "穴", "究": "穴", "空": "穴", "穿": "穴", "突": "穴", "窄": "穴", "窗": "穴", "窟": "穴", "窩": "穴", "窮": "穴", "窺": "穴", "竄": "穴", "立": "立", "站": "立", "竟": "立", "章": "立", "端": "立", "競": "立", "竹": "竹", "竿": "竹", "笑": "竹", "笛": "竹", "符": "竹", "笨": "竹", "第": "竹", "筆": "竹", "等": "竹", "筋": "竹", "筒": "竹", "答": "竹", "策": "竹", "算": "竹", "管": "竹", "箭": "竹", "箱": "竹", "節": "竹", "篇": "竹", "築": "竹", "篩": "竹", "篷": "竹", "簡": "竹", "簽": "竹", "簾": "竹", "籃": "竹", "籍": "竹", "籠": "竹", "籤": "竹", "米": "米", "粉": "米", "粒": "米", "粗": "米", "粥": "米", "精": "米", "糊": "米", "糕": "米", "糖": "米", "糜": "米", "糟": "米", "糧": "米", "糸": "糸", "系": "糸", "紀": "糸", "約": "糸", "紅": "糸", "紋": "糸", "紐": "糸", "純": "糸", "紗": "糸", "紙": "糸", "級": "糸", "紛": "糸", "素": "糸", "索": "糸", "紫": "糸", "累": "糸", "細": "糸", "紹": "糸", "終": "糸", "組": "糸", "結": "糸", "絕": "糸", "絡": "糸", "絢": "糸", "給": "糸", "統": "糸", "絲": "糸", "綁": "糸", "經": "糸", "綜": "糸", "綠": "糸", "綢": "糸", "綺": "糸", "緊": "糸", "緒": "糸", "線": "糸", "緞": "糸", "編": "糸", "緩": "糸", "練": "糸", "縣": "糸", "縫": "糸", "縮": "糸", "縱": "糸", "總": "糸", "績": "糸", "繁": "糸", "繃": "糸", "繡": "糸", "繩": "糸", "繪": "糸", "繫": "糸", "繳": "糸", "繹": "糸", "繼": "糸", "繽": "糸", "續": "糸", "纏": "糸", "纖": "糸", "缶": "缶", "缸": "缶", "缺": "缶", "罐": "缶", "罩": "网", "罪": "网", "置": "网", "罰": "网", "署": "网", "罵": "网", "罷": "网", "羊": "羊", "美": "羊", "羞": "羊", "群": "羊", "羨": "羊", "義": "羊", "羽": "羽", "翅": "羽", "翎": "羽", "習": "羽", "翔": "羽", "翠": "羽", "翩": "羽", "翰": "羽", "翱": "羽", "翹": "羽", "翻": "羽", "翼": "羽", "耀": "羽", "老": "老", "考": "老", "而": "而", "耐": "而", "耕": "耳", "耗": "耳", "耙": "耳", "耳": "耳", "耶": "耳", "聊": "耳", "聖": "耳", "聘": "耳", "聚": "耳", "聞": "耳", "聯": "耳", "聰": "耳", "聲": "耳", "聳": "耳", "職": "耳", "聽": "耳", "肉": "肉", "肌": "肉", "肘": "肉", "肚": "肉", "肝": "肉", "股": "肉", "肥": "肉", "肩": "肉", "肯": "肉", "育": "肉", "胃": "肉", "背": "肉", "胖": "肉", "胡": "肉", "胸": "肉", "能": "肉", "脂": "肉", "脆": "肉", "脈": "肉", "脊": "肉", "脖": "肉", "脣": "肉", "脫": "肉", "腎": "肉", "腐": "肉", "腔": "肉", "腕": "肉", "腦": "肉", "腰": "肉", "腳": "肉", "腸": "肉", "腹": "肉", "腿": "肉", "膀": "肉", "膏": "肉", "膚": "肉", "膛": "肉", "膜": "肉", "膝": "肉", "膠": "肉", "膨": "肉", "膩": "肉", "膽": "肉", "臂": "肉", "臉": "肉", "臘": "肉", "臟": "肉", "臣": "臣", "臨": "臣", "自": "自", "臭": "自", "至": "至", "致": "至", "臺": "自", "舅": "臼", "與": "臼", "興": "臼", "舉": "臼", "舌": "舌", "舍": "舌", "舒": "舌", "舟": "舟", "航": "舟", "般": "舟", "船": "舟", "艘": "舟", "艙": "舟", "艦": "舟", "良": "艮", "色": "色", "芒": "艸", "芬": "艸", "芭": "艸", "花": "艸", "芳": "艸", "芽": "艸", "苗": "艸", "苦": "艸", "英": "艸", "茁": "艸", "茂": "艸", "茶": "艸", "草": "艸", "荒": "艸", "荷": "艸", "莊": "艸", "莖": "艸", "菊": "艸", "菜": "艸", "華": "艸", "萄": "艸", "萊": "艸", "萬": "艸", "落": "艸", "葉": "艸", "著": "艸", "葡": "艸", "葦": "艸", "蒙": "艸", "蒜": "艸", "蒸": "艸", "蒼": "艸", "蓋": "艸", "蓮": "艸", "蔓": "艸", "蔡": "艸", "蔣": "艸", "蔥": "艸", "蕉": "艸", "蕩": "艸", "蕪": "艸", "薄": "艸", "薑": "艸", "薪": "艸", "薰": "艸", "藍": "艸", "藏": "艸", "藝": "艸", "藤": "艸", "藥": "艸", "蘆": "艸", "蘇": "艸", "蘋": "艸", "蘑": "艸", "蘭": "艸", "虎": "虍", "虐": "虍", "虔": "虍", "虛": "虍", "號": "虍", "虧": "虍", "虫": "虫", "虹": "虫", "蚊": "虫", "蛇": "虫", "蛋": "虫", "蛙": "虫", "蛛": "虫", "蜂": "虫", "蜓": "虫", "蜘": "虫", "蜜": "虫", "蜻": "虫", "蜿": "虫", "蝦": "虫", "蝴": "虫", "蝶": "虫", "蝸": "虫", "螞": "虫", "螢": "虫", "螺": "虫", "蟬": "虫", "蟲": "虫", "蟻": "虫", "蠅": "虫", "蠟": "虫", "蠢": "虫", "蠻": "虫", "血": "血", "行": "行", "街": "行", "衛": "行", "衝": "行", "衡": "行", "衣": "衣", "表": "衣", "衫": "衣", "衰": "衣", "袋": "衣", "袖": "衣", "被": "衣", "裁": "衣", "裂": "衣", "裘": "衣", "裙": "衣", "裝": "衣", "裡": "衣", "裹": "衣", "複": "衣", "褐": "衣", "褲": "衣", "襪": "衣", "襯": "衣", "西": "衣", "見": "見", "規": "見", "覓": "見", "視": "見", "覺": "見", "覽": "見", "觀": "見", "角": "角", "解": "角", "觸": "角", "言": "言", "訂": "言", "計": "言", "訊": "言", "訓": "言", "託": "言", "記": "言", "訪": "言", "設": "言", "許": "言", "訴": "言", "診": "言", "註": "言", "詐": "言", "評": "言", "詞": "言", "詢": "言", "試": "言", "詩": "言", "話": "言", "該": "言", "詳": "言", "誇": "言", "誌": "言", "認": "言", "誓": "言", "誕": "言", "語": "言", "誠": "言", "誤": "言", "說": "言", "誰": "言", "課": "言", "誼": "言", "調": "言", "談": "言", "請": "言", "諒": "言", "論": "言", "諸": "言", "諺": "言", "諾": "言", "謀": "言", "謙": "言", "講": "言", "謝": "言", "謹": "言", "證": "言", "識": "言", "譜": "言", "警": "言", "譯": "言", "議": "言", "譴": "言", "護": "言", "讀": "言", "變": "言", "讓": "言", "讚": "言", "谷": "谷", "豆": "豆", "豊": "豆", "豐": "豆", "豔": "豆", "豕": "豕", "象": "豕", "豪": "豕", "豬": "豕", "貌": "豸", "貓": "豸", "貝": "貝", "貞": "貝", "負": "貝", "財": "貝", "貢": "貝", "貧": "貝", "貨": "貝", "販": "貝", "貪": "貝", "貫": "貝", "責": "貝", "貴": "貝", "買": "貝", "費": "貝", "貼": "貝", "賀": "貝", "資": "貝", "賊": "貝", "賓": "貝", "賜": "貝", "賞": "貝", "賠": "貝", "賢": "貝", "賣": "貝", "賤": "貝", "賦": "貝", "質": "貝", "賭": "貝", "賴": "貝", "賺": "貝", "購": "貝", "賽": "貝", "贈": "貝", "贊": "貝", "贏": "貝", "贖": "貝", "走": "走", "赴": "走", "起": "走", "超": "走", "越": "走", "趕": "走", "趙": "走", "趟": "走", "趣": "走", "趨": "走", "足": "足", "跌": "足", "跑": "足", "跟": "足", "跡": "足", "跨": "足", "路": "足", "跳": "足", "跺": "足", "踏": "足", "踐": "足", "踩": "足", "蹄": "足", "蹟": "足", "蹤": "足", "蹦": "足", "蹬": "足", "蹲": "足", "躁": "足", "躍": "足", "身": "身", "躲": "身", "躺": "身", "車": "車", "軌": "車", "軍": "車", "軒": "車", "軟": "車", "較": "車", "載": "車", "輕": "車", "輛": "車", "輝": "車", "輩": "車", "輪": "車", "輯": "車", "輸": "車", "轉": "車", "轟": "車", "辛": "辛", "辜": "辛"};
+
+</script>
+
+<script>
+// ========== WORKING ZHUYIN_DICT (overrides broken one above if it failed to parse) ==========
+const ZHUYIN_DICT={"一": "ㄧ", "七": "ㄑㄧ", "三": "ㄙㄢ", "上": "ㄕㄤˋ", "下": "ㄒㄧㄚˋ", "不": "ㄅㄨˋ", "且": "ㄑㄧㄝˇ", "世": "ㄕˋ", "丘": "ㄑㄧㄡ", "丟": "ㄉㄧㄡ", "中": "ㄓㄨㄥ", "串": "ㄔㄨㄢˋ", "主": "ㄓㄨˇ", "乘": "ㄔㄥˊ", "九": "ㄐㄧㄡˇ", "也": "ㄧㄝˇ", "乾": "ㄍㄢ", "亂": "ㄌㄨㄢˋ", "了": "ㄌㄜ", "二": "ㄦˋ", "互": "ㄏㄨˋ", "五": "ㄨˇ", "些": "ㄒㄧㄝ", "亡": "ㄨㄤˊ", "交": "ㄐㄧㄠ", "京": "ㄐㄧㄥ", "亮": "ㄌㄧㄤˋ", "人": "ㄖㄣˊ", "什": "ㄕㄣˊ", "仁": "ㄖㄣˊ", "今": "ㄐㄧㄣ", "他": "ㄊㄚ", "以": "ㄧˇ", "仰": "ㄧㄤˇ", "件": "ㄐㄧㄢˋ", "任": "ㄖㄣˋ", "伏": "ㄈㄨˊ", "休": "ㄒㄧ", "伯": "ㄅㄛˊ", "伴": "ㄅㄢˋ", "伸": "ㄕㄣ", "但": "ㄉㄢˋ", "佈": "ㄅㄨˋ", "位": "ㄨㄟˋ", "低": "ㄉㄧ", "住": "ㄓㄨˋ", "何": "ㄏㄜˊ", "作": "ㄗㄨㄛˋ", "你": "ㄋㄧˇ", "佳": "ㄐㄧㄚ", "侄": "ㄓˊ", "來": "ㄌㄞˊ", "便": "ㄆㄧㄢˊ", "促": "ㄘㄨˋ", "俊": "ㄐㄩㄣˋ", "俗": "ㄙㄨˊ", "保": "ㄅㄠˇ", "信": "ㄒㄧㄣˋ", "修": "ㄒㄧㄡ", "俯": "ㄈㄨˇ", "個": "ㄍㄜˋ", "倍": "ㄅㄟˋ", "們": "ㄇㄣˊ", "倒": "ㄉㄠˇ", "候": "ㄏㄡˋ", "借": "ㄐㄧㄝˋ", "假": "ㄐㄧㄚˋ", "偉": "ㄩㄝˇ", "做": "ㄗㄨㄛˋ", "停": "ㄊㄧㄥˊ", "健": "ㄐㄧㄢˋ", "側": "ㄘㄜˋ", "傑": "ㄐㄧㄝˊ", "備": "ㄅㄟˋ", "催": "ㄘㄨㄟ", "傲": "ㄠˋ", "傳": "ㄔㄨㄢˊ", "傷": "ㄕㄤ", "傻": "ㄕㄚˇ", "傾": "ㄑㄧㄥ", "價": "ㄐㄧㄚˋ", "億": "ㄧˋ", "儉": "ㄐㄧㄢˇ", "償": "ㄔㄤˊ", "優": "ㄧ", "元": "ㄩㄢˊ", "兄": "ㄒㄩㄥ", "兆": "ㄓㄠˋ", "先": "ㄒㄧㄢ", "光": "ㄍㄨㄤ", "克": "ㄎㄜˋ", "兒": "ㄦˊ", "兔": "ㄊㄨˋ", "入": "ㄖㄨˋ", "內": "ㄋㄟˋ", "全": "ㄑㄩㄢˊ", "八": "ㄅㄚ", "公": "ㄍㄨㄥ", "六": "ㄌㄧㄡˋ", "共": "ㄍㄨㄥˋ", "其": "ㄑㄧˊ", "具": "ㄐㄩˋ", "典": "ㄉㄧㄢˇ", "再": "ㄗㄞˋ", "冢": "ㄓㄨㄥˇ", "冥": "ㄇㄧㄥˊ", "冬": "ㄉㄨㄥ", "冰": "ㄅㄧㄥ", "冷": "ㄌㄥˇ", "凋": "ㄉㄧㄠ", "凍": "ㄉㄨㄥˋ", "凝": "ㄋㄧㄥˊ", "出": "ㄔㄨ", "刀": "ㄉㄠ", "分": "ㄈㄣ", "切": "ㄑㄧㄝ", "刑": "ㄒㄧㄥˊ", "列": "ㄌㄧㄝˋ", "初": "ㄔㄨ", "判": "ㄆㄢˋ", "別": "ㄅㄧㄝˊ", "刨": "ㄆㄠˊ", "利": "ㄌㄧˋ", "到": "ㄉㄠˋ", "制": "ㄓˋ", "刷": "ㄕㄨㄚ", "刺": "ㄘˋ", "刻": "ㄎㄜˋ", "則": "ㄗㄜˊ", "削": "ㄒㄩㄝ", "前": "ㄑㄧㄢˊ", "剎": "ㄕㄚ", "剔": "ㄊㄧ", "剛": "ㄍㄤ", "剪": "ㄐㄧㄢˇ", "割": "ㄍㄜ", "創": "ㄔㄨㄤˋ", "劃": "ㄏㄨㄚˋ", "劇": "ㄐㄩˋ", "劈": "ㄆㄧ", "劉": "ㄌㄧㄡˊ", "劍": "ㄐㄧㄢˋ", "力": "ㄌㄧˋ", "功": "ㄍㄨㄥ", "加": "ㄐㄧㄚ", "劣": "ㄌㄧㄝˋ", "助": "ㄓㄨˋ", "努": "ㄋㄨˇ", "勇": "ㄩㄥˇ", "動": "ㄉㄨㄥˋ", "務": "ㄨˋ", "勝": "ㄕㄥˋ", "勞": "ㄌㄠˊ", "勤": "ㄑㄧㄣˊ", "勺": "ㄕㄠˊ", "勻": "ㄩㄣˊ", "包": "ㄅㄠ", "化": "ㄏㄨㄚˋ", "北": "ㄅㄟˇ", "匙": "ㄕ", "匾": "ㄅㄧㄢˇ", "區": "ㄑㄩ", "十": "ㄕˊ", "千": "ㄑㄧㄢ", "升": "ㄕㄥ", "午": "ㄨˇ", "半": "ㄅㄢˋ", "卑": "ㄅㄟ", "南": "ㄋㄢˊ", "卡": "ㄎㄚˇ", "印": "ㄧㄣˋ", "危": "ㄨㄟ", "卸": "ㄒㄧㄝˋ", "卻": "ㄑㄩㄝˋ", "厚": "ㄏㄡˋ", "厭": "ㄧㄢˋ", "去": "ㄑㄩˋ", "又": "ㄧˋ", "叉": "ㄔㄚ", "及": "ㄐㄧˊ", "友": "ㄧˇ", "叔": "ㄕㄨ", "取": "ㄑㄩˇ", "受": "ㄕㄡˋ", "口": "ㄎㄡˇ", "句": "ㄐㄩˋ", "叨": "ㄉㄠ", "只": "ㄓˇ", "叫": "ㄐㄧㄠˋ", "召": "ㄓㄠˋ", "可": "ㄎㄜˇ", "台": "ㄊㄞˊ", "史": "ㄕˇ", "右": "ㄧˋ", "吃": "ㄔ", "各": "ㄍㄜˋ", "合": "ㄏㄜˊ", "吉": "ㄐㄧˊ", "吊": "ㄉㄧㄠˋ", "同": "ㄊㄨㄥˊ", "名": "ㄇㄧㄥˊ", "向": "ㄒㄧㄤˋ", "吟": "ㄧㄣˊ", "吧": "ㄅㄚ", "吳": "ㄨˊ", "吵": "ㄔㄠˇ", "吸": "ㄒㄧ", "吹": "ㄔㄨㄟ", "吼": "ㄏㄡˇ", "呀": "ㄧㄚ", "呆": "ㄉㄞ", "告": "ㄍㄠˋ", "呢": "ㄋㄜ", "周": "ㄓㄡ", "味": "ㄩㄝˋ", "呸": "ㄆㄟ", "呻": "ㄕㄣ", "呼": "ㄏㄨ", "和": "ㄏㄜˊ", "咚": "ㄉㄨㄥ", "咦": "ㄧˊ", "哀": "ㄞ", "品": "ㄆㄧㄣˇ", "哇": "ㄨㄚ", "哈": "ㄏㄚ", "哦": "ㄛˊ", "哪": "ㄋㄚˇ", "哭": "ㄎㄨ", "哲": "ㄓㄜˊ", "哼": "ㄏㄥ", "唇": "ㄔㄨㄣˊ", "唉": "ㄞ", "唱": "ㄔㄤˋ", "唷": "ㄧ", "商": "ㄕㄤ", "啊": "ㄚ", "問": "ㄩㄝˋ", "啦": "ㄌㄚ", "啪": "ㄆㄚ", "喂": "ㄩㄝˋ", "善": "ㄕㄢˋ", "喊": "ㄏㄢˇ", "喔": "ㄛ", "喚": "ㄏㄨㄢˋ", "喜": "ㄒㄧˇ", "喝": "ㄏㄜ", "喧": "ㄒㄩㄢ", "單": "ㄉㄢ", "嗆": "ㄑㄧㄤ", "嗎": "ㄇㄚ", "嗝": "ㄍㄜˊ", "嗨": "ㄏㄞ", "嗯": "ㄣ", "嘆": "ㄊㄢˋ", "嘔": "ㄡˇ", "嘖": "ㄗㄜˊ", "嘗": "ㄔㄤˊ", "嘩": "ㄏㄨㄚ", "嘮": "ㄌㄠˊ", "嘴": "ㄗㄨㄟˇ", "嘶": "ㄙ", "嘻": "ㄒㄧ", "嘿": "ㄏㄟ", "噎": "ㄧㄝ", "噓": "ㄒㄩ", "噢": "ㄛ", "器": "ㄑㄧˋ", "噴": "ㄆㄣ", "嚥": "ㄧㄢˋ", "嚴": "ㄧㄢˊ", "嚷": "ㄖㄤˇ", "囂": "ㄒㄧㄠ", "囉": "ㄌㄨㄛ", "四": "ㄙˋ", "回": "ㄏㄨㄟˊ", "因": "ㄧㄣ", "困": "ㄎㄨㄣˋ", "圈": "ㄑㄩㄢ", "國": "ㄍㄨㄛˊ", "圍": "ㄩㄝˊ", "園": "ㄩㄢˊ", "圓": "ㄩㄢˊ", "圖": "ㄊㄨˊ", "團": "ㄊㄨㄢˊ", "土": "ㄊㄨˇ", "在": "ㄗㄞˋ", "地": "ㄉㄧˋ", "址": "ㄓˇ", "坐": "ㄗㄨㄛˋ", "坡": "ㄆㄛ", "型": "ㄒㄧㄥˊ", "垢": "ㄍㄡˋ", "城": "ㄔㄥˊ", "堅": "ㄐㄧㄢ", "堆": "ㄉㄨㄟ", "報": "ㄅㄠˋ", "場": "ㄔㄤˇ", "塊": "ㄎㄨㄞˋ", "塑": "ㄙㄨˋ", "塔": "ㄊㄚˇ", "塘": "ㄊㄤˊ", "塚": "ㄓㄨㄥˇ", "填": "ㄊㄧㄢˊ", "塵": "ㄔㄣˊ", "境": "ㄐㄧㄥˋ", "墓": "ㄇㄨˋ", "墜": "ㄓㄨㄟˋ", "增": "ㄗㄥ", "墨": "ㄇㄛˋ", "墾": "ㄎㄣˇ", "壁": "ㄅㄧˋ", "壓": "ㄧㄚ", "壘": "ㄌㄟˇ", "壞": "ㄏㄨㄞˋ", "壯": "ㄓㄨㄤˋ", "壺": "ㄏㄨˊ", "壽": "ㄕㄡˋ", "夏": "ㄒㄧㄚˋ", "夕": "ㄒㄧ", "外": "ㄨㄞˋ", "多": "ㄉㄨㄛ", "夜": "ㄧㄝˋ", "夠": "ㄍㄡˋ", "夢": "ㄇㄥˋ", "大": "ㄉㄚˋ", "天": "ㄊㄧㄢ", "太": "ㄊㄞˋ", "夫": "ㄈㄨ", "失": "ㄕ", "奇": "ㄑㄧˊ", "奏": "ㄗㄡˋ", "奐": "ㄏㄨㄢˋ", "契": "ㄑㄧˋ", "奔": "ㄅㄣ", "套": "ㄊㄠˋ", "奢": "ㄕㄜ", "奧": "ㄠˋ", "奪": "ㄉㄨㄛˊ", "女": "ㄋㄩˇ", "奶": "ㄋㄞˇ", "她": "ㄊㄚ", "好": "ㄏㄠˇ", "如": "ㄖㄨˊ", "妍": "ㄧㄢˊ", "妒": "ㄉㄨˋ", "妙": "ㄇㄧㄠˋ", "妹": "ㄇㄟˋ", "妻": "ㄑㄧ", "始": "ㄕˇ", "姐": "ㄐㄧㄝˇ", "姑": "ㄍㄨ", "姨": "ㄧˊ", "姿": "ㄗ", "娃": "ㄨㄚˊ", "婆": "ㄆㄛˊ", "婉": "ㄨㄢˇ", "婿": "ㄒㄩˋ", "媚": "ㄇㄟˋ", "媽": "ㄇㄚ", "嫂": "ㄙㄠˇ", "嫉": "ㄐㄧˊ", "嫌": "ㄒㄧㄢˊ", "嫣": "ㄧㄢ", "嫩": "ㄋㄣˋ", "嫻": "ㄒㄧㄢˊ", "嬈": "ㄖㄠˊ", "嬌": "ㄐㄧㄠ", "嬰": "ㄧㄥ", "嬸": "ㄕㄣˇ", "子": "ㄗˇ", "字": "ㄗˋ", "存": "ㄘㄨㄣˊ", "孝": "ㄒㄧㄠˋ", "孤": "ㄍㄨ", "孩": "ㄏㄞˊ", "孫": "ㄙㄨㄣ", "學": "ㄒㄩㄝˊ", "它": "ㄊㄚ", "守": "ㄕㄡˇ", "安": "ㄢ", "完": "ㄨㄢˊ", "定": "ㄉㄧㄥˋ", "宜": "ㄧˊ", "室": "ㄕˋ", "宵": "ㄒㄧㄠ", "家": "ㄐㄧㄚ", "容": "ㄖㄨㄥˊ", "寂": "ㄐㄧˋ", "密": "ㄇㄧˋ", "寞": "ㄇㄛˋ", "察": "ㄔㄚˊ", "實": "ㄕˊ", "寧": "ㄋㄧㄥˊ", "審": "ㄕㄣˇ", "寫": "ㄒㄧㄝˇ", "寬": "ㄎㄨㄢ", "寶": "ㄅㄠˇ", "將": "ㄐㄧㄤ", "尊": "ㄗㄨㄣ", "尋": "ㄒㄩㄣˊ", "對": "ㄉㄨㄟˋ", "導": "ㄉㄠˇ", "小": "ㄒㄧㄠˇ", "少": "ㄕㄠˇ", "就": "ㄐㄧㄡˋ", "尺": "ㄔˇ", "局": "ㄐㄩˊ", "居": "ㄐㄩ", "屋": "ㄨ", "屏": "ㄆㄧㄥˊ", "展": "ㄓㄢˇ", "層": "ㄘㄥˊ", "山": "ㄕㄢ", "岩": "ㄧㄢˊ", "岸": "ㄢˋ", "峰": "ㄈㄥ", "島": "ㄉㄠˇ", "峽": "ㄒㄧㄚˊ", "崖": "ㄧㄚˊ", "崗": "ㄍㄤˇ", "嵐": "ㄌㄢˊ", "嶺": "ㄌㄧㄥˇ", "嶼": "ㄩˇ", "巖": "ㄧㄢˊ", "巢": "ㄔㄠˊ", "工": "ㄍㄨㄥ", "左": "ㄗㄨㄛˇ", "巧": "ㄑㄧㄠˇ", "己": "ㄐㄧˇ", "已": "ㄧˇ", "市": "ㄕˋ", "布": "ㄅㄨˋ", "帆": "ㄈㄢ", "希": "ㄒㄧ", "帛": "ㄅㄛˊ", "師": "ㄕ", "帳": "ㄓㄤˋ", "帶": "ㄉㄞˋ", "常": "ㄔㄤˊ", "帽": "ㄇㄠˋ", "幕": "ㄇㄨˋ", "幟": "ㄓˋ", "幡": "ㄈㄢ", "幫": "ㄅㄤ", "平": "ㄆㄧㄥˊ", "年": "ㄋㄧㄢˊ", "幻": "ㄏㄨㄢˋ", "幼": "ㄧˋ", "幽": "ㄧ", "幾": "ㄐㄧˇ", "床": "ㄔㄨㄤˊ", "序": "ㄒㄩˋ", "底": "ㄉㄧˇ", "店": "ㄉㄧㄢˋ", "府": "ㄈㄨˇ", "度": "ㄉㄨˋ", "座": "ㄗㄨㄛˋ", "康": "ㄎㄤ", "廚": "ㄔㄨˊ", "廳": "ㄊㄧㄥ", "延": "ㄧㄢˊ", "建": "ㄐㄧㄢˋ", "式": "ㄕˋ", "引": "ㄧㄣˇ", "弟": "ㄉㄧˋ", "弦": "ㄒㄧㄢˊ", "張": "ㄓㄤ", "彈": "ㄊㄢˊ", "彎": "ㄨㄢ", "形": "ㄒㄧㄥˊ", "彩": "ㄘㄞˇ", "影": "ㄧㄥˇ", "往": "ㄨㄤˇ", "很": "ㄏㄣˇ", "律": "ㄌㄩˋ", "後": "ㄏㄡˋ", "徐": "ㄒㄩˊ", "徑": "ㄐㄧㄥˋ", "得": "ㄉㄜˊ", "從": "ㄘㄨㄥˊ", "復": "ㄈㄨˋ", "德": "ㄉㄜˊ", "徽": "ㄏㄨㄟ", "心": "ㄒㄧㄣ", "必": "ㄅㄧˋ", "忘": "ㄨㄤˋ", "忙": "ㄇㄤˊ", "忠": "ㄓㄨㄥ", "快": "ㄎㄨㄞˋ", "念": "ㄋㄧㄢˋ", "忽": "ㄏㄨ", "怎": "ㄗㄣˇ", "怒": "ㄋㄨˋ", "怕": "ㄆㄚˋ", "思": "ㄙ", "急": "ㄐㄧˊ", "怪": "ㄍㄨㄞˋ", "怯": "ㄑㄧㄝˋ", "恐": "ㄎㄨㄥˇ", "恕": "ㄕㄨˋ", "恢": "ㄏㄨㄟ", "恥": "ㄔˇ", "恩": "ㄣ", "恬": "ㄊㄧㄢˊ", "恭": "ㄍㄨㄥ", "息": "ㄒㄧ", "悄": "ㄑㄧㄠˇ", "悟": "ㄨˋ", "悲": "ㄅㄟ", "悶": "ㄇㄣˋ", "情": "ㄑㄧㄥˊ", "惑": "ㄏㄨㄛˋ", "惜": "ㄒㄧ", "惡": "ㄜˋ", "惰": "ㄉㄨㄛˋ", "惱": "ㄋㄠˇ", "想": "ㄒㄧㄤˇ", "愁": "ㄔㄡˊ", "意": "ㄧˋ", "愚": "ㄩˊ", "愛": "ㄞˋ", "感": "ㄍㄢˇ", "慈": "ㄘˊ", "慌": "ㄏㄨㄤ", "慢": "ㄇㄢˋ", "慧": "ㄏㄨㄟˋ", "慶": "ㄑㄧㄥˋ", "憂": "ㄧ", "憤": "ㄈㄣˋ", "憶": "ㄧˋ", "應": "ㄧㄥ", "懲": "ㄔㄥˊ", "懶": "ㄌㄢˇ", "懷": "ㄏㄨㄞˊ", "懸": "ㄒㄩㄢˊ", "成": "ㄔㄥˊ", "我": "ㄨㄛˇ", "或": "ㄏㄨㄛˋ", "截": "ㄐㄧㄝˊ", "戰": "ㄓㄢˋ", "戲": "ㄒㄧˋ", "房": "ㄈㄤˊ", "所": "ㄙㄨㄛˇ", "扇": "ㄕㄢˋ", "手": "ㄕㄡˇ", "才": "ㄘㄞˊ", "打": "ㄉㄚˇ", "扔": "ㄖㄥ", "扛": "ㄎㄤˊ", "扣": "ㄎㄡˋ", "扭": "ㄋㄧㄡˇ", "扶": "ㄈㄨˊ", "批": "ㄆㄧ", "找": "ㄓㄠˇ", "技": "ㄐㄧˋ", "把": "ㄅㄚˇ", "抓": "ㄓㄨㄚ", "投": "ㄊㄡˊ", "折": "ㄓㄜˊ", "抱": "ㄅㄠˋ", "押": "ㄧㄚ", "拂": "ㄈㄨˊ", "拈": "ㄋㄧㄢ", "拉": "ㄌㄚ", "拋": "ㄆㄠ", "拍": "ㄆㄞ", "拒": "ㄐㄩˋ", "拓": "ㄊㄨㄛˋ", "拖": "ㄊㄨㄛ", "拙": "ㄓㄨㄛ", "拳": "ㄑㄩㄢˊ", "拽": "ㄓㄨㄞˋ", "拿": "ㄋㄚˊ", "持": "ㄔˊ", "指": "ㄓˇ", "挑": "ㄊㄧㄠ", "挖": "ㄨㄚ", "振": "ㄓㄣˋ", "挺": "ㄊㄧㄥˇ", "捉": "ㄓㄨㄛ", "捏": "ㄋㄧㄝ", "捕": "ㄅㄨˇ", "捨": "ㄕㄜˇ", "捶": "ㄔㄨㄟˊ", "掃": "ㄙㄠˇ", "掉": "ㄉㄧㄠˋ", "掌": "ㄓㄤˇ", "掏": "ㄊㄠ", "掐": "ㄑㄧㄚ", "排": "ㄆㄞˊ", "掘": "ㄐㄩㄝˊ", "掛": "ㄍㄨㄚˋ", "接": "ㄐㄧㄝ", "控": "ㄎㄨㄥˋ", "推": "ㄊㄨㄟ", "掩": "ㄧㄢˇ", "揉": "ㄖㄡˊ", "提": "ㄊㄧˊ", "揚": "ㄧㄤˊ", "換": "ㄏㄨㄢˋ", "握": "ㄨㄛˋ", "揮": "ㄏㄨㄟ", "搓": "ㄘㄨㄛ", "搖": "ㄧㄠˊ", "搗": "ㄉㄠˇ", "搜": "ㄙㄡ", "搬": "ㄅㄢ", "搭": "ㄉㄚ", "摔": "ㄕㄨㄞ", "摩": "ㄇㄛˊ", "撈": "ㄌㄠ", "撞": "ㄓㄨㄤˋ", "撥": "ㄅㄛ", "播": "ㄅㄛ", "撿": "ㄐㄧㄢˇ", "擇": "ㄗㄜˊ", "擊": "ㄐㄧ", "擋": "ㄉㄤˇ", "操": "ㄘㄠ", "擠": "ㄐㄧˇ", "擦": "ㄘㄚ", "擴": "ㄎㄨㄛˋ", "擺": "ㄅㄞˇ", "攀": "ㄆㄢ", "攙": "ㄔㄢ", "收": "ㄕㄡ", "改": "ㄍㄞˇ", "攻": "ㄍㄨㄥ", "放": "ㄈㄤˋ", "政": "ㄓㄥˋ", "敏": "ㄇㄧㄣˇ", "救": "ㄐㄧㄡˋ", "敗": "ㄅㄞˋ", "教": "ㄐㄧㄠˋ", "敢": "ㄍㄢˇ", "散": "ㄙㄢˋ", "敬": "ㄐㄧㄥˋ", "敲": "ㄑㄧㄠ", "整": "ㄓㄥˇ", "數": "ㄕㄨˋ", "文": "ㄩㄝˊ", "斑": "ㄅㄢ", "斕": "ㄌㄢˊ", "料": "ㄌㄧㄠˋ", "斜": "ㄒㄧㄝˊ", "新": "ㄒㄧㄣ", "斷": "ㄉㄨㄢˋ", "方": "ㄈㄤ", "於": "ㄩˊ", "旁": "ㄆㄤˊ", "旅": "ㄌㄩˇ", "旗": "ㄑㄧˊ", "日": "ㄖˋ", "旦": "ㄉㄢˋ", "早": "ㄗㄠˇ", "旺": "ㄨㄤˋ", "昇": "ㄕㄥ", "昌": "ㄔㄤ", "明": "ㄇㄧㄥˊ", "昏": "ㄏㄨㄣ", "易": "ㄧˋ", "星": "ㄒㄧㄥ", "映": "ㄧㄥˋ", "春": "ㄔㄨㄣ", "昨": "ㄗㄨㄛˊ", "是": "ㄕˋ", "時": "ㄕˊ", "晃": "ㄏㄨㄤˋ", "晚": "ㄨㄢˇ", "晝": "ㄓㄡˋ", "晨": "ㄔㄣˊ", "晰": "ㄒㄧ", "晴": "ㄑㄧㄥˊ", "智": "ㄓˋ", "暖": "ㄋㄨㄢˇ", "暗": "ㄢˋ", "暮": "ㄇㄨˋ", "暴": "ㄅㄠˋ", "曉": "ㄒㄧㄠˇ", "曬": "ㄕㄞˋ", "曲": "ㄑㄩˇ", "更": "ㄍㄥˋ", "書": "ㄕㄨ", "曾": "ㄘㄥˊ", "最": "ㄗㄨㄟˋ", "會": "ㄏㄨㄟˋ", "月": "ㄩㄝˋ", "有": "ㄧˇ", "朋": "ㄆㄥˊ", "服": "ㄈㄨˊ", "朗": "ㄌㄤˇ", "望": "ㄨㄤˋ", "朦": "ㄇㄥˊ", "朧": "ㄌㄨㄥˊ", "木": "ㄇㄨˋ", "本": "ㄅㄣˇ", "朽": "ㄒㄧㄡˇ", "李": "ㄌㄧˇ", "杏": "ㄒㄧㄥˋ", "材": "ㄘㄞˊ", "村": "ㄘㄨㄣ", "杜": "ㄉㄨˋ", "束": "ㄕㄨˋ", "杯": "ㄅㄟ", "東": "ㄉㄨㄥ", "松": "ㄙㄨㄥ", "林": "ㄌㄧㄣˊ", "果": "ㄍㄨㄛˇ", "枯": "ㄎㄨ", "架": "ㄐㄧㄚˋ", "柏": "ㄅㄞˇ", "染": "ㄖㄢˇ", "柔": "ㄖㄡˊ", "柳": "ㄌㄧㄡˇ", "柿": "ㄕˋ", "校": "ㄒㄧㄠˋ", "根": "ㄍㄣ", "格": "ㄍㄜˊ", "桂": "ㄍㄨㄟˋ", "桃": "ㄊㄠˊ", "桌": "ㄓㄨㄛ", "桶": "ㄊㄨㄥˇ", "梅": "ㄇㄟˊ", "條": "ㄊㄧㄠˊ", "梨": "ㄌㄧˊ", "梯": "ㄊㄧ", "棄": "ㄑㄧˋ", "棉": "ㄇㄧㄢˊ", "棋": "ㄑㄧˊ", "棕": "ㄗㄨㄥ", "森": "ㄙㄣ", "棵": "ㄎㄜ", "椅": "ㄧˇ", "植": "ㄓˊ", "椿": "ㄔㄨㄣ", "楊": "ㄧㄤˊ", "楓": "ㄈㄥ", "楚": "ㄔㄨˇ", "業": "ㄧㄝˋ", "極": "ㄐㄧˊ", "概": "ㄍㄞˋ", "榆": "ㄩˊ", "榕": "ㄖㄨㄥˊ", "榮": "ㄖㄨㄥˊ", "構": "ㄍㄡˋ", "樂": "ㄌㄜˋ", "樓": "ㄌㄡˊ", "標": "ㄅㄧㄠ", "樟": "ㄓㄤ", "模": "ㄇㄛˊ", "樣": "ㄧㄤˋ", "樸": "ㄆㄨˇ", "樹": "ㄕㄨˋ", "橋": "ㄑㄧㄠˊ", "橘": "ㄐㄩˊ", "橙": "ㄔㄥˊ", "機": "ㄐㄧ", "檜": "ㄍㄨㄟˋ", "權": "ㄑㄩㄢˊ", "欠": "ㄑㄧㄢˋ", "次": "ㄘˋ", "欣": "ㄒㄧㄣ", "歌": "ㄍㄜ", "歡": "ㄏㄨㄢ", "正": "ㄓㄥˋ", "步": "ㄅㄨˋ", "歪": "ㄨㄞ", "歲": "ㄙㄨㄟˋ", "歷": "ㄌㄧˋ", "死": "ㄙˇ", "殘": "ㄘㄢˊ", "段": "ㄉㄨㄢˋ", "母": "ㄇㄨˇ", "每": "ㄇㄟˇ", "比": "ㄅㄧˇ", "毛": "ㄇㄠˊ", "氈": "ㄓㄢ", "民": "ㄇㄧㄣˊ", "氣": "ㄑㄧˋ", "水": "ㄕㄨㄟˇ", "汙": "ㄨ", "江": "ㄐㄧㄤ", "池": "ㄔˊ", "污": "ㄨ", "決": "ㄐㄩㄝˊ", "沃": "ㄨㄛˋ", "沈": "ㄔㄣˊ", "沉": "ㄔㄣˊ", "沒": "ㄇㄟˊ", "沖": "ㄔㄨㄥ", "沙": "ㄕㄚ", "河": "ㄏㄜˊ", "治": "ㄓˋ", "沼": "ㄓㄠˇ", "泉": "ㄑㄩㄢˊ", "法": "ㄈㄚˇ", "泡": "ㄆㄠˋ", "波": "ㄅㄛ", "泥": "ㄋㄧˊ", "注": "ㄓㄨˋ", "泳": "ㄩㄥˇ", "洗": "ㄒㄧˇ", "洞": "ㄉㄨㄥˋ", "洲": "ㄓㄡ", "派": "ㄆㄞˋ", "流": "ㄌㄧㄡˊ", "浪": "ㄌㄤˋ", "浮": "ㄈㄨˊ", "浴": "ㄩˋ", "海": "ㄏㄞˇ", "浸": "ㄐㄧㄣˋ", "消": "ㄒㄧㄠ", "涵": "ㄏㄢˊ", "涼": "ㄌㄧㄤˊ", "淋": "ㄌㄧㄣˊ", "淘": "ㄊㄠˊ", "淡": "ㄉㄢˋ", "淨": "ㄐㄧㄥˋ", "深": "ㄕㄣ", "淵": "ㄩㄢ", "混": "ㄏㄨㄣˋ", "淺": "ㄑㄧㄢˇ", "清": "ㄑㄧㄥ", "減": "ㄐㄧㄢˇ", "渠": "ㄑㄩˊ", "測": "ㄘㄜˋ", "港": "ㄍㄤˇ", "渴": "ㄎㄜˇ", "游": "ㄧˊ", "渺": "ㄇㄧㄠˇ", "渾": "ㄏㄨㄣˊ", "湖": "ㄏㄨˊ", "湯": "ㄊㄤ", "溉": "ㄍㄞˋ", "準": "ㄓㄨㄣˇ", "溜": "ㄌㄧㄡ", "溝": "ㄍㄡ", "溪": "ㄒㄧ", "溫": "ㄩㄝ", "溼": "ㄕ", "滅": "ㄇㄧㄝˋ", "滋": "ㄗ", "滑": "ㄏㄨㄚˊ", "滷": "ㄌㄨˇ", "滾": "ㄍㄨㄣˇ", "滿": "ㄇㄢˇ", "漂": "ㄆㄧㄠˋ", "漠": "ㄇㄛˋ", "漸": "ㄐㄧㄢˋ", "潔": "ㄐㄧㄝˊ", "潤": "ㄖㄨㄣˋ", "潮": "ㄔㄠˊ", "澆": "ㄐㄧㄠ", "澈": "ㄔㄜˋ", "澗": "ㄐㄧㄢˋ", "澤": "ㄗㄜˊ", "濁": "ㄓㄨㄛˊ", "濃": "ㄋㄨㄥˊ", "濛": "ㄇㄥˊ", "濟": "ㄐㄧˋ", "濾": "ㄌㄩˋ", "瀑": "ㄆㄨˋ", "灌": "ㄍㄨㄢˋ", "灑": "ㄙㄚˇ", "灘": "ㄊㄢ", "灣": "ㄨㄢ", "火": "ㄏㄨㄛˇ", "灰": "ㄏㄨㄟ", "炒": "ㄔㄠˇ", "炫": "ㄒㄩㄢˋ", "炸": "ㄓㄚˊ", "為": "ㄨㄟˋ", "烈": "ㄌㄧㄝˋ", "烘": "ㄏㄨㄥ", "烤": "ㄎㄠˇ", "烹": "ㄆㄥ", "無": "ㄨˊ", "焦": "ㄐㄧㄠ", "然": "ㄖㄢˊ", "煌": "ㄏㄨㄤˊ", "煎": "ㄐㄧㄢ", "照": "ㄓㄠˋ", "煩": "ㄈㄢˊ", "煮": "ㄓㄨˇ", "熠": "ㄧˋ", "熱": "ㄖㄜˋ", "燈": "ㄉㄥ", "燉": "ㄉㄨㄣˋ", "燒": "ㄕㄠ", "燕": "ㄧㄢˋ", "燙": "ㄊㄤˋ", "燜": "ㄇㄣˋ", "燦": "ㄘㄢˋ", "爍": "ㄕㄨㄛˋ", "爛": "ㄌㄢˋ", "爬": "ㄆㄚˊ", "父": "ㄈㄨˋ", "爸": "ㄅㄚˋ", "爺": "ㄧㄝˊ", "牆": "ㄑㄧㄤˊ", "片": "ㄆㄧㄢˋ", "版": "ㄅㄢˇ", "牌": "ㄆㄞˊ", "牙": "ㄧㄚˊ", "牛": "ㄋㄧㄡˊ", "牢": "ㄌㄠˊ", "牧": "ㄇㄨˋ", "物": "ㄨˋ", "特": "ㄊㄜˋ", "牽": "ㄑㄧㄢ", "犁": "ㄌㄧˊ", "狂": "ㄎㄨㄤˊ", "狗": "ㄍㄡˇ", "猖": "ㄔㄤ", "猛": "ㄇㄥˇ", "猴": "ㄏㄡˊ", "獎": "ㄐㄧㄤˇ", "獨": "ㄉㄨˊ", "獲": "ㄏㄨㄛˋ", "獵": "ㄌㄧㄝˋ", "玄": "ㄒㄩㄢˊ", "率": "ㄕㄨㄞˋ", "玉": "ㄩˋ", "王": "ㄨㄤˊ", "玩": "ㄨㄢˊ", "玻": "ㄅㄛ", "珠": "ㄓㄨ", "班": "ㄅㄢ", "現": "ㄒㄧㄢˋ", "球": "ㄑㄧㄡˊ", "理": "ㄌㄧˇ", "琴": "ㄑㄧㄣˊ", "琶": "ㄆㄚˊ", "瑞": "ㄖㄨㄟˋ", "璀": "ㄘㄨㄟˇ", "璃": "ㄌㄧˊ", "璨": "ㄘㄢˋ", "環": "ㄏㄨㄢˊ", "瓜": "ㄍㄨㄚ", "瓶": "ㄆㄧㄥˊ", "瓷": "ㄘˊ", "甜": "ㄊㄧㄢˊ", "生": "ㄕㄥ", "甥": "ㄕㄥ", "用": "ㄩㄥˋ", "田": "ㄊㄧㄢˊ", "由": "ㄧㄡˊ", "界": "ㄐㄧㄝˋ", "留": "ㄌㄧㄡˊ", "畜": "ㄔㄨˋ", "略": "ㄌˋ", "畫": "ㄏㄨㄚˋ", "異": "ㄧˋ", "當": "ㄉㄤ", "疾": "ㄐㄧˊ", "病": "ㄅㄧㄥˋ", "痕": "ㄏㄣˊ", "痛": "ㄊㄨㄥˋ", "瘠": "ㄐㄧˊ", "瘦": "ㄕㄡˋ", "癒": "ㄩˋ", "登": "ㄉㄥ", "發": "ㄈㄚ", "白": "ㄅㄞˊ", "百": "ㄅㄞˇ", "的": "ㄉㄜ", "皎": "ㄐㄧㄠˇ", "皮": "ㄆㄧˊ", "盈": "ㄧㄥˊ", "盒": "ㄏㄜˊ", "盛": "ㄕㄥˋ", "盟": "ㄇㄥˊ", "盡": "ㄐㄧㄣˋ", "盤": "ㄆㄢˊ", "盪": "ㄉㄤˋ", "目": "ㄇㄨˋ", "直": "ㄓˊ", "相": "ㄒㄧㄤˋ", "盼": "ㄆㄢˋ", "省": "ㄕㄥˇ", "眉": "ㄇㄟˊ", "看": "ㄎㄢˋ", "真": "ㄓㄣ", "眨": "ㄓㄚˇ", "眩": "ㄒㄩㄢˋ", "眼": "ㄧㄢˇ", "睛": "ㄐㄧㄥ", "睜": "ㄓㄥ", "睡": "ㄕㄨㄟˋ", "睹": "ㄉㄨˇ", "瞄": "ㄇㄧㄠˊ", "瞥": "ㄆㄧㄝ", "瞧": "ㄑㄧㄠˊ", "瞪": "ㄉㄥˋ", "矚": "ㄓㄨˇ", "知": "ㄓ", "短": "ㄉㄨㄢˇ", "矮": "ㄞˇ", "石": "ㄕˊ", "砌": "ㄑㄧˋ", "砍": "ㄎㄢˇ", "研": "ㄧㄢˊ", "砰": "ㄆㄥ", "破": "ㄆㄛˋ", "硬": "ㄧㄥˋ", "碑": "ㄅㄟ", "碗": "ㄨㄢˇ", "碧": "ㄅㄧˋ", "碩": "ㄕㄨㄛˋ", "碰": "ㄆㄥˋ", "確": "ㄑㄩㄝˋ", "碼": "ㄇㄚˇ", "磨": "ㄇㄛˊ", "礁": "ㄐㄧㄠ", "示": "ㄕˋ", "社": "ㄕㄜˋ", "祈": "ㄑㄧˊ", "祕": "ㄇㄧˋ", "祝": "ㄓㄨˋ", "神": "ㄕㄣˊ", "祥": "ㄒㄧㄤˊ", "票": "ㄆㄧㄠˋ", "禁": "ㄐㄧㄣˋ", "福": "ㄈㄨˊ", "禮": "ㄌㄧˇ", "禱": "ㄉㄠˇ", "禾": "ㄏㄜˊ", "秀": "ㄒㄧㄡˋ", "秋": "ㄑㄧㄡ", "科": "ㄎㄜ", "秒": "ㄇㄧㄠˇ", "移": "ㄧˊ", "程": "ㄔㄥˊ", "稚": "ㄓˋ", "種": "ㄓㄨㄥˇ", "稱": "ㄔㄥ", "稻": "ㄉㄠˋ", "穀": "ㄍㄨˇ", "積": "ㄐㄧ", "穗": "ㄙㄨㄟˋ", "穴": "ㄒㄩㄝˋ", "究": "ㄐㄧㄡ", "空": "ㄎㄨㄥ", "穿": "ㄔㄨㄢ", "突": "ㄊㄨ", "窄": "ㄓㄞˇ", "窗": "ㄔㄨㄤ", "窩": "ㄨㄛ", "窺": "ㄎㄨㄟ", "竄": "ㄘㄨㄢˋ", "立": "ㄌㄧˋ", "站": "ㄓㄢˋ", "章": "ㄓㄤ", "童": "ㄊㄨㄥˊ", "端": "ㄉㄨㄢ", "竹": "ㄓㄨˊ", "笑": "ㄒㄧㄠˋ", "笛": "ㄉㄧˊ", "笨": "ㄅㄣˋ", "第": "ㄉㄧˋ", "筆": "ㄅㄧˇ", "等": "ㄉㄥˇ", "答": "ㄉㄚˊ", "算": "ㄙㄨㄢˋ", "管": "ㄍㄨㄢˇ", "箱": "ㄒㄧㄤ", "節": "ㄐㄧㄝˊ", "篇": "ㄆㄧㄢ", "築": "ㄓㄨˊ", "篩": "ㄕㄞ", "簡": "ㄐㄧㄢˇ", "簽": "ㄑㄧㄢ", "簾": "ㄌㄧㄢˊ", "米": "ㄇㄧˇ", "粉": "ㄈㄣˇ", "粗": "ㄘㄨ", "精": "ㄐㄧㄥ", "糊": "ㄏㄨˊ", "糖": "ㄊㄤˊ", "糜": "ㄇㄧˊ", "約": "ㄩㄝ", "紅": "ㄏㄨㄥˊ", "紋": "ㄩㄝˊ", "紗": "ㄕㄚ", "紙": "ㄓˇ", "級": "ㄐㄧˊ", "紛": "ㄈㄣ", "素": "ㄙㄨˋ", "索": "ㄙㄨㄛˇ", "紫": "ㄗˇ", "累": "ㄌㄟˋ", "細": "ㄒㄧˋ", "終": "ㄓㄨㄥ", "組": "ㄗㄨˇ", "結": "ㄐㄧㄝˊ", "絕": "ㄐㄩㄝˊ", "絢": "ㄒㄩㄢˋ", "給": "ㄍㄟˇ", "絲": "ㄙ", "綁": "ㄅㄤˇ", "經": "ㄐㄧㄥ", "綠": "ㄌㄩˋ", "綢": "ㄔㄡˊ", "網": "ㄨㄤˇ", "緊": "ㄐㄧㄣˇ", "線": "ㄒㄧㄢˋ", "緞": "ㄉㄨㄢˋ", "編": "ㄅㄧㄢ", "緩": "ㄏㄨㄢˇ", "縣": "ㄒㄧㄢˋ", "縫": "ㄈㄥˊ", "縮": "ㄙㄨㄛ", "總": "ㄗㄨㄥˇ", "績": "ㄐㄧ", "繁": "ㄈㄢˊ", "織": "ㄓ", "繡": "ㄒㄧㄡˋ", "繩": "ㄕㄥˊ", "繽": "ㄅㄧㄣ", "纏": "ㄔㄢˊ", "罩": "ㄓㄠˋ", "罪": "ㄗㄨㄟˋ", "置": "ㄓˋ", "罰": "ㄈㄚˊ", "羅": "ㄌㄨㄛˊ", "羊": "ㄧㄤˊ", "美": "ㄇㄟˇ", "羞": "ㄒㄧㄡ", "群": "ㄑㄩㄣˊ", "義": "ㄧˋ", "羽": "ㄩˇ", "翁": "ㄩㄝ", "翅": "ㄔˋ", "翎": "ㄌㄧㄥˊ", "翔": "ㄒㄧㄤˊ", "翠": "ㄘㄨㄟˋ", "翩": "ㄆㄧㄢ", "翱": "ㄠˊ", "翹": "ㄑㄧㄠˋ", "翻": "ㄈㄢ", "翼": "ㄧˋ", "耀": "ㄧㄠˋ", "老": "ㄌㄠˇ", "考": "ㄎㄠˇ", "而": "ㄦˊ", "耐": "ㄋㄞˋ", "耕": "ㄍㄥ", "耙": "ㄅㄚˋ", "耳": "ㄦˇ", "聊": "ㄌㄧㄠˊ", "聖": "ㄕㄥˋ", "聘": "ㄆㄧㄣˋ", "聚": "ㄐㄩˋ", "聰": "ㄘㄨㄥ", "聲": "ㄕㄥ", "聽": "ㄊㄧㄥ", "肉": "ㄖㄡˋ", "肘": "ㄓㄡˇ", "肚": "ㄉㄨˋ", "肝": "ㄍㄢ", "肥": "ㄈㄟˊ", "肩": "ㄐㄧㄢ", "育": "ㄩˋ", "肺": "ㄈㄟˋ", "胃": "ㄩㄝˋ", "背": "ㄅㄟˋ", "胎": "ㄊㄞ", "胖": "ㄆㄤˋ", "胡": "ㄏㄨˊ", "胸": "ㄒㄩㄥ", "能": "ㄋㄥˊ", "脆": "ㄘㄨㄟˋ", "脊": "ㄐㄧˇ", "脹": "ㄓㄤˋ", "腎": "ㄕㄣˋ", "腐": "ㄈㄨˇ", "腕": "ㄨㄢˋ", "腦": "ㄋㄠˇ", "腰": "ㄧㄠ", "腳": "ㄐㄧㄠˇ", "腸": "ㄔㄤˊ", "腹": "ㄈㄨˋ", "腿": "ㄊㄨㄟˇ", "膀": "ㄅㄤˇ", "膝": "ㄒㄧ", "膠": "ㄐㄧㄠ", "膨": "ㄆㄥˊ", "膩": "ㄋㄧˋ", "膽": "ㄉㄢˇ", "臂": "ㄅㄧˋ", "臉": "ㄌㄧㄢˇ", "臥": "ㄨㄛˋ", "自": "ㄗˋ", "臭": "ㄔㄡˋ", "臺": "ㄊㄞˊ", "舅": "ㄐㄧㄡˋ", "與": "ㄩˇ", "興": "ㄒㄧㄥ", "舉": "ㄐㄩˇ", "舊": "ㄐㄧㄡˋ", "舌": "ㄕㄜˊ", "舞": "ㄨˇ", "航": "ㄏㄤˊ", "船": "ㄔㄨㄢˊ", "良": "ㄌㄧㄤˊ", "色": "ㄙㄜˋ", "花": "ㄏㄨㄚ", "芽": "ㄧㄚˊ", "苗": "ㄇㄧㄠˊ", "苦": "ㄎㄨˇ", "英": "ㄧㄥ", "茁": "ㄓㄨㄛˊ", "茂": "ㄇㄠˋ", "茫": "ㄇㄤˊ", "茶": "ㄔㄚˊ", "草": "ㄘㄠˇ", "荒": "ㄏㄨㄤ", "荷": "ㄏㄜˊ", "莊": "ㄓㄨㄤ", "莖": "ㄐㄧㄥ", "菊": "ㄐㄩˊ", "菜": "ㄘㄞˋ", "華": "ㄏㄨㄚˊ", "萎": "ㄩㄝˇ", "萬": "ㄨㄢˋ", "落": "ㄌㄨㄛˋ", "葉": "ㄧㄝˋ", "蒜": "ㄙㄨㄢˋ", "蒸": "ㄓㄥ", "蒼": "ㄘㄤ", "蓋": "ㄍㄞˋ", "蓮": "ㄌㄧㄢˊ", "蔑": "ㄇㄧㄝˋ", "蔡": "ㄘㄞˋ", "蔥": "ㄘㄨㄥ", "蔽": "ㄅㄧˋ", "蕩": "ㄉㄤˋ", "蕪": "ㄨˊ", "薄": "ㄅㄠˊ", "薑": "ㄐㄧㄤ", "薪": "ㄒㄧㄣ", "藍": "ㄌㄢˊ", "藏": "ㄘㄤˊ", "藐": "ㄇㄧㄠˇ", "藝": "ㄧˋ", "藤": "ㄊㄥˊ", "藥": "ㄧㄠˋ", "蘭": "ㄌㄢˊ", "虎": "ㄏㄨˇ", "虔": "ㄑㄧㄢˊ", "處": "ㄔㄨˋ", "虛": "ㄒㄩ", "號": "ㄏㄠˋ", "虹": "ㄏㄨㄥˊ", "蚊": "ㄩㄝˊ", "蛇": "ㄕㄜˊ", "蛋": "ㄉㄢˋ", "蜂": "ㄈㄥ", "蜓": "ㄊㄧㄥˊ", "蜜": "ㄇㄧˋ", "蜻": "ㄑㄧㄥ", "蝴": "ㄏㄨˊ", "蝶": "ㄉㄧㄝˊ", "蝸": "ㄍㄨㄚ", "融": "ㄖㄨㄥˊ", "蟲": "ㄔㄨㄥˊ", "蟻": "ㄧˇ", "蠅": "ㄧㄥˊ", "蠻": "ㄇㄢˊ", "血": "ㄒㄩㄝˋ", "行": "ㄒㄧㄥˊ", "術": "ㄕㄨˋ", "街": "ㄐㄧㄝ", "衛": "ㄨㄟˋ", "衝": "ㄔㄨㄥ", "衡": "ㄏㄥˊ", "衣": "ㄧ", "表": "ㄅㄧㄠˇ", "衰": "ㄕㄨㄞ", "袋": "ㄉㄞˋ", "被": "ㄅㄟˋ", "裙": "ㄑㄩㄣˊ", "補": "ㄅㄨˇ", "裝": "ㄓㄨㄤ", "裡": "ㄌㄧˇ", "裹": "ㄍㄨㄛˇ", "製": "ㄓˋ", "複": "ㄈㄨˋ", "褐": "ㄏㄜˋ", "褲": "ㄎㄨˋ", "襪": "ㄨㄚˋ", "西": "ㄒㄧ", "要": "ㄧㄠˋ", "見": "ㄐㄧㄢˋ", "規": "ㄍㄨㄟ", "覓": "ㄇㄧˋ", "視": "ㄕˋ", "覺": "ㄐㄩㄝˊ", "觀": "ㄍㄨㄢ", "角": "ㄐㄧㄠˇ", "解": "ㄐㄧㄝˇ", "訂": "ㄉㄧㄥˋ", "計": "ㄐㄧˋ", "訊": "ㄒㄩㄣˋ", "記": "ㄐㄧˋ", "設": "ㄕㄜˋ", "訴": "ㄙㄨˋ", "評": "ㄆㄧㄥˊ", "詞": "ㄘˊ", "試": "ㄕˋ", "詩": "ㄕ", "話": "ㄏㄨㄚˋ", "該": "ㄍㄞ", "詳": "ㄒㄧㄤˊ", "認": "ㄖㄣˋ", "誓": "ㄕˋ", "誕": "ㄉㄢˋ", "語": "ㄩˇ", "誠": "ㄔㄥˊ", "說": "ㄕㄨㄛ", "誰": "ㄕㄨㄟˊ", "課": "ㄎㄜˋ", "調": "ㄊㄧㄠˊ", "談": "ㄊㄢˊ", "請": "ㄑㄧㄥˇ", "諒": "ㄌㄧㄤˋ", "論": "ㄌㄨㄣˋ", "諾": "ㄋㄨㄛˋ", "謙": "ㄑㄧㄢ", "講": "ㄐㄧㄤˇ", "謝": "ㄒㄧㄝˋ", "證": "ㄓㄥˋ", "識": "ㄕˊ", "警": "ㄐㄧㄥˇ", "譯": "ㄧˋ", "議": "ㄧˋ", "護": "ㄏㄨˋ", "讀": "ㄉㄨˊ", "變": "ㄅㄧㄢˋ", "讓": "ㄖㄤˋ", "谷": "ㄍㄨˇ", "豆": "ㄉㄡˋ", "豐": "ㄈㄥ", "豔": "ㄧㄢˋ", "象": "ㄒㄧㄤˋ", "豪": "ㄏㄠˊ", "豬": "ㄓㄨ", "貓": "ㄇㄠ", "貝": "ㄅㄟˋ", "負": "ㄈㄨˋ", "貧": "ㄆㄧㄣˊ", "責": "ㄗㄜˊ", "貴": "ㄍㄨㄟˋ", "買": "ㄇㄞˇ", "貸": "ㄉㄞˋ", "貼": "ㄊㄧㄝ", "貿": "ㄇㄠˋ", "賀": "ㄏㄜˋ", "資": "ㄗ", "賞": "ㄕㄤˇ", "賠": "ㄆㄟˊ", "賢": "ㄒㄧㄢˊ", "賣": "ㄇㄞˋ", "質": "ㄓˋ", "賺": "ㄓㄨㄢˋ", "賽": "ㄙㄞˋ", "贏": "ㄧㄥˊ", "赦": "ㄕㄜˋ", "走": "ㄗㄡˇ", "起": "ㄑㄧˇ", "超": "ㄔㄠ", "越": "ㄩㄝˋ", "趕": "ㄍㄢˇ", "趙": "ㄓㄠˋ", "趟": "ㄊㄤˋ", "足": "ㄗㄨˊ", "跑": "ㄆㄠˇ", "跟": "ㄍㄣ", "跡": "ㄐㄧˋ", "跨": "ㄎㄨㄚˋ", "跪": "ㄍㄨㄟˋ", "路": "ㄌㄨˋ", "跳": "ㄊㄧㄠˋ", "踏": "ㄊㄚˋ", "踝": "ㄏㄨㄞˊ", "踩": "ㄘㄞˇ", "蹤": "ㄗㄨㄥ", "蹦": "ㄅㄥˋ", "蹬": "ㄉㄥ", "蹲": "ㄉㄨㄣ", "躁": "ㄗㄠˋ", "身": "ㄕㄣ", "躲": "ㄉㄨㄛˇ", "躺": "ㄊㄤˇ", "車": "ㄔㄜ", "軌": "ㄍㄨㄟˇ", "軍": "ㄐㄩㄣ", "軟": "ㄖㄨㄢˇ", "較": "ㄐㄧㄠˋ", "載": "ㄗㄞˋ", "輕": "ㄑㄧㄥ", "輝": "ㄏㄨㄟ", "輪": "ㄌㄨㄣˊ", "輸": "ㄕㄨ", "轉": "ㄓㄨㄢˇ", "辣": "ㄌㄚˋ", "辦": "ㄅㄢˋ", "辯": "ㄅㄧㄢˋ", "辱": "ㄖㄨˇ", "農": "ㄋㄨㄥˊ", "迅": "ㄒㄩㄣˋ", "近": "ㄐㄧㄣˋ", "迷": "ㄇㄧˊ", "追": "ㄓㄨㄟ", "退": "ㄊㄨㄟˋ", "送": "ㄙㄨㄥˋ", "逃": "ㄊㄠˊ", "逐": "ㄓㄨˊ", "途": "ㄊㄨˊ", "這": "ㄓㄜˋ", "通": "ㄊㄨㄥ", "逛": "ㄍㄨㄤˋ", "速": "ㄙㄨˋ", "造": "ㄗㄠˋ", "連": "ㄌㄧㄢˊ", "進": "ㄐㄧㄣˋ", "遊": "ㄧㄡˊ", "運": "ㄩㄣˋ", "過": "ㄍㄨㄛˋ", "道": "ㄉㄠˋ", "達": "ㄉㄚˊ", "遛": "ㄌㄧㄡˋ", "遞": "ㄉㄧˋ", "遠": "ㄩㄢˇ", "遣": "ㄑㄧㄢˇ", "遮": "ㄓㄜ", "遲": "ㄔˊ", "選": "ㄒㄩㄢˇ", "遺": "ㄧˊ", "避": "ㄅㄧˋ", "邀": "ㄧㄠ", "邁": "ㄇㄞˋ", "還": "ㄏㄞˊ", "邊": "ㄅㄧㄢ", "那": "ㄋㄚˋ", "部": "ㄅㄨˋ", "郭": "ㄍㄨㄛ", "都": "ㄉㄡ", "鄉": "ㄒㄧㄤ", "鄙": "ㄅㄧˇ", "鄭": "ㄓㄥˋ", "鄰": "ㄌㄧㄣˊ", "配": "ㄆㄟˋ", "酒": "ㄐㄧㄡˇ", "酬": "ㄔㄡˊ", "酸": "ㄙㄨㄢ", "醃": "ㄧㄢ", "醋": "ㄘㄨˋ", "醒": "ㄒㄧㄥˇ", "醜": "ㄔㄡˇ", "醫": "ㄧ", "醬": "ㄐㄧㄤˋ", "釋": "ㄕˋ", "重": "ㄓㄨㄥˋ", "野": "ㄧㄝˇ", "量": "ㄌㄧㄤˋ", "金": "ㄐㄧㄣ", "釘": "ㄉㄧㄥ", "釣": "ㄉㄧㄠˋ", "鈍": "ㄉㄨㄣˋ", "鉤": "ㄍㄡ", "銀": "ㄧㄣˊ", "銅": "ㄊㄨㄥˊ", "鋁": "ㄌㄩˇ", "鋤": "ㄔㄨˊ", "鋼": "ㄍㄤ", "錄": "ㄌㄨˋ", "錢": "ㄑㄧㄢˊ", "錯": "ㄘㄨㄛˋ", "鍋": "ㄍㄨㄛ", "鍵": "ㄐㄧㄢˋ", "鎖": "ㄙㄨㄛˇ", "鎮": "ㄓㄣˋ", "鏟": "ㄔㄢˇ", "鏡": "ㄐㄧㄥˋ", "鐘": "ㄓㄨㄥ", "鐮": "ㄌㄧㄢˊ", "鐵": "ㄊㄧㄝˇ", "鑑": "ㄐㄧㄢˋ", "鑒": "ㄐㄧㄢˋ", "鑰": "ㄧㄠˋ", "鑿": "ㄗㄠˊ", "長": "ㄓㄤˇ", "門": "ㄇㄣˊ", "閃": "ㄕㄢˇ", "閉": "ㄅㄧˋ", "開": "ㄎㄞ", "閒": "ㄒㄧㄢˊ", "間": "ㄐㄧㄢ", "關": "ㄍㄨㄢ", "防": "ㄈㄤˊ", "陋": "ㄌㄡˋ", "降": "ㄐㄧㄤˋ", "院": "ㄩㄢˋ", "除": "ㄔㄨˊ", "陰": "ㄧㄣ", "陳": "ㄔㄣˊ", "陵": "ㄌㄧㄥˊ", "陶": "ㄊㄠˊ", "陸": "ㄌㄨˋ", "陽": "ㄧㄤˊ", "隊": "ㄉㄨㄟˋ", "際": "ㄐㄧˋ", "障": "ㄓㄤˋ", "隨": "ㄙㄨㄟˊ", "險": "ㄒㄧㄢˇ", "隱": "ㄧㄣˇ", "隻": "ㄓ", "雀": "ㄑㄩㄝˋ", "雁": "ㄧㄢˋ", "雄": "ㄒㄩㄥˊ", "雅": "ㄧㄚˇ", "集": "ㄐㄧˊ", "雇": "ㄍㄨˋ", "雖": "ㄙㄨㄟ", "雙": "ㄕㄨㄤ", "雜": "ㄗㄚˊ", "雞": "ㄐㄧ", "離": "ㄌㄧˊ", "難": "ㄋㄢˊ", "雨": "ㄩˇ", "雪": "ㄒㄩㄝˇ", "雲": "ㄩㄣˊ", "零": "ㄌㄧㄥˊ", "雷": "ㄌㄟˊ", "電": "ㄉㄧㄢˋ", "需": "ㄒㄩ", "霓": "ㄋㄧˊ", "霜": "ㄕㄨㄤ", "霞": "ㄒㄧㄚˊ", "霧": "ㄨˋ", "露": "ㄌㄨˋ", "霾": "ㄇㄞˊ", "靄": "ㄞˇ", "靈": "ㄌㄧㄥˊ", "青": "ㄑㄧㄥ", "靜": "ㄐㄧㄥˋ", "非": "ㄈㄟ", "靠": "ㄎㄠˋ", "面": "ㄇㄧㄢˋ", "鞋": "ㄒㄧㄝˊ", "鞍": "ㄢ", "音": "ㄧㄣ", "響": "ㄒㄧㄤˇ", "頂": "ㄉㄧㄥˇ", "須": "ㄒㄩ", "頑": "ㄨㄢˊ", "領": "ㄌㄧㄥˇ", "頭": "ㄊㄡˊ", "頸": "ㄐㄧㄥˇ", "頹": "ㄊㄨㄟˊ", "頻": "ㄆㄧㄣˊ", "題": "ㄊㄧˊ", "額": "ㄜˊ", "類": "ㄌㄟˋ", "風": "ㄈㄥ", "飄": "ㄆㄧㄠ", "飛": "ㄈㄟ", "食": "ㄕˊ", "飢": "ㄐㄧ", "飯": "ㄈㄢˋ", "飼": "ㄙˋ", "飽": "ㄅㄠˇ", "飾": "ㄕˋ", "餅": "ㄅㄧㄥˇ", "養": "ㄧㄤˇ", "餓": "ㄜˋ", "館": "ㄍㄨㄢˇ", "饒": "ㄖㄠˊ", "首": "ㄕㄡˇ", "香": "ㄒㄧㄤ", "馬": "ㄇㄚˇ", "馱": "ㄊㄨㄛˊ", "馴": "ㄒㄩㄣˋ", "駕": "ㄐㄧㄚˋ", "騎": "ㄑㄧˊ", "騰": "ㄊㄥˊ", "驅": "ㄑㄩ", "驕": "ㄐㄧㄠ", "驗": "ㄧㄢˋ", "驚": "ㄐㄧㄥ", "骨": "ㄍㄨˇ", "髒": "ㄗㄤ", "體": "ㄊㄧˇ", "高": "ㄍㄠ", "髮": "ㄈㄚˋ", "鬆": "ㄙㄨㄥ", "鬧": "ㄋㄠˋ", "鬱": "ㄩˋ", "魚": "ㄩˊ", "鮮": "ㄒㄧㄢ", "鯨": "ㄐㄧㄥ", "鳥": "ㄋㄧㄠˇ", "鴉": "ㄧㄚ", "鴨": "ㄧㄚ", "鴿": "ㄍㄜ", "鵑": "ㄐㄩㄢ", "鵝": "ㄜˊ", "鵡": "ㄨˇ", "鵲": "ㄑㄩㄝˋ", "鶯": "ㄧㄥ", "鶴": "ㄏㄜˋ", "鷄": "ㄐㄧ", "鷹": "ㄧㄥ", "鸚": "ㄧㄥ", "鹹": "ㄒㄧㄢˊ", "鹿": "ㄌㄨˋ", "麗": "ㄌㄧˋ", "麥": "ㄇㄞˋ", "麵": "ㄇㄧㄢˋ", "麻": "ㄇㄚˊ", "麼": "ㄇㄜ", "黃": "ㄏㄨㄤˊ", "黎": "ㄌㄧˊ", "黑": "ㄏㄟ", "默": "ㄇㄛˋ", "點": "ㄉㄧㄢˇ", "鼓": "ㄍㄨˇ", "鼠": "ㄕㄨˇ", "鼻": "ㄅㄧˊ", "齊": "ㄑㄧˊ", "齒": "ㄔˇ", "龍": "ㄌㄨㄥˊ"};
+</script>
 </html>
