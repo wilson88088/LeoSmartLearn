@@ -951,6 +951,31 @@ function closeAddCourseModal(){
   document.getElementById('add-course-modal').classList.remove('open');
 }
 
+// Helper: convert a Chinese phrase to its zhuyin via ZHUYIN_DICT
+function generateZhuyinFromPhrase(phrase){
+  if(!phrase) return {zhuyin: '', matched: 0, total: 0};
+  let zhuyin = '';
+  let matched = 0;
+  let total = 0;
+  for(let i = 0; i < phrase.length; i++){
+    const char = phrase[i];
+    // Skip spaces and punctuation (keep punctuation as-is in output)
+    if(/\s|[，。！？；：、『』「」（）()【】《》]/.test(char)){
+      if(char !== ' ') zhuyin += char + ' ';
+      continue;
+    }
+    total++;
+    if(typeof ZHUYIN_DICT !== 'undefined' && ZHUYIN_DICT[char]){
+      zhuyin += ZHUYIN_DICT[char] + ' ';
+      matched++;
+    } else {
+      // Keep the original character as a placeholder if unmatched
+      zhuyin += char + ' ';
+    }
+  }
+  return {zhuyin: zhuyin.trim(), matched, total};
+}
+
 function addNewCourse(){
   const name = document.getElementById('new-course-name').value.trim();
   const phrases = document.getElementById('new-course-phrases').value.split('\n').filter(p => p.trim());
@@ -960,9 +985,17 @@ function addNewCourse(){
     return;
   }
 
-  const courseId = courses.length > 0 ? String(Math.max(...courses.map(c => parseInt(c.id))) + 1) : '1';
-  const lines = phrases.map(phrase => ({phrase, zhuyin: ''}));
+  // Auto-generate zhuyin for each phrase BEFORE saving
+  let totalMatched = 0;
+  let totalChars = 0;
+  const lines = phrases.map(phrase => {
+    const result = generateZhuyinFromPhrase(phrase);
+    totalMatched += result.matched;
+    totalChars += result.total;
+    return {phrase, zhuyin: result.zhuyin};
+  });
 
+  const courseId = courses.length > 0 ? String(Math.max(...courses.map(c => parseInt(c.id))) + 1) : '1';
   const course = {id: courseId, name, lines};
   courses.push(course);
 
@@ -971,53 +1004,13 @@ function addNewCourse(){
   renderCoursesList();
   updateCourseSelects();
 
-  // Auto-generate Zhuyin for all phrases and show editor
-  currentCourse = course;
-  tempPhrases = JSON.parse(JSON.stringify(course.lines));
-
-  // Auto-generate zhuyin for each phrase using built-in character map
-  let generatedCount = 0;
-
-  tempPhrases.forEach((line, idx) => {
-    if(line.phrase){
-      let zhuyin = '';
-      let charCount = 0;
-
-      // Process each character
-      for(let i = 0; i < line.phrase.length; i++){
-        const char = line.phrase[i];
-
-        // Skip spaces and punctuation
-        if(/\s|[，。！？；：『』「」（）]/.test(char)){
-          if(char !== ' ') zhuyin += char;
-          continue;
-        }
-
-        // Look up in ZHUYIN_DICT
-        if(typeof ZHUYIN_DICT !== 'undefined' && ZHUYIN_DICT[char]){
-          zhuyin += ZHUYIN_DICT[char] + ' ';
-          charCount++;
-        }
-      }
-
-      if(zhuyin.trim()){
-        line.zhuyin = zhuyin.trim();
-        generatedCount++;
-        console.log('Auto-generated for "' + line.phrase + '":', line.zhuyin);
-      }
-    }
-  });
-
-  // Show the course editor so user can confirm/edit generated zhuyin
-  renderPhraseEditor();
-  document.getElementById('course-name-input').value = currentCourse.name;
-  document.getElementById('course-detail-card').style.display = 'block';
-
-  // Show appropriate message
-  if(generatedCount > 0){
-    alert(`✓ 課程已建立！已為 ${generatedCount} 行詞句自動產生注音\n\n請確認或編輯下方的注音內容`);
+  // Show concise summary; user can still click the course card to fine-tune
+  if(totalChars > 0 && totalMatched === totalChars){
+    alert(`✓ 課程「${name}」已建立\n${lines.length} 行詞句的注音已全部自動產生`);
+  } else if(totalMatched > 0){
+    alert(`✓ 課程「${name}」已建立\n已自動產生 ${totalMatched}/${totalChars} 個字的注音\n（少數字典查無，已保留原字，可點擊課程卡片手動編輯）`);
   } else {
-    alert(`📝 課程已建立！包含 ${tempPhrases.length} 行詞句\n\n請點擊「🤖 自動注音」按鈕為每行詞句生成注音\n或手動輸入注音內容`);
+    alert(`✓ 課程「${name}」已建立\n注音字典查無對應字，請點擊課程卡片手動編輯注音`);
   }
 }
 
