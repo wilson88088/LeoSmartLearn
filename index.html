@@ -598,7 +598,8 @@ let charHistory = {};
 let currentCourse = null;
 let currentReviewLines = [];
 let reviewIndex = 0;
-let currentSchedule = null;
+let currentSchedule = null;     // The active schedule item being reviewed (transient)
+let scheduleItems = [];         // Persisted list of today's review schedule items
 let tempPhrases = [];
 
 // Today's tasks are built dynamically from currentSchedule
@@ -606,22 +607,21 @@ let defaultTasks = [];
 
 function buildTodayTasks(){
   const tasks = [];
-  if(currentSchedule){
-    const course = courses.find(c => c.id === currentSchedule.courseId);
-    if(course){
-      const isEnglish = course.type === 'english';
-      tasks.push({
-        id: 0,
-        name: (isEnglish ? '英文｜' : '國語｜') + course.name,
-        desc: `今日複習 ${currentSchedule.lineCount} ${isEnglish ? '個單字' : '行詞句'}`,
-        time: Math.max(5, currentSchedule.lineCount * 2),
-        tag: '每日任務',
-        done: false,
-        clickable: !isEnglish, // English review not yet implemented
-        type: isEnglish ? 'english-review' : 'chinese-review'
-      });
-    }
-  }
+  (scheduleItems || []).forEach((item, idx) => {
+    const course = courses.find(c => c.id === item.courseId);
+    if(!course) return; // skip if course was deleted
+    const isEnglish = course.type === 'english';
+    tasks.push({
+      id: idx, // index into scheduleItems
+      name: (isEnglish ? '英文｜' : '國語｜') + course.name,
+      desc: `今日複習 ${item.lineCount} ${isEnglish ? '個單字' : '行詞句'}`,
+      time: Math.max(5, item.lineCount * 2),
+      tag: isEnglish ? '英文' : '國文',
+      done: false,
+      clickable: !isEnglish, // English review not yet implemented
+      type: isEnglish ? 'english-review' : 'chinese-review'
+    });
+  });
   return tasks;
 }
 
@@ -679,12 +679,20 @@ function loadData(){
     const data = JSON.parse(stored);
     courses = data.courses || [];
     charHistory = data.charHistory || {};
-    currentSchedule = data.currentSchedule || null;
+    // Backward-compat: old saves had a single currentSchedule object
+    if(Array.isArray(data.scheduleItems)){
+      scheduleItems = data.scheduleItems;
+    } else if(data.currentSchedule){
+      scheduleItems = [data.currentSchedule];
+    } else {
+      scheduleItems = [];
+    }
+    currentSchedule = null; // transient
   }
 }
 
 function saveData(){
-  localStorage.setItem('chineseData-' + kidName, JSON.stringify({courses, charHistory, currentSchedule}));
+  localStorage.setItem('chineseData-' + kidName, JSON.stringify({courses, charHistory, scheduleItems}));
 }
 
 function renderAll(){
@@ -745,7 +753,13 @@ function renderTasks(list){
       </div>`;
     return;
   }
-  el.innerHTML = list.map(t=>`
+  el.innerHTML = list.map(t=>{
+    const isEnglish = t.type === 'english-review';
+    const badgeStyle = isEnglish
+      ? 'background:#fef3c7;color:#92400e;border:1px solid #fde68a'
+      : 'background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe';
+    const badge = `<span style="${badgeStyle};padding:3px 9px;border-radius:999px;font-size:11px;font-weight:800;white-space:nowrap">${isEnglish ? '🔤 英文' : '🀄 國文'}</span>`;
+    return `
     <div class="task-item ${t.done?'done':''}" id="task-${t.id}" ${t.clickable ? `onclick="startChineseReview('${t.id}')"` : ''}>
       <div class="task-meta">
         <div class="task-check ${t.done?'checked':''}" onclick="event.stopPropagation();toggleTask(${t.id})">${t.done?'✓':''}</div>
@@ -755,11 +769,11 @@ function renderTasks(list){
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
-        <span class="task-tag">${t.tag}</span>
+        ${badge}
         <button class="start-btn ${t.done?'done-btn':''}" onclick="event.stopPropagation();${t.clickable ? "startChineseReview(" + t.id + ")" : "openTask(" + t.id + ")"}">${t.done?'✓ 完成':'開始'}</button>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 function toggleTask(id){
@@ -972,22 +986,37 @@ function updateCourseSelects(){
 
 function renderScheduleList(){
   const el = document.getElementById('schedule-list');
-  if(!currentSchedule){
+  if(!scheduleItems || !scheduleItems.length){
     el.innerHTML = '<div style="color:#6b7280;padding:20px;text-align:center">還沒有設定今日複習行程</div>';
     return;
   }
-  const c = courses.find(x => x.id === currentSchedule.courseId);
-  if(!c){
-    el.innerHTML = '<div style="color:#ef4444;padding:20px;text-align:center">課程已刪除</div>';
-    return;
-  }
-  el.innerHTML = `
-    <div style="padding:16px;background:#f0fdf4;border-left:4px solid #22c55e;border-radius:8px">
-      <div style="font-weight:700;color:#166534;margin-bottom:4px">${c.name}</div>
-      <div style="color:#4b5563;margin-bottom:8px">每日複習 ${currentSchedule.lineCount} 行詞句</div>
-      <button onclick="clearSchedule()" style="padding:6px 12px;background:#ef4444;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">移除行程</button>
-    </div>
-  `;
+  el.innerHTML = scheduleItems.map((item, idx) => {
+    const c = courses.find(x => x.id === item.courseId);
+    if(!c){
+      return `
+        <div style="padding:14px;margin-bottom:10px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:8px;display:flex;justify-content:space-between;align-items:center">
+          <div style="color:#991b1b;font-weight:700">課程已刪除</div>
+          <button onclick="removeScheduleItem(${idx})" style="padding:6px 12px;background:#ef4444;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">移除</button>
+        </div>`;
+    }
+    const isEnglish = c.type === 'english';
+    const badge = isEnglish
+      ? '<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700">🔤 英文</span>'
+      : '<span style="background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700">🀄 國文</span>';
+    const accent = isEnglish ? '#f59e0b' : '#22c55e';
+    const bg = isEnglish ? '#fffbeb' : '#f0fdf4';
+    const labelColor = isEnglish ? '#92400e' : '#166534';
+    const unit = isEnglish ? '個單字' : '行詞句';
+    return `
+      <div style="padding:14px;margin-bottom:10px;background:${bg};border-left:4px solid ${accent};border-radius:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div style="font-weight:800;color:${labelColor}">${c.name}</div>
+          ${badge}
+        </div>
+        <div style="color:#4b5563;margin-bottom:10px;font-size:13px">每日複習 ${item.lineCount} ${unit}</div>
+        <button onclick="removeScheduleItem(${idx})" style="padding:6px 12px;background:#ef4444;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">移除</button>
+      </div>`;
+  }).join('');
 }
 
 function addToSchedule(){
@@ -997,16 +1026,36 @@ function addToSchedule(){
     alert('請選擇課程');
     return;
   }
-  currentSchedule = {courseId, lineCount};
+  // Prevent duplicates of the same course
+  if(scheduleItems.some(s => s.courseId === courseId)){
+    if(!confirm('此課程已在行程中，是否要更新每日複習行數？')){
+      return;
+    }
+    // Update existing item's lineCount
+    scheduleItems = scheduleItems.map(s => s.courseId === courseId ? {...s, lineCount} : s);
+  } else {
+    scheduleItems.push({courseId, lineCount});
+  }
   saveData();
   renderScheduleList();
+  renderAll(); // refresh today tasks too
   document.getElementById('review-course-select').value = '';
 }
 
-function clearSchedule(){
-  currentSchedule = null;
+function removeScheduleItem(idx){
+  if(idx < 0 || idx >= scheduleItems.length) return;
+  scheduleItems.splice(idx, 1);
   saveData();
   renderScheduleList();
+  renderAll(); // refresh today tasks too
+}
+
+// Kept for backward-compat in case any inline handler still calls it
+function clearSchedule(){
+  scheduleItems = [];
+  saveData();
+  renderScheduleList();
+  renderAll();
 }
 
 // ========== 課程管理功能 ==========
@@ -1223,15 +1272,19 @@ function addNewCourse(){
 }
 
 function startChineseReview(id){
-  if(!currentSchedule){
-    alert('請先在「課程管理」中加入今日複習行程');
+  // id is the index into scheduleItems (from buildTodayTasks)
+  const item = scheduleItems && scheduleItems[id];
+  if(!item){
+    alert('請先在「課程設定」中加入今日複習行程');
     return;
   }
-  const course = courses.find(c => c.id === currentSchedule.courseId);
+  const course = courses.find(c => c.id === item.courseId);
   if(!course){
     alert('課程不存在');
     return;
   }
+  // Set the active schedule item for review functions to read
+  currentSchedule = item;
   showPage('chinese-review');
   reviewIndex = 0;
   renderReviewContent();
@@ -1397,14 +1450,18 @@ function deleteCourse(){
   if(!currentCourse) return;
   if(!confirm('確定要刪除此課程？')) return;
 
-  courses = courses.filter(c => c.id !== currentCourse.id);
-  if(currentSchedule && currentSchedule.courseId === currentCourse.id){
+  const deletedId = currentCourse.id;
+  courses = courses.filter(c => c.id !== deletedId);
+  // Also remove any schedule items pointing to the deleted course
+  scheduleItems = (scheduleItems || []).filter(s => s.courseId !== deletedId);
+  if(currentSchedule && currentSchedule.courseId === deletedId){
     currentSchedule = null;
   }
   saveData();
   closeCourseDetail();
   renderCoursesList();
   renderScheduleList();
+  renderAll(); // refresh today tasks
   alert('✓ 課程已刪除');
 }
 
