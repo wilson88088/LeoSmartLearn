@@ -499,16 +499,36 @@
     </div>
   </div>
 
-  <!-- Add Course Modal -->
+  <!-- Add Course Type Selection Modal -->
+  <div class="modal-overlay" id="add-course-type-modal">
+    <div class="modal">
+      <div class="modal-title">選擇課程類型</div>
+      <div style="display:flex;gap:14px;justify-content:center;margin:20px 0">
+        <div onclick="openChineseAddCourseModal()" style="flex:1;padding:24px 12px;background:#eff6ff;border:2px solid #bfdbfe;border-radius:14px;text-align:center;cursor:pointer;transition:all .15s" onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='#eff6ff'">
+          <div style="font-size:48px;line-height:1">🀄</div>
+          <div style="font-size:17px;font-weight:800;color:#1d4ed8;margin-top:10px">國文</div>
+          <div style="font-size:12px;color:#6b7280;margin-top:4px">注音、筆順、部首</div>
+        </div>
+        <div onclick="openEnglishAddCourseModal()" style="flex:1;padding:24px 12px;background:#fef3c7;border:2px solid #fde68a;border-radius:14px;text-align:center;cursor:pointer;transition:all .15s" onmouseover="this.style.background='#fde68a'" onmouseout="this.style.background='#fef3c7'">
+          <div style="font-size:48px;line-height:1">🔤</div>
+          <div style="font-size:17px;font-weight:800;color:#92400e;margin-top:10px">英文</div>
+          <div style="font-size:12px;color:#6b7280;margin-top:4px">單字、中文翻譯</div>
+        </div>
+      </div>
+      <button onclick="closeAddCourseTypeModal()" class="modal-btn modal-close">取消</button>
+    </div>
+  </div>
+
+  <!-- Add Chinese Course Modal -->
   <div class="modal-overlay" id="add-course-modal">
     <div class="modal">
-      <div class="modal-title">新增課程</div>
+      <div class="modal-title">🀄 新增國文課程</div>
       <div style="margin-bottom:12px">
         <div class="form-label">課程名稱</div>
         <input type="text" id="new-course-name" class="form-input" placeholder="例：第一課 春天來了" />
       </div>
       <div style="margin-bottom:12px">
-        <div class="form-label">詞句（每行一個，注音另行輸入）</div>
+        <div class="form-label">字／詞 <span style="font-size:11px;color:#6b7280;font-weight:400">（可輸入多行，每行自動拆分為一筆，注音將自動產生）</span></div>
         <textarea id="new-course-phrases" class="form-textarea" placeholder="例：
 美麗的花朵
 春天的陽光
@@ -517,6 +537,36 @@
       </div>
       <button onclick="addNewCourse()" class="modal-btn modal-start">建立課程</button>
       <button onclick="closeAddCourseModal()" class="modal-btn modal-close">取消</button>
+    </div>
+  </div>
+
+  <!-- Add English Course Modal -->
+  <div class="modal-overlay" id="add-english-course-modal">
+    <div class="modal">
+      <div class="modal-title">🔤 新增英文課程</div>
+      <div style="margin-bottom:12px">
+        <div class="form-label">課程名稱</div>
+        <input type="text" id="new-en-course-name" class="form-input" placeholder="例：第一課 動物" />
+      </div>
+      <div style="margin-bottom:12px">
+        <div class="form-label">英文單字 <span style="font-size:11px;color:#6b7280;font-weight:400">（每行一個單字）</span></div>
+        <textarea id="new-en-course-words" class="form-textarea" placeholder="例：
+apple
+banana
+school
+teacher"></textarea>
+      </div>
+      <div style="margin-bottom:12px">
+        <div class="form-label">中文翻譯 <span style="font-size:11px;color:#6b7280;font-weight:400">（多行以換行對應，順序須一致）</span></div>
+        <textarea id="new-en-course-meanings" class="form-textarea" placeholder="例：
+蘋果
+香蕉
+學校
+老師"></textarea>
+        <button id="translate-en-btn" onclick="translateEnglishWords()" style="width:100%;margin-top:8px;padding:10px;background:#fff;color:#2563eb;border:2px solid #2563eb;border-radius:10px;font-weight:700;cursor:pointer;font-size:13px">🔄 自動翻譯中文</button>
+      </div>
+      <button onclick="addNewEnglishCourse()" class="modal-btn modal-start">建立課程</button>
+      <button onclick="closeAddEnglishCourseModal()" class="modal-btn modal-close">取消</button>
     </div>
   </div>
 </div>
@@ -551,11 +601,29 @@ let reviewIndex = 0;
 let currentSchedule = null;
 let tempPhrases = [];
 
-const defaultTasks = [
-  {id:0,name:'國語｜生字複習',desc:'每天 5 個詞',time:10,tag:'每日任務',done:false,clickable:true},
-  {id:1,name:'數學｜分數小測驗',desc:'老師指派',time:8,tag:'指派作業',done:false},
-  {id:2,name:'自然｜影片檢核點',desc:'本週複習',time:6,tag:'本週任務',done:false},
-];
+// Today's tasks are built dynamically from currentSchedule
+let defaultTasks = [];
+
+function buildTodayTasks(){
+  const tasks = [];
+  if(currentSchedule){
+    const course = courses.find(c => c.id === currentSchedule.courseId);
+    if(course){
+      const isEnglish = course.type === 'english';
+      tasks.push({
+        id: 0,
+        name: (isEnglish ? '英文｜' : '國語｜') + course.name,
+        desc: `今日複習 ${currentSchedule.lineCount} ${isEnglish ? '個單字' : '行詞句'}`,
+        time: Math.max(5, currentSchedule.lineCount * 2),
+        tag: '每日任務',
+        done: false,
+        clickable: !isEnglish, // English review not yet implemented
+        type: isEnglish ? 'english-review' : 'chinese-review'
+      });
+    }
+  }
+  return tasks;
+}
 
 const subjects = [
   {name:'國語',icon:'📖',pct:70,color:'#059669',bg:'#d1fae5',done:14,total:20},
@@ -620,6 +688,7 @@ function saveData(){
 }
 
 function renderAll(){
+  defaultTasks = buildTodayTasks();
   renderTasks([...defaultTasks]);
   renderProgress();
   renderRemindersMini();
@@ -667,6 +736,15 @@ function showPage(name){
 
 function renderTasks(list){
   const el = document.getElementById('task-list');
+  if(!list || !list.length){
+    el.innerHTML = `
+      <div style="padding:32px 16px;text-align:center;color:#6b7280;border:2px dashed #e5e7eb;border-radius:12px">
+        <div style="font-size:36px;margin-bottom:8px">🗓️</div>
+        <div style="font-size:15px;font-weight:700;color:#374151;margin-bottom:4px">今日無任務</div>
+        <div style="font-size:12px">請至「⚙️ 課程設定」加入今日複習行程</div>
+      </div>`;
+    return;
+  }
   el.innerHTML = list.map(t=>`
     <div class="task-item ${t.done?'done':''}" id="task-${t.id}" ${t.clickable ? `onclick="startChineseReview('${t.id}')"` : ''}>
       <div class="task-meta">
@@ -678,7 +756,7 @@ function renderTasks(list){
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         <span class="task-tag">${t.tag}</span>
-        <button class="start-btn ${t.done?'done-btn':''}" onclick="event.stopPropagation();${t.id === 0 ? "startChineseReview(0)" : "openTask(" + t.id + ")"}">${t.done?'✓ 完成':'開始'}</button>
+        <button class="start-btn ${t.done?'done-btn':''}" onclick="event.stopPropagation();${t.clickable ? "startChineseReview(" + t.id + ")" : "openTask(" + t.id + ")"}">${t.done?'✓ 完成':'開始'}</button>
       </div>
     </div>
   `).join('');
@@ -883,7 +961,7 @@ function fmtTime(s){
 
 function handleSearch(v){
   if(!v.trim()){renderTasks([...defaultTasks]);return;}
-  const f=defaultTasks.filter(t=>t.name.includes(v)||t.desc.includes(v)||t.tag.includes(v));
+  const f=defaultTasks.filter(t=>t.name.includes(v)||t.desc.includes(v)||(t.tag||'').includes(v));
   renderTasks(f);
 }
 
@@ -938,18 +1016,38 @@ function renderCoursesList(){
   if(courses.length === 0){
     html = '<div style="text-align:center;padding:20px;color:#6b7280">還沒有課程，點擊「+ 新增課程」開始建立</div>';
   } else {
-    html = courses.map(course => `
+    html = courses.map(course => {
+      const isEnglish = course.type === 'english';
+      const badge = isEnglish
+        ? '<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700">🔤 英文</span>'
+        : '<span style="background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700">🀄 國文</span>';
+      const unit = isEnglish ? '個單字' : '行詞句';
+      return `
       <div style="padding:16px;background:#f8fafc;border:2px solid #e5e7eb;border-radius:12px;cursor:pointer" onclick="editCourse('${course.id}')">
-        <div style="font-weight:800;color:#111;margin-bottom:4px;font-size:16px">第 ${course.id} 課</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <div style="font-weight:800;color:#111;font-size:16px">第 ${course.id} 課</div>
+          ${badge}
+        </div>
         <div style="color:#6b7280;margin-bottom:4px">${course.name}</div>
-        <div style="font-size:12px;color:#2563eb;font-weight:700">${course.lines.length} 行詞句</div>
+        <div style="font-size:12px;color:#2563eb;font-weight:700">${course.lines.length} ${unit}</div>
       </div>
-    `).join('');
+    `}).join('');
   }
   document.getElementById('courses-list').innerHTML = html;
 }
 
+// Entry point: show course type selection
 function openAddCourseModal(){
+  document.getElementById('add-course-type-modal').classList.add('open');
+}
+
+function closeAddCourseTypeModal(){
+  document.getElementById('add-course-type-modal').classList.remove('open');
+}
+
+// Chinese course flow
+function openChineseAddCourseModal(){
+  closeAddCourseTypeModal();
   document.getElementById('add-course-modal').classList.add('open');
   document.getElementById('new-course-name').value = '';
   document.getElementById('new-course-phrases').value = '';
@@ -958,6 +1056,92 @@ function openAddCourseModal(){
 
 function closeAddCourseModal(){
   document.getElementById('add-course-modal').classList.remove('open');
+}
+
+// English course flow
+function openEnglishAddCourseModal(){
+  closeAddCourseTypeModal();
+  document.getElementById('add-english-course-modal').classList.add('open');
+  document.getElementById('new-en-course-name').value = '';
+  document.getElementById('new-en-course-words').value = '';
+  document.getElementById('new-en-course-meanings').value = '';
+  document.getElementById('new-en-course-name').focus();
+}
+
+function closeAddEnglishCourseModal(){
+  document.getElementById('add-english-course-modal').classList.remove('open');
+}
+
+// Auto-translate English words to Traditional Chinese using MyMemory free API
+function translateEnglishWords(){
+  const rawText = document.getElementById('new-en-course-words').value.trim();
+  if(!rawText){
+    alert('請先輸入英文單字');
+    return;
+  }
+  const words = rawText.split('\n').map(l => l.trim()).filter(l => l);
+  const btn = document.getElementById('translate-en-btn');
+  const meaningEl = document.getElementById('new-en-course-meanings');
+
+  if(btn){
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+    btn.style.cursor = 'wait';
+    btn.textContent = '🔄 翻譯中…';
+  }
+
+  Promise.all(words.map(word =>
+    fetch('https://api.mymemory.translated.net/get?q=' + encodeURIComponent(word) + '&langpair=en|zh-TW')
+      .then(r => r.json())
+      .then(data => (data && data.responseData && data.responseData.translatedText) ? data.responseData.translatedText : word)
+      .catch(() => word)
+  )).then(translations => {
+    if(meaningEl) meaningEl.value = translations.join('\n');
+  }).catch(err => {
+    console.error('翻譯失敗:', err);
+    alert('翻譯失敗，請檢查網路或稍後再試');
+  }).finally(() => {
+    if(btn){
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.style.cursor = 'pointer';
+      btn.textContent = '🔄 自動翻譯中文';
+    }
+  });
+}
+
+function addNewEnglishCourse(){
+  const name = document.getElementById('new-en-course-name').value.trim();
+  const words = document.getElementById('new-en-course-words').value.split('\n').map(s => s.trim()).filter(s => s);
+  const meanings = document.getElementById('new-en-course-meanings').value.split('\n').map(s => s.trim());
+
+  if(!name || !words.length){
+    alert('請輸入課程名稱和英文單字');
+    return;
+  }
+
+  // Pair each word with its meaning by line index (meaning may be empty)
+  const lines = words.map((word, i) => ({
+    phrase: word,
+    zhuyin: '',
+    meaning: meanings[i] || ''
+  }));
+
+  const courseId = courses.length > 0 ? String(Math.max(...courses.map(c => parseInt(c.id))) + 1) : '1';
+  const course = {id: courseId, name, lines, type: 'english'};
+  courses.push(course);
+
+  saveData();
+  closeAddEnglishCourseModal();
+  renderCoursesList();
+  updateCourseSelects();
+
+  const missingMeanings = lines.filter(l => !l.meaning).length;
+  if(missingMeanings === 0){
+    alert(`✓ 英文課程「${name}」已建立\n包含 ${lines.length} 個單字，中文翻譯全部到位`);
+  } else {
+    alert(`✓ 英文課程「${name}」已建立\n包含 ${lines.length} 個單字\n${missingMeanings} 個單字尚無翻譯（可點擊課程卡片補填）`);
+  }
 }
 
 // Helper: convert a single Chinese char to zhuyin
@@ -1020,7 +1204,7 @@ function addNewCourse(){
   });
 
   const courseId = courses.length > 0 ? String(Math.max(...courses.map(c => parseInt(c.id))) + 1) : '1';
-  const course = {id: courseId, name, lines};
+  const course = {id: courseId, name, lines, type: 'chinese'};
   courses.push(course);
 
   saveData();
