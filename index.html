@@ -521,7 +521,7 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/pinyin-pro@3.19.2/lib/index.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pinyin-pro@3.26.0/dist/index.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
 <script>
 // Debug: Check if pinyin library loaded
@@ -960,7 +960,21 @@ function closeAddCourseModal(){
   document.getElementById('add-course-modal').classList.remove('open');
 }
 
-// Helper: convert a Chinese phrase to its zhuyin via ZHUYIN_DICT
+// Helper: convert a single Chinese char to zhuyin
+// Layer 1: built-in ZHUYIN_DICT (offline, 1633 chars)
+// Layer 2: pinyin-pro CDN (online, covers nearly all CJK)
+function lookupZhuyin(ch){
+  if(typeof ZHUYIN_DICT !== 'undefined' && ZHUYIN_DICT[ch]) return ZHUYIN_DICT[ch];
+  if(window.pinyinPro && typeof syllableToZhuyin === 'function'){
+    try{
+      const py = window.pinyinPro.pinyin(ch, {toneType: 'symbol', type: 'array'});
+      if(py && py.length > 0 && py[0]) return syllableToZhuyin(py[0]);
+    }catch(e){}
+  }
+  return '';
+}
+
+// Helper: convert a Chinese phrase to its zhuyin
 function generateZhuyinFromPhrase(phrase){
   if(!phrase) return {zhuyin: '', matched: 0, total: 0};
   let zhuyin = '';
@@ -974,8 +988,9 @@ function generateZhuyinFromPhrase(phrase){
       continue;
     }
     total++;
-    if(typeof ZHUYIN_DICT !== 'undefined' && ZHUYIN_DICT[char]){
-      zhuyin += ZHUYIN_DICT[char] + ' ';
+    const z = lookupZhuyin(char);
+    if(z){
+      zhuyin += z + ' ';
       matched++;
     } else {
       // Keep the original character as a placeholder if unmatched
@@ -1312,7 +1327,13 @@ function autoGenerateZhuyin(idx) {
   const chars = phrase.split('');
   const zhuyinParts = chars.map(ch => {
     if (!/[一-鿿]/.test(ch)) return ch;
-    if (ZHUYIN_DICT && ZHUYIN_DICT[ch]) return ZHUYIN_DICT[ch];
+    // Layer 1: built-in dict; Layer 2: pinyin-pro fallback
+    if (typeof lookupZhuyin === 'function') {
+      const z = lookupZhuyin(ch);
+      if (z) return z;
+    } else if (typeof ZHUYIN_DICT !== 'undefined' && ZHUYIN_DICT[ch]) {
+      return ZHUYIN_DICT[ch];
+    }
     return ch;
   });
   tempPhrases[idx].zhuyin = zhuyinParts.join(' ').trim();
