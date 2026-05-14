@@ -24,6 +24,25 @@
 .nav-item:hover{background:rgba(255,255,255,.15);color:#fff}
 .nav-item.active{background:rgba(255,255,255,.22);color:#fff;font-weight:700}
 .nav-icon{width:22px;text-align:center;font-size:16px}
+/* Individual nav icon images extracted into icon/ */
+.nav-icon-img{width:26px;height:26px;background-size:contain;background-repeat:no-repeat;background-position:center;flex-shrink:0}
+.nav-icon-home{background-image:url('icon/nav_home.png')}
+.nav-icon-cal{background-image:url('icon/nav_cal.png')}
+.nav-icon-books{background-image:url('icon/nav_books.png')}
+.nav-icon-bell{background-image:url('icon/nav_bell.png')}
+.nav-icon-parents{background-image:url('icon/nav_parents.png')}
+.nav-icon-gear{background-image:url('icon/nav_gear.png')}
+.sidebar{position:relative;padding-bottom:130px}
+.sidebar-mascot{position:absolute;left:0;right:0;bottom:6px;height:120px;background-image:url('icon/mascot_backpack.png');background-size:contain;background-repeat:no-repeat;background-position:center bottom;opacity:.98;pointer-events:none}
+.add-schedule-mascot{position:absolute;right:10px;bottom:10px;width:90px;height:90px;background-image:url('icon/mascot_calendar.png');background-size:contain;background-repeat:no-repeat;background-position:center;opacity:.98;pointer-events:none}
+.topbar-airplane{width:44px;height:34px;background-image:url('icon/deco_airplane.png');background-size:contain;background-repeat:no-repeat;background-position:center;flex-shrink:0;margin-right:6px}
+/* Course list lesson icons */
+.lesson-icon{width:42px;height:42px;background-size:contain;background-repeat:no-repeat;background-position:center;flex-shrink:0}
+.lesson-icon-chinese{background-image:url('icon/lesson_notebook.png')}
+.lesson-icon-english{background-image:url('icon/lesson_book.png')}
+/* Card title decoration */
+.card-title-icon{width:24px;height:24px;background-size:contain;background-repeat:no-repeat;background-position:center;display:inline-block;vertical-align:-5px;margin-right:6px}
+.card-title-icon-course{background-image:url('icon/section_course.png')}
 /* Main */
 .main{display:flex;flex-direction:column;overflow:hidden}
 .topbar{padding:16px 20px;background:#fff;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;gap:12px}
@@ -33,7 +52,8 @@
 .streak-badge{background:#fef3c7;color:#92400e;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700;margin-right:8px}
 .search-box{padding:8px 14px;border-radius:999px;border:1px solid #e5e7eb;background:#f8fafc;font-size:13px;color:#374151;outline:none;width:180px}
 .search-box:focus{border-color:var(--blue)}
-.avatar-btn{width:38px;height:38px;border-radius:50%;background:#fef3c7;display:grid;place-items:center;font-size:20px;cursor:pointer;border:none;flex-shrink:0}
+.avatar-btn{width:42px;height:42px;border-radius:50%;background:#fef3c7;display:grid;place-items:center;cursor:pointer;border:none;flex-shrink:0;overflow:hidden;padding:0}
+.avatar-btn img{width:100%;height:100%;object-fit:cover}
 /* Pages */
 .page{display:none;padding:18px 20px;overflow-y:auto;flex:1}
 .page.active{display:block}
@@ -164,7 +184,7 @@
 <!-- Login Screen -->
 <div class="login-screen" id="login-screen">
   <div class="login-card">
-    <div class="login-icon">📘</div>
+    <div class="login-icon"><img src="icon/app_logo.png" alt="小學學習通" style="width:80px;height:80px;object-fit:contain;display:block;margin:0 auto" /></div>
     <div class="login-title">小學學習通</div>
     <div class="login-sub">歡迎來到學習系統</div>
     <input
@@ -183,30 +203,31 @@
   <div class="frame">
     <nav class="sidebar">
       <div class="brand">
-        <div class="brand-icon">📘</div>
+        <div class="brand-icon"><img src="icon/app_logo.png" alt="logo" style="width:30px;height:30px;object-fit:contain" /></div>
         <span class="brand-name">小學學習通</span>
       </div>
       <button class="nav-item active" onclick="showPage('today')">
-        <span class="nav-icon">🏠</span>今日學習
+        <span class="nav-icon-img nav-icon-home"></span>今日學習
       </button>
       <button class="nav-item" onclick="showPage('calendar')">
-        <span class="nav-icon">📅</span>月曆 / 週曆
+        <span class="nav-icon-img nav-icon-cal"></span>月曆 / 週曆
       </button>
       <button class="nav-item" onclick="showPage('subjects')">
-        <span class="nav-icon">📚</span>科目歷程
+        <span class="nav-icon-img nav-icon-books"></span>科目歷程
       </button>
       <button class="nav-item" onclick="showPage('reminders')">
-        <span class="nav-icon">⏰</span>學習提醒
+        <span class="nav-icon-img nav-icon-bell"></span>學習提醒
       </button>
       <button class="nav-item" onclick="showPage('parent')">
-        <span class="nav-icon">👨‍👩‍👧</span>家長摘要
+        <span class="nav-icon-img nav-icon-parents"></span>家長摘要
       </button>
       <button class="nav-item" onclick="showPage('course-setting')">
-        <span class="nav-icon">⚙️</span>課程設定
+        <span class="nav-icon-img nav-icon-gear"></span>課程設定
       </button>
-      <button class="nav-item" onclick="resetApp()" style="margin-top:auto;color:rgba(255,255,255,.75)">
+      <button class="nav-item" onclick="resetApp()" style="color:rgba(255,255,255,.75)">
         <span class="nav-icon">🔄</span>重新開始
       </button>
+      <div class="sidebar-mascot" aria-hidden="true"></div>
     </nav>
 
     <div class="main">
@@ -218,8 +239,9 @@
             本週完成 <span id="week-done">7</span> / 10
           </div>
         </div>
+        <div class="topbar-airplane" aria-hidden="true"></div>
         <input class="search-box" placeholder="🔍 搜尋科目或作業" id="search-box" oninput="handleSearch(this.value)" />
-        <button class="avatar-btn" onclick="showPage('parent')">😊</button>
+        <button class="avatar-btn" onclick="showPage('parent')" title="家長摘要"><img src="icon/avatar.png" alt="頭像" /></button>
       </div>
 
       <!-- Today Page -->
@@ -389,8 +411,8 @@
       <!-- Course Setting Page -->
       <div class="page" id="page-course-setting">
         <div class="card">
-          <div class="card-title">📚 課程管理</div>
-          <button onclick="openAddCourseModal()" style="width:100%;padding:12px;background:#2563eb;color:#fff;border:none;border-radius:12px;font-weight:800;cursor:pointer;margin-bottom:16px">+ 新增課程</button>
+          <div class="card-title"><span class="card-title-icon card-title-icon-course"></span>課程管理</div>
+          <button onclick="openAddCourseModal()" style="width:100%;padding:12px;background:linear-gradient(90deg,#2563eb,#4f8cff);color:#fff;border:none;border-radius:999px;font-weight:800;cursor:pointer;margin-bottom:16px;box-shadow:0 4px 14px rgba(37,99,235,.35)">+ 新增課程</button>
           <div id="courses-list" style="display:grid;gap:10px"></div>
         </div>
 
@@ -412,7 +434,8 @@
           <button onclick="deleteCourse()" style="width:100%;margin-top:8px;padding:12px;background:#ef4444;color:#fff;border:none;border-radius:12px;font-weight:800;cursor:pointer">刪除課程</button>
         </div>
 
-        <div class="card">
+        <div class="card" style="position:relative;overflow:hidden">
+          <div class="add-schedule-mascot" aria-hidden="true"></div>
           <div class="card-title">📋 加入行程</div>
           <div class="form-label">選擇複習課程</div>
           <select id="review-course-select" class="form-select" onchange="updateReviewConfig()">
@@ -1219,17 +1242,21 @@ function renderCoursesList(){
     html = courses.map(course => {
       const isEnglish = course.type === 'english';
       const badge = isEnglish
-        ? '<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700">🔤 英文</span>'
-        : '<span style="background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700">🀄 國文</span>';
+        ? '<img src="icon/badge_english.png" alt="英文" style="height:24px;width:auto;object-fit:contain" />'
+        : '<img src="icon/badge_chinese.png" alt="國文" style="height:24px;width:auto;object-fit:contain" />';
+      const lessonIconClass = isEnglish ? 'lesson-icon-english' : 'lesson-icon-chinese';
       const unit = isEnglish ? '個單字' : '行詞句';
       return `
-      <div style="padding:16px;background:#f8fafc;border:2px solid #e5e7eb;border-radius:12px;cursor:pointer" onclick="editCourse('${course.id}')">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-          <div style="font-weight:800;color:#111;font-size:16px">第 ${course.id} 課</div>
-          ${badge}
+      <div style="padding:14px;background:#f8fafc;border:2px solid #e5e7eb;border-radius:14px;cursor:pointer;display:flex;align-items:center;gap:14px" onclick="editCourse('${course.id}')">
+        <div class="lesson-icon ${lessonIconClass}"></div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <div style="font-weight:800;color:#111;font-size:16px">第 ${course.id} 課</div>
+            ${badge}
+          </div>
+          <div style="color:#6b7280;margin-bottom:4px">${course.name}</div>
+          <div style="font-size:12px;color:#2563eb;font-weight:700">${course.lines.length} ${unit}</div>
         </div>
-        <div style="color:#6b7280;margin-bottom:4px">${course.name}</div>
-        <div style="font-size:12px;color:#2563eb;font-weight:700">${course.lines.length} ${unit}</div>
       </div>
     `}).join('');
   }
