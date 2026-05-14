@@ -43,6 +43,37 @@
 /* Card title decoration */
 .card-title-icon{width:24px;height:24px;background-size:contain;background-repeat:no-repeat;background-position:center;display:inline-block;vertical-align:-5px;margin-right:6px}
 .card-title-icon-course{background-image:url('icon/section_course.png')}
+.card-title-icon-cal{background-image:url('icon/nav_cal.png')}
+/* Schedule form layout */
+.schedule-card{padding:18px 20px}
+.schedule-grid{display:grid;grid-template-columns:1.6fr .9fr;gap:18px;align-items:start}
+.schedule-form{display:flex;flex-direction:column;gap:14px}
+.schedule-fields-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.field-block{display:flex;flex-direction:column}
+.field-label{font-size:13px;font-weight:700;color:#374151;margin-bottom:8px}
+.field-input{padding:11px 14px;border:1px solid #e5e7eb;border-radius:12px;font-size:13px;font-family:inherit;outline:none;background:#fff;color:#374151}
+.field-input:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.field-input-date{position:relative}
+.field-input-date input{width:100%;padding:11px 38px 11px 14px;border:1px solid #e5e7eb;border-radius:12px;font-size:13px;font-family:inherit;outline:none;background:#fff;color:#374151}
+.field-input-date input:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.field-input-date::after{content:'';position:absolute;right:12px;top:50%;transform:translateY(-50%);width:18px;height:18px;background-image:url('icon/date_picker.png');background-size:contain;background-repeat:no-repeat;background-position:center;pointer-events:none;opacity:.7}
+/* Stepper */
+.stepper{display:flex;align-items:center;border:1px solid #e5e7eb;border-radius:12px;background:#fff;overflow:hidden;height:42px}
+.stepper button{flex:0 0 38px;height:100%;border:none;background:none;font-size:18px;font-weight:800;color:#374151;cursor:pointer;transition:background .15s}
+.stepper button:hover{background:#f1f5f9}
+.stepper input{flex:1;border:none;outline:none;text-align:center;font-size:15px;font-weight:800;color:#111;background:transparent;font-family:inherit;width:100%}
+.stepper input::-webkit-inner-spin-button,.stepper input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+/* Right-side mascot card */
+.schedule-mascot-card{background:linear-gradient(180deg,#f8faff,#eef4ff);border:1px solid #e5edff;border-radius:18px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;position:relative}
+.schedule-mascot-card img{width:100px;height:auto;display:block}
+.schedule-mascot-card .copy{font-size:13px;font-weight:800;color:#1d4ed8;line-height:1.5}
+.schedule-add-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 22px;background:linear-gradient(90deg,#2563eb,#4f8cff);color:#fff;border:none;border-radius:999px;font-weight:800;cursor:pointer;font-size:14px;box-shadow:0 4px 14px rgba(37,99,235,.35);transition:transform .15s,box-shadow .15s}
+.schedule-add-btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(37,99,235,.4)}
+/* Optional repeat-rule pill row, kept for backward compat */
+.repeat-pill-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.repeat-pill{padding:6px 12px;border:1.5px solid #e5e7eb;border-radius:999px;background:#fff;color:#374151;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s}
+.repeat-pill.active{background:#2563eb;color:#fff;border-color:#2563eb}
+.repeat-pill:hover{border-color:#bfdbfe}
 /* Main */
 .main{display:flex;flex-direction:column;overflow:hidden}
 .topbar{padding:16px 20px;background:#fff;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;gap:12px}
@@ -434,40 +465,66 @@
           <button onclick="deleteCourse()" style="width:100%;margin-top:8px;padding:12px;background:#ef4444;color:#fff;border:none;border-radius:12px;font-weight:800;cursor:pointer">刪除課程</button>
         </div>
 
-        <div class="card" style="position:relative;overflow:hidden">
-          <div class="add-schedule-mascot" aria-hidden="true"></div>
-          <div class="card-title">📋 加入行程</div>
-          <div class="form-label">選擇複習課程</div>
-          <select id="review-course-select" class="form-select" onchange="updateReviewConfig()">
-            <option value="">請選擇課程...</option>
-          </select>
-          <div class="form-label">每日複習數量（行/單字）</div>
-          <input type="number" id="daily-review-count" class="form-input" value="5" min="1" max="50" />
-          <div class="form-label">重複規則</div>
-          <select id="schedule-repeat" class="form-select" onchange="onRepeatChange()">
-            <option value="daily">每天</option>
-            <option value="weekday">工作天（週一～週五）</option>
-            <option value="weekend">休息天（週六/日）</option>
-            <option value="weekly">每週固定（指定星期幾）</option>
-            <option value="once">單一天</option>
-          </select>
-          <div id="schedule-weekly-row" style="display:none;margin-top:8px">
-            <div class="form-label">指定星期幾</div>
-            <select id="schedule-weekday" class="form-select">
-              <option value="1">星期一</option>
-              <option value="2">星期二</option>
-              <option value="3">星期三</option>
-              <option value="4">星期四</option>
-              <option value="5">星期五</option>
-              <option value="6">星期六</option>
-              <option value="0">星期日</option>
-            </select>
+        <div class="card schedule-card">
+          <div class="card-title"><span class="card-title-icon card-title-icon-cal"></span>加入行程</div>
+          <div class="schedule-grid">
+            <div class="schedule-form">
+              <div class="field-block">
+                <label class="field-label" for="review-course-select">選擇複習課程</label>
+                <select id="review-course-select" class="field-input" onchange="updateReviewConfig()">
+                  <option value="">請選擇課程...</option>
+                </select>
+              </div>
+              <div class="schedule-fields-row">
+                <div class="field-block">
+                  <label class="field-label">每日複習行數</label>
+                  <div class="stepper">
+                    <button type="button" onclick="stepLineCount(-1)" aria-label="減少">−</button>
+                    <input type="number" id="daily-review-count" value="5" min="1" max="50" />
+                    <button type="button" onclick="stepLineCount(1)" aria-label="增加">+</button>
+                  </div>
+                </div>
+                <div class="field-block">
+                  <label class="field-label" for="schedule-start-date">開始日期</label>
+                  <div class="field-input-date">
+                    <input type="date" id="schedule-start-date" />
+                  </div>
+                </div>
+                <div class="field-block">
+                  <label class="field-label" for="schedule-end-date">結束日期 <span style="color:#9ca3af;font-weight:500">（選填）</span></label>
+                  <div class="field-input-date">
+                    <input type="date" id="schedule-end-date" placeholder="選擇日期" />
+                  </div>
+                </div>
+              </div>
+              <div class="field-block">
+                <label class="field-label">重複規則</label>
+                <div class="repeat-pill-row" id="repeat-pill-row">
+                  <div class="repeat-pill active" data-repeat="daily" onclick="selectRepeat('daily')">每天</div>
+                  <div class="repeat-pill" data-repeat="weekday" onclick="selectRepeat('weekday')">工作天</div>
+                  <div class="repeat-pill" data-repeat="weekend" onclick="selectRepeat('weekend')">休息天</div>
+                  <div class="repeat-pill" data-repeat="weekly" onclick="selectRepeat('weekly')">每週固定</div>
+                </div>
+                <div id="schedule-weekly-row" style="display:none;margin-top:10px">
+                  <select id="schedule-weekday" class="field-input" style="max-width:200px">
+                    <option value="1">星期一</option>
+                    <option value="2">星期二</option>
+                    <option value="3">星期三</option>
+                    <option value="4">星期四</option>
+                    <option value="5">星期五</option>
+                    <option value="6">星期六</option>
+                    <option value="0">星期日</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="schedule-mascot-card">
+              <img src="icon/mascot_calendar.png" alt="持續複習" />
+              <div class="copy">持續複習，<br>學習效果更棒！</div>
+              <button class="schedule-add-btn" onclick="addToSchedule()">加入行程</button>
+            </div>
           </div>
-          <div id="schedule-once-row" style="display:none;margin-top:8px">
-            <div class="form-label">日期</div>
-            <input type="date" id="schedule-date" class="form-input" />
-          </div>
-          <button onclick="addToSchedule()" style="width:100%;margin-top:12px;padding:12px;background:#2563eb;color:#fff;border:none;border-radius:12px;font-weight:800;cursor:pointer">✓ 加入行程</button>
         </div>
 
         <div class="card" id="schedule-card">
@@ -704,18 +761,32 @@ function fmtLocalDate(d){
 function repeatLabel(item){
   const t = item.repeatType || 'daily';
   const wkNames = ['日','一','二','三','四','五','六'];
+  let base;
   switch(t){
-    case 'daily': return '每天';
-    case 'weekday': return '工作天 (一～五)';
-    case 'weekend': return '休息天 (六/日)';
-    case 'weekly': return `每週${wkNames[parseInt(item.weekday||0)]}`;
-    case 'once': return item.date ? `單日：${item.date}` : '單日';
-    default: return '每天';
+    case 'daily': base = '每天'; break;
+    case 'weekday': base = '工作天 (一～五)'; break;
+    case 'weekend': base = '休息天 (六/日)'; break;
+    case 'weekly': base = `每週${wkNames[parseInt(item.weekday||0)]}`; break;
+    case 'once': base = item.date ? `單日：${item.date}` : '單日'; break;
+    default: base = '每天';
   }
+  // Append optional date range
+  if(item.startDate || item.endDate){
+    const s = item.startDate || '今';
+    const e = item.endDate || '無';
+    base += `（${s} ~ ${e}）`;
+  }
+  return base;
 }
 
 // Does this schedule item fire on the given Date?
 function scheduleMatchesDate(item, date){
+  const dateStr = fmtLocalDate(date);
+  // Range gating: if startDate set, date must be >= startDate
+  if(item.startDate && dateStr < item.startDate) return false;
+  // If endDate set, date must be <= endDate
+  if(item.endDate && dateStr > item.endDate) return false;
+
   const t = item.repeatType || 'daily';
   const dow = date.getDay(); // 0=Sun, 6=Sat
   switch(t){
@@ -723,16 +794,38 @@ function scheduleMatchesDate(item, date){
     case 'weekday': return dow >= 1 && dow <= 5;
     case 'weekend': return dow === 0 || dow === 6;
     case 'weekly': return dow === parseInt(item.weekday || 0);
-    case 'once': return item.date === fmtLocalDate(date);
+    case 'once': return item.date === dateStr;
     default: return true;
   }
 }
 
-// Toggle visibility of repeat-related extra fields
+// Track the selected repeat type chosen via pill buttons
+let selectedRepeatType = 'daily';
+
+// Toggle visibility of repeat-related extra fields (legacy stub kept for safety)
 function onRepeatChange(){
-  const t = document.getElementById('schedule-repeat').value;
-  document.getElementById('schedule-weekly-row').style.display = t === 'weekly' ? '' : 'none';
-  document.getElementById('schedule-once-row').style.display = t === 'once' ? '' : 'none';
+  // No-op; pills + selectRepeat() handle this now.
+}
+
+// Increment / decrement the line-count stepper
+function stepLineCount(delta){
+  const el = document.getElementById('daily-review-count');
+  const min = parseInt(el.min || '1');
+  const max = parseInt(el.max || '50');
+  let v = parseInt(el.value || '5') + delta;
+  if(isNaN(v)) v = 5;
+  if(v < min) v = min;
+  if(v > max) v = max;
+  el.value = v;
+}
+
+// Pick a repeat rule via the pill buttons
+function selectRepeat(rt){
+  selectedRepeatType = rt;
+  document.querySelectorAll('#repeat-pill-row .repeat-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.repeat === rt);
+  });
+  document.getElementById('schedule-weekly-row').style.display = rt === 'weekly' ? '' : 'none';
 }
 
 function buildTodayTasks(){
@@ -1177,30 +1270,33 @@ function renderScheduleList(){
 function addToSchedule(){
   const courseId = document.getElementById('review-course-select').value;
   const lineCount = parseInt(document.getElementById('daily-review-count').value) || 5;
-  const repeatType = document.getElementById('schedule-repeat').value || 'daily';
+  const repeatType = selectedRepeatType || 'daily';
+  const startDate = document.getElementById('schedule-start-date').value || '';
+  const endDate = document.getElementById('schedule-end-date').value || '';
+
   if(!courseId){
     alert('請選擇課程');
     return;
   }
+  if(startDate && endDate && endDate < startDate){
+    alert('結束日期不可早於開始日期');
+    return;
+  }
+
   const newItem = {courseId, lineCount, repeatType};
   if(repeatType === 'weekly'){
     newItem.weekday = parseInt(document.getElementById('schedule-weekday').value);
-  } else if(repeatType === 'once'){
-    const dateVal = document.getElementById('schedule-date').value;
-    if(!dateVal){
-      alert('請選擇日期');
-      return;
-    }
-    newItem.date = dateVal;
   }
+  if(startDate) newItem.startDate = startDate;
+  if(endDate) newItem.endDate = endDate;
 
-  // We allow multiple entries for the same course as long as the repeat rule differs.
-  // Duplicate full-match → ask to update instead.
+  // Allow multiple entries per course as long as rule/range differs.
   const dup = scheduleItems.findIndex(s =>
     s.courseId === newItem.courseId &&
     (s.repeatType || 'daily') === newItem.repeatType &&
     (s.weekday ?? null) === (newItem.weekday ?? null) &&
-    (s.date ?? null) === (newItem.date ?? null)
+    (s.startDate || '') === (newItem.startDate || '') &&
+    (s.endDate || '') === (newItem.endDate || '')
   );
   if(dup >= 0){
     if(!confirm('此課程在此規則下已存在，是否更新每日複習數量？')){
@@ -1214,6 +1310,8 @@ function addToSchedule(){
   renderScheduleList();
   renderAll(); // refresh today tasks + calendar
   document.getElementById('review-course-select').value = '';
+  // Reset only the optional end date so the form stays helpful
+  document.getElementById('schedule-end-date').value = '';
 }
 
 function removeScheduleItem(idx){
