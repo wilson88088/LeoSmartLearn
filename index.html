@@ -7,18 +7,28 @@
   <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+/* Scrollbar styling — thin, blends with background */
+.sidebar::-webkit-scrollbar,.page::-webkit-scrollbar{width:8px}
+.sidebar::-webkit-scrollbar-track,.page::-webkit-scrollbar-track{background:transparent}
+.sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:999px}
+.sidebar::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.32)}
+.page::-webkit-scrollbar-thumb{background:rgba(15,23,42,.18);border-radius:999px}
+.page::-webkit-scrollbar-thumb:hover{background:rgba(15,23,42,.32)}
+.sidebar{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.25) transparent}
+.page{scrollbar-width:thin;scrollbar-color:rgba(15,23,42,.25) transparent}
 :root{
   --blue:#2563eb;--blue-lt:#dbeafe;--blue-ltt:#eff6ff;
   --green:#22c55e;--amber:#f59e0b;--red:#ef4444;
   --gray-1:#f8fafc;--gray-2:#e5e7eb;--gray-3:#6b7280;--gray-4:#374151;
   --navy:#172554;--white:#fff;--radius:16px;--radius-lg:24px;
 }
-.app{font-family:'Noto Sans TC','Microsoft JhengHei',sans-serif;background:#f0f4f8;min-height:600px;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;font-size:14px;color:#1f2937}
-.frame{display:grid;grid-template-columns:220px 1fr;min-height:600px}
+.app{font-family:'Noto Sans TC','Microsoft JhengHei',sans-serif;background:#f0f4f8;height:100vh;border-radius:0;overflow:hidden;display:flex;flex-direction:column;font-size:14px;color:#1f2937}
+.frame{display:grid;grid-template-columns:220px 1fr;flex:1;min-height:0;height:100%}
 /* Sidebar */
-.sidebar{background:linear-gradient(160deg,#1e3a8a,#2563eb);padding:20px 16px;display:flex;flex-direction:column;gap:6px}
+.sidebar{background:linear-gradient(160deg,#1e3a8a,#2563eb);padding:20px 16px;display:flex;flex-direction:column;gap:6px;overflow-y:auto;overflow-x:hidden;min-height:0}
 .brand{display:flex;align-items:center;gap:10px;margin-bottom:20px;color:#fff}
-.brand-icon{width:40px;height:40px;border-radius:14px;background:rgba(255,255,255,.2);display:grid;place-items:center;font-size:22px;flex-shrink:0}
+.brand-icon{width:56px;height:56px;display:grid;place-items:center;flex-shrink:0;background:transparent}
 .brand-name{font-size:17px;font-weight:900;color:#fff}
 .nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;color:rgba(255,255,255,.75);cursor:pointer;font-weight:500;transition:all .2s;font-size:13px;border:none;background:none;width:100%;text-align:left}
 .nav-item:hover{background:rgba(255,255,255,.15);color:#fff}
@@ -36,10 +46,29 @@
 .sidebar-mascot{position:absolute;left:0;right:0;bottom:6px;height:120px;background-image:url('icon/mascot_backpack.png');background-size:contain;background-repeat:no-repeat;background-position:center bottom;opacity:.98;pointer-events:none}
 .add-schedule-mascot{position:absolute;right:10px;bottom:10px;width:90px;height:90px;background-image:url('icon/mascot_calendar.png');background-size:contain;background-repeat:no-repeat;background-position:center;opacity:.98;pointer-events:none}
 .topbar-airplane{width:44px;height:34px;background-image:url('icon/deco_airplane.png');background-size:contain;background-repeat:no-repeat;background-position:center;flex-shrink:0;margin-right:6px}
+/* Course management section */
+.course-mgmt-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:12px}
+.course-mgmt-header h3{font-size:18px;font-weight:900;color:#111;display:flex;align-items:center;gap:8px;margin:0}
+.course-mgmt-header h3 .card-title-icon{vertical-align:middle;margin-right:0}
+.course-mgmt-add-btn{display:inline-flex;align-items:center;gap:6px;padding:11px 22px;background:linear-gradient(90deg,#2563eb,#4f8cff);color:#fff;border:none;border-radius:999px;font-weight:800;cursor:pointer;font-size:14px;box-shadow:0 4px 14px rgba(37,99,235,.35);transition:transform .15s,box-shadow .15s;white-space:nowrap}
+.course-mgmt-add-btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(37,99,235,.4)}
 /* Course list lesson icons */
-.lesson-icon{width:42px;height:42px;background-size:contain;background-repeat:no-repeat;background-position:center;flex-shrink:0}
-.lesson-icon-chinese{background-image:url('icon/lesson_notebook.png')}
-.lesson-icon-english{background-image:url('icon/lesson_book.png')}
+.lesson-icon{width:68px;height:68px;background-size:contain;background-repeat:no-repeat;background-position:center;flex-shrink:0}
+.lesson-icon-chinese{background-image:url('icon/lesson_book.png')}
+.lesson-icon-english{background-image:url('icon/lesson_notebook.png')}
+/* Course list cards */
+.course-card{position:relative;padding:18px 20px;background:#fff;border:1.5px solid #eef2f7;border-radius:18px;cursor:pointer;display:flex;align-items:center;gap:18px;margin-bottom:12px;transition:all .2s;overflow:hidden}
+.course-card:hover{border-color:#bfdbfe;box-shadow:0 6px 18px rgba(37,99,235,.08);transform:translateY(-1px)}
+.course-card-body{flex:1;min-width:0}
+.course-card-title{font-size:20px;font-weight:900;color:#111;line-height:1.25;margin-bottom:10px;word-break:break-word;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.course-card-meta{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#2563eb;font-weight:700;background:#eff6ff;padding:5px 12px;border-radius:999px}
+.course-card-meta-icon{width:14px;height:14px;display:inline-block}
+.course-card-side{display:flex;align-items:center;gap:14px;flex-shrink:0}
+.course-card-badge{height:30px;width:auto;object-fit:contain;flex-shrink:0}
+.course-card-menu{width:20px;height:20px;background-image:url('icon/menu_dots.png');background-size:contain;background-repeat:no-repeat;background-position:center;opacity:.55;cursor:pointer;flex-shrink:0;transition:opacity .15s}
+.course-card-menu:hover{opacity:1}
+/* Subtle ABC decoration on English cards */
+.course-card.is-english::after{content:'';position:absolute;right:120px;bottom:8px;width:90px;height:48px;background-image:url('icon/deco_abc.png');background-size:contain;background-repeat:no-repeat;background-position:right bottom;opacity:.5;pointer-events:none}
 /* Card title decoration */
 .card-title-icon{width:24px;height:24px;background-size:contain;background-repeat:no-repeat;background-position:center;display:inline-block;vertical-align:-5px;margin-right:6px}
 .card-title-icon-course{background-image:url('icon/section_course.png')}
@@ -75,7 +104,7 @@
 .repeat-pill.active{background:#2563eb;color:#fff;border-color:#2563eb}
 .repeat-pill:hover{border-color:#bfdbfe}
 /* Main */
-.main{display:flex;flex-direction:column;overflow:hidden}
+.main{display:flex;flex-direction:column;overflow:hidden;min-height:0;min-width:0}
 .topbar{padding:16px 20px;background:#fff;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;gap:12px}
 .topbar-left{flex:1}
 .topbar-title{font-size:17px;font-weight:800;color:#111}
@@ -86,7 +115,7 @@
 .avatar-btn{width:42px;height:42px;border-radius:50%;background:#fef3c7;display:grid;place-items:center;cursor:pointer;border:none;flex-shrink:0;overflow:hidden;padding:0}
 .avatar-btn img{width:100%;height:100%;object-fit:cover}
 /* Pages */
-.page{display:none;padding:18px 20px;overflow-y:auto;flex:1}
+.page{display:none;padding:18px 20px;overflow-y:auto;flex:1;min-height:0}
 .page.active{display:block}
 /* Cards */
 .card{background:#fff;border-radius:20px;padding:18px;box-shadow:0 4px 16px rgba(15,23,42,.07);border:1px solid rgba(15,23,42,.05);margin-bottom:14px}
@@ -215,7 +244,7 @@
 <!-- Login Screen -->
 <div class="login-screen" id="login-screen">
   <div class="login-card">
-    <div class="login-icon"><img src="icon/app_logo.png" alt="小學學習通" style="width:80px;height:80px;object-fit:contain;display:block;margin:0 auto" /></div>
+    <div class="login-icon"><img src="icon/app_logo.png" alt="小學學習通" style="width:120px;height:120px;object-fit:contain;display:block;margin:0 auto" /></div>
     <div class="login-title">小學學習通</div>
     <div class="login-sub">歡迎來到學習系統</div>
     <input
@@ -234,7 +263,7 @@
   <div class="frame">
     <nav class="sidebar">
       <div class="brand">
-        <div class="brand-icon"><img src="icon/app_logo.png" alt="logo" style="width:30px;height:30px;object-fit:contain" /></div>
+        <div class="brand-icon"><img src="icon/app_logo.png" alt="logo" style="width:52px;height:52px;object-fit:contain" /></div>
         <span class="brand-name">小學學習通</span>
       </div>
       <button class="nav-item active" onclick="showPage('today')">
@@ -442,9 +471,11 @@
       <!-- Course Setting Page -->
       <div class="page" id="page-course-setting">
         <div class="card">
-          <div class="card-title"><span class="card-title-icon card-title-icon-course"></span>課程管理</div>
-          <button onclick="openAddCourseModal()" style="width:100%;padding:12px;background:linear-gradient(90deg,#2563eb,#4f8cff);color:#fff;border:none;border-radius:999px;font-weight:800;cursor:pointer;margin-bottom:16px;box-shadow:0 4px 14px rgba(37,99,235,.35)">+ 新增課程</button>
-          <div id="courses-list" style="display:grid;gap:10px"></div>
+          <div class="course-mgmt-header">
+            <h3><span class="card-title-icon card-title-icon-course"></span>課程管理</h3>
+            <button class="course-mgmt-add-btn" onclick="openAddCourseModal()">+ 新增課程</button>
+          </div>
+          <div id="courses-list" style="display:grid;gap:0"></div>
         </div>
 
         <div class="card" id="course-detail-card" style="display:none">
@@ -1339,21 +1370,24 @@ function renderCoursesList(){
   } else {
     html = courses.map(course => {
       const isEnglish = course.type === 'english';
-      const badge = isEnglish
-        ? '<img src="icon/badge_english.png" alt="英文" style="height:24px;width:auto;object-fit:contain" />'
-        : '<img src="icon/badge_chinese.png" alt="國文" style="height:24px;width:auto;object-fit:contain" />';
       const lessonIconClass = isEnglish ? 'lesson-icon-english' : 'lesson-icon-chinese';
+      const badgeSrc = isEnglish ? 'icon/badge_english.png' : 'icon/badge_chinese.png';
+      const badgeAlt = isEnglish ? '英文' : '國文';
       const unit = isEnglish ? '個單字' : '行詞句';
+      const metaIcon = isEnglish
+        ? '<svg class="course-card-meta-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="2.5" width="10" height="11.5" rx="1.5"/><path d="M6 1.5h4v2H6z"/><path d="M5.5 7h5M5.5 9.5h5M5.5 12h3"/></svg>'
+        : '<svg class="course-card-meta-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 4.5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H7l-3 2.5v-2.5h-.5a1 1 0 0 1-1-1z"/></svg>';
+      const displayName = (course.name || '').trim() || '（未命名課程）';
       return `
-      <div style="padding:14px;background:#f8fafc;border:2px solid #e5e7eb;border-radius:14px;cursor:pointer;display:flex;align-items:center;gap:14px" onclick="editCourse('${course.id}')">
+      <div class="course-card ${isEnglish ? 'is-english' : 'is-chinese'}" onclick="editCourse('${course.id}')">
         <div class="lesson-icon ${lessonIconClass}"></div>
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-            <div style="font-weight:800;color:#111;font-size:16px">第 ${course.id} 課</div>
-            ${badge}
-          </div>
-          <div style="color:#6b7280;margin-bottom:4px">${course.name}</div>
-          <div style="font-size:12px;color:#2563eb;font-weight:700">${course.lines.length} ${unit}</div>
+        <div class="course-card-body">
+          <div class="course-card-title">${displayName}</div>
+          <div class="course-card-meta">${metaIcon}<span>${course.lines.length} ${unit}</span></div>
+        </div>
+        <div class="course-card-side">
+          <img class="course-card-badge" src="${badgeSrc}" alt="${badgeAlt}" />
+          <div class="course-card-menu" onclick="event.stopPropagation();editCourse('${course.id}')" title="編輯"></div>
         </div>
       </div>
     `}).join('');
