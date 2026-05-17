@@ -1509,6 +1509,10 @@ function getItemLearningStatus(state, due){
   return {key:'learning', label:'學習中', color:'#1d4ed8', bg:'#dbeafe'};
 }
 
+function hasLearningAttempt(item){
+  return !!(item && item.state && ((item.state.attempts || 0) > 0 || item.state.lastReviewed));
+}
+
 function getLearningItems(){
   const today = todayKey();
   const items = [];
@@ -2218,7 +2222,12 @@ function renderMasteryDetails(){
 
 function getWrongItems(limit = 8){
   return getLearningItems()
-    .filter(item => item.status.key === 'weak' || ((item.state && item.state.lapses) || 0) > 0 || (item.state && (item.state.lastQuality || 0) < 3))
+    .filter(item => {
+      if(!hasLearningAttempt(item)) return false;
+      const lapses = (item.state && item.state.lapses) || 0;
+      const lastQuality = item.state && item.state.lastQuality;
+      return item.status.key === 'weak' || lapses > 0 || (lastQuality !== null && lastQuality !== undefined && lastQuality < 3);
+    })
     .sort((a,b) => {
       const lapseDiff = ((b.state && b.state.lapses) || 0) - ((a.state && a.state.lapses) || 0);
       if(lapseDiff) return lapseDiff;
@@ -2298,7 +2307,11 @@ function formatParentDate(dateStr){
 function getParentFocusItems(limit = 5){
   const priority = {weak:0, due:1, learning:2, new:3, familiar:4};
   return getLearningItems()
-    .filter(item => item.status.key !== 'familiar' || item.mastery < 90)
+    .filter(item => {
+      if(!hasLearningAttempt(item)) return false;
+      const lapses = (item.state && item.state.lapses) || 0;
+      return item.status.key === 'weak' || item.status.key === 'due' || item.mastery < 60 || lapses > 0;
+    })
     .sort((a,b) => {
       const pa = priority[a.status.key] ?? 9;
       const pb = priority[b.status.key] ?? 9;
