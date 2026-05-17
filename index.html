@@ -268,6 +268,16 @@ html,body{height:100%;overflow:hidden}
 .score-btn{padding:12px 14px;border:2px solid #e5e7eb;background:#fff;border-radius:10px;cursor:pointer;font-weight:700;font-size:12px;transition:all .2s;margin:6px;flex:1;min-width:100px}
 .score-btn:hover{border-color:#2563eb;color:#2563eb}
 .score-btn.selected{background:#2563eb;color:#fff;border-color:#2563eb}
+.recall-hidden{letter-spacing:.18em;color:#94a3b8!important}
+.recall-note{font-size:12px;font-weight:800;color:#1d4ed8;background:#eff6ff;border:1px solid #bfdbfe;border-radius:999px;padding:6px 10px;display:inline-flex;margin-top:10px}
+.spell-box{width:100%;max-width:420px;background:#fff7ed;border:1px solid #fed7aa;border-radius:14px;padding:12px;margin-bottom:14px}
+.spell-input{width:100%;padding:11px 14px;border:1px solid #fdba74;border-radius:10px;font-size:16px;font-weight:800;text-align:center;outline:none}
+.spell-input:focus{border-color:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,.15)}
+.spell-result{font-size:12px;font-weight:900;text-align:center;margin-top:8px;min-height:18px}
+.wrong-list{display:grid;gap:8px}
+.wrong-row{background:#fff;border:1px solid #fecaca;border-left:4px solid #dc2626;border-radius:12px;padding:10px 12px}
+.wrong-title{display:flex;justify-content:space-between;gap:8px;font-size:13px;font-weight:900;color:#111}
+.wrong-meta{font-size:12px;color:#6b7280;margin-top:4px;line-height:1.45}
 
 /* Login Screen */
 .login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#1e3a8a,#2563eb);display:flex;align-items:center;justify-content:center;z-index:1000;font-family:'Noto Sans TC','Microsoft JhengHei',sans-serif}
@@ -454,6 +464,10 @@ html,body{height:100%;overflow:hidden}
           <div id="subject-overview-panel">
             <div id="subject-summary-metrics"></div>
             <div id="subject-history"></div>
+            <div style="margin-top:14px">
+              <div class="card-title" style="font-size:14px;margin-bottom:10px">錯題清單</div>
+              <div id="wrong-item-list" class="wrong-list"></div>
+            </div>
           </div>
           <div id="subject-mastery-panel" style="display:none">
             <div class="mastery-toolbar">
@@ -722,8 +736,9 @@ html,body{height:100%;overflow:hidden}
           <div id="review-stroke-target" style="display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin-bottom:20px;min-height:130px;width:100%"></div>
 
           <div style="display:flex;gap:10px;width:100%;max-width:300px;margin-bottom:16px">
-            <button onclick="speakCurrentPhrase()" style="flex:1;padding:14px;background:#2563eb;color:#fff;border:none;border-radius:12px;cursor:pointer;font-weight:800;font-size:15px">🔊 再讀一次</button>
-            <button onclick="playStrokeAnimation()" style="flex:1;padding:14px;background:#8b5cf6;color:#fff;border:none;border-radius:12px;cursor:pointer;font-weight:800;font-size:15px">✍️ 筆順</button>
+            <button id="zh-speak-btn" onclick="speakCurrentPhrase()" style="flex:1;padding:14px;background:#2563eb;color:#fff;border:none;border-radius:12px;cursor:pointer;font-weight:800;font-size:15px">🔊 再讀一次</button>
+            <button id="zh-stroke-btn" onclick="playStrokeAnimation()" style="flex:1;padding:14px;background:#8b5cf6;color:#fff;border:none;border-radius:12px;cursor:pointer;font-weight:800;font-size:15px">✍️ 筆順</button>
+            <button id="zh-recall-toggle-btn" onclick="toggleChineseRecallMode()" style="flex:1;padding:14px;background:#fff;color:#1d4ed8;border:2px solid #bfdbfe;border-radius:12px;cursor:pointer;font-weight:800;font-size:15px">遮字回想</button>
           </div>
 
           <div style="display:flex;gap:10px;width:100%;max-width:360px;flex-wrap:wrap;justify-content:center"><button onclick="completeCurrentPhrase(2)" style="flex:1;min-width:130px;padding:14px;background:#fff;color:#991b1b;border:2px solid #fecaca;border-radius:12px;cursor:pointer;font-weight:800;font-size:15px">還不熟</button><button onclick="completeCurrentPhrase(4)" style="flex:1;min-width:130px;padding:14px;background:#22c55e;color:#fff;border:none;border-radius:12px;cursor:pointer;font-weight:800;font-size:15px" id="next-btn">記住了 →</button></div>
@@ -759,6 +774,14 @@ html,body{height:100%;overflow:hidden}
           <div style="display:flex;gap:10px;width:100%;max-width:340px;margin-bottom:14px;flex-wrap:wrap;justify-content:center">
             <button onclick="replayEnglishPron()" style="flex:1;min-width:120px;padding:12px;background:#f59e0b;color:#fff;border:none;border-radius:12px;cursor:pointer;font-weight:800;font-size:14px">🔊 播放發音</button>
             <button id="en-pron-mode-btn" onclick="cycleEnPronMode()" style="flex:1;min-width:140px;padding:12px;background:#fff;color:#92400e;border:2px solid #fde68a;border-radius:12px;cursor:pointer;font-weight:800;font-size:13px">🔤 中+英+拼讀</button>
+            <button id="en-answer-toggle-btn" onclick="toggleEnglishAnswer()" style="flex:1;min-width:120px;padding:12px;background:#fff;color:#1d4ed8;border:2px solid #bfdbfe;border-radius:12px;cursor:pointer;font-weight:800;font-size:13px">顯示答案</button>
+          </div>
+
+          <div class="spell-box">
+            <div style="font-size:12px;font-weight:900;color:#92400e;text-align:center;margin-bottom:8px">拼字輸入</div>
+            <input id="en-spell-input" class="spell-input" placeholder="看中文，輸入英文單字" onkeydown="if(event.key==='Enter') checkEnglishSpelling()" />
+            <div id="en-spell-result" class="spell-result"></div>
+            <button onclick="checkEnglishSpelling()" style="width:100%;margin-top:8px;padding:10px;background:#f59e0b;color:#fff;border:none;border-radius:10px;cursor:pointer;font-weight:900">檢查拼字</button>
           </div>
 
           <div style="display:flex;gap:10px;width:100%;max-width:340px">
@@ -2105,6 +2128,43 @@ function renderMasteryDetails(){
   }).join('');
 }
 
+function getWrongItems(limit = 8){
+  return getLearningItems()
+    .filter(item => item.status.key === 'weak' || ((item.state && item.state.lapses) || 0) > 0 || (item.state && (item.state.lastQuality || 0) < 3))
+    .sort((a,b) => {
+      const lapseDiff = ((b.state && b.state.lapses) || 0) - ((a.state && a.state.lapses) || 0);
+      if(lapseDiff) return lapseDiff;
+      if(a.mastery !== b.mastery) return a.mastery - b.mastery;
+      return String(b.lastReviewed || '').localeCompare(String(a.lastReviewed || ''));
+    })
+    .slice(0, limit);
+}
+
+function renderWrongItems(){
+  const el = document.getElementById('wrong-item-list');
+  if(!el) return;
+  const items = getWrongItems();
+  if(!items.length){
+    el.innerHTML = '<div class="parent-empty">目前沒有錯題紀錄，完成幾次複習後會自動整理。</div>';
+    return;
+  }
+  el.innerHTML = items.map(item => {
+    const lapses = (item.state && item.state.lapses) || 0;
+    return `
+      <div class="wrong-row">
+        <div class="wrong-title">
+          <span>${escapeHtml(item.phrase || '未命名內容')}</span>
+          <span class="parent-chip" style="background:${item.status.bg};color:${item.status.color}">${item.mastery}%</span>
+        </div>
+        <div class="wrong-meta">
+          ${escapeHtml(item.subjectName)}｜${escapeHtml(item.courseName)}${item.helper ? `｜${escapeHtml(item.helper)}` : ''}<br>
+          答錯 ${lapses} 次｜作答 ${item.attempts} 次｜正確率 ${item.accuracy === null ? '—' : item.accuracy + '%'}｜下次 ${item.nextDue || '—'}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
 function renderSubjects(){
   const stats = getSubjectStats();
   const summary = getMasterySummary();
@@ -2129,6 +2189,7 @@ function renderSubjects(){
       <div class="subj-pct" style="color:${s.color}">${s.masteryPct}%</div>
     </div>
   `).join('');
+  renderWrongItems();
   if(currentSubjectTab === 'mastery') renderMasteryDetails();
   const mins = getWeekMinutes();
   const mx=Math.max(...mins)||1;
@@ -3034,7 +3095,9 @@ function addNewCourse(){
 
 // ========== English review ==========
 let enReviewIndex = 0;
-let enPronMode = 'full'; // 'none' | 'word' | 'full'
+let enPronMode = 'none'; // 'none' | 'word' | 'full'
+let enAnswerVisible = false;
+let chineseRecallMode = true;
 
 function startEnglishReview(id){
   const item = scheduleItems && scheduleItems[id];
@@ -3047,6 +3110,8 @@ function startEnglishReview(id){
   currentReviewLines = getCourseReviewItems(course, item);
   if(!currentReviewLines.length){ alert('此課程尚無單字'); return; }
   enReviewIndex = 0;
+  enPronMode = 'none';
+  enAnswerVisible = false;
   showPage('english-review');
   renderEnglishReviewContent();
 }
@@ -3063,12 +3128,14 @@ function renderEnglishReviewContent(){
   document.getElementById('en-review-total').textContent = total;
   document.getElementById('en-review-index').textContent = enReviewIndex + 1;
   document.getElementById('en-review-meaning').textContent = line.meaning || '—';
-  document.getElementById('en-review-word').textContent = line.phrase || '';
-  // Spelled-out form (letters spaced)
-  const spell = (line.phrase || '').toUpperCase().split('').join(' ');
-  document.getElementById('en-review-spell').textContent = spell;
+  enAnswerVisible = false;
+  updateEnglishAnswerDisplay();
   const progress = ((enReviewIndex + 1) / total) * 100;
   document.getElementById('en-review-progress').style.width = progress + '%';
+  const spellInput = document.getElementById('en-spell-input');
+  const spellResult = document.getElementById('en-spell-result');
+  if(spellInput) spellInput.value = '';
+  if(spellResult){ spellResult.textContent = ''; spellResult.style.color = '#92400e'; }
 
   // Update next-button label to "完成" on last item
   const nextBtn = document.getElementById('en-review-next-btn');
@@ -3079,8 +3146,38 @@ function renderEnglishReviewContent(){
   // Update mode-cycle button label
   updateEnPronModeButton();
 
-  // Auto-play pronunciation
-  replayEnglishPron();
+  // Default is no pronunciation; only play if the learner explicitly changes mode.
+  if(enPronMode !== 'none') replayEnglishPron();
+}
+
+function maskEnglishWord(word){
+  return String(word || '').split('').map(ch => /[A-Za-z]/.test(ch) ? '•' : ch).join('');
+}
+
+function updateEnglishAnswerDisplay(){
+  const item = currentReviewLines && currentReviewLines[enReviewIndex];
+  const line = item && item.line;
+  const wordEl = document.getElementById('en-review-word');
+  const spellEl = document.getElementById('en-review-spell');
+  const btn = document.getElementById('en-answer-toggle-btn');
+  if(!line || !wordEl || !spellEl) return;
+  const word = line.phrase || '';
+  if(enAnswerVisible){
+    wordEl.textContent = word;
+    wordEl.classList.remove('recall-hidden');
+    spellEl.textContent = word.toUpperCase().split('').join(' ');
+    if(btn) btn.textContent = '隱藏答案';
+  } else {
+    wordEl.textContent = maskEnglishWord(word);
+    wordEl.classList.add('recall-hidden');
+    spellEl.textContent = '先看中文，自己拼出英文';
+    if(btn) btn.textContent = '顯示答案';
+  }
+}
+
+function toggleEnglishAnswer(){
+  enAnswerVisible = !enAnswerVisible;
+  updateEnglishAnswerDisplay();
 }
 
 function enReviewPrev(){
@@ -3092,7 +3189,9 @@ function enReviewPrev(){
 
 function enReviewNext(quality = 4){
   if(!currentSchedule) return;
-  updateMemoryState(currentReviewLines[enReviewIndex], quality);
+  const item = currentReviewLines[enReviewIndex];
+  if(item && !item._scored) updateMemoryState(item, quality);
+  if(item) item._scored = false;
   if(enReviewIndex < currentReviewLines.length - 1){
     enReviewIndex++;
     saveData();
@@ -3104,6 +3203,41 @@ function enReviewNext(quality = 4){
     showPage('today');
     alert('✓ 英文複習完成！已安排下次複習');
   }
+}
+
+function normalizeSpelling(text){
+  return String(text || '').trim().toLowerCase().replace(/\s+/g, '');
+}
+
+function checkEnglishSpelling(){
+  if(!currentSchedule) return;
+  const item = currentReviewLines[enReviewIndex];
+  const line = item && item.line;
+  const input = document.getElementById('en-spell-input');
+  const result = document.getElementById('en-spell-result');
+  if(!line || !input || !result) return;
+  const expected = normalizeSpelling(line.phrase);
+  const actual = normalizeSpelling(input.value);
+  if(!actual){
+    result.textContent = '請先輸入英文單字';
+    result.style.color = '#92400e';
+    return;
+  }
+  if(actual === expected){
+    result.textContent = '拼對了！已記錄為熟悉';
+    result.style.color = '#166534';
+    updateMemoryState(item, 5);
+    item._scored = true;
+    enAnswerVisible = true;
+  } else {
+    result.textContent = `還差一點，正確拼法是 ${line.phrase}`;
+    result.style.color = '#991b1b';
+    updateMemoryState(item, 2);
+    item._scored = true;
+    enAnswerVisible = true;
+  }
+  updateEnglishAnswerDisplay();
+  saveData();
 }
 
 function updateEnPronModeButton(){
@@ -3184,6 +3318,7 @@ function startChineseReview(id){
   if(!currentReviewLines.length){ alert('此課程尚無詞句'); return; }
   showPage('chinese-review');
   reviewIndex = 0;
+  chineseRecallMode = true;
   renderReviewContent();
 }
 
@@ -3208,9 +3343,67 @@ function renderReviewContent(){
 
   const progress = ((reviewIndex + 1) / currentReviewLines.length) * 100;
   document.getElementById('review-progress').style.width = progress + '%';
+  chineseRecallMode = true;
+  updateChineseRecallDisplay();
 
-  speakCurrentPhrase();
-  playStrokeAnimation();
+  if(!chineseRecallMode) speakCurrentPhrase();
+  if(!chineseRecallMode) playStrokeAnimation();
+}
+
+function maskTextForRecall(text){
+  return String(text || '').split('').map(ch => /\s/.test(ch) ? ch : '□').join('');
+}
+
+function toggleChineseRecallMode(){
+  chineseRecallMode = !chineseRecallMode;
+  updateChineseRecallDisplay();
+}
+
+function updateChineseRecallDisplay(){
+  const phraseEl = document.getElementById('review-phrase');
+  const zhuyinEl = document.getElementById('review-zhuyin');
+  const btn = document.getElementById('zh-recall-toggle-btn');
+  const speakBtn = document.getElementById('zh-speak-btn');
+  const strokeBtn = document.getElementById('zh-stroke-btn');
+  const strokeTarget = document.getElementById('review-stroke-target');
+  if(!phraseEl || !zhuyinEl) return;
+  const item = currentReviewLines && currentReviewLines[reviewIndex];
+  const line = item && item.line;
+  if(!line) return;
+  if(chineseRecallMode){
+    phraseEl.textContent = maskTextForRecall(line.phrase);
+    phraseEl.classList.add('recall-hidden');
+    zhuyinEl.textContent = line.zhuyin || '看注音回想詞句';
+    if(btn) btn.textContent = '顯示答案';
+    if(speakBtn){
+      speakBtn.disabled = true;
+      speakBtn.style.opacity = '.45';
+      speakBtn.style.cursor = 'not-allowed';
+    }
+    if(strokeBtn){
+      strokeBtn.disabled = true;
+      strokeBtn.style.opacity = '.45';
+      strokeBtn.style.cursor = 'not-allowed';
+    }
+    if(strokeTarget) strokeTarget.innerHTML = '<div class="recall-note">先看注音回想詞句，顯示答案後再看筆順</div>';
+  } else {
+    phraseEl.textContent = line.phrase || '';
+    phraseEl.classList.remove('recall-hidden');
+    zhuyinEl.textContent = line.zhuyin || 'ㄅㄆㄇ';
+    if(btn) btn.textContent = '遮字回想';
+    if(speakBtn){
+      speakBtn.disabled = false;
+      speakBtn.style.opacity = '1';
+      speakBtn.style.cursor = 'pointer';
+    }
+    if(strokeBtn){
+      strokeBtn.disabled = false;
+      strokeBtn.style.opacity = '1';
+      strokeBtn.style.cursor = 'pointer';
+    }
+    if(strokeTarget) strokeTarget.innerHTML = '';
+    playStrokeAnimation();
+  }
 }
 
 // Look up the radicals of all Chinese chars in a phrase, joined with 、
@@ -3224,6 +3417,11 @@ function getRadicalsForPhrase(phrase){
 // Play stroke order animation for each Chinese char in the current phrase
 function playStrokeAnimation(){
   if(!currentSchedule) return;
+  if(chineseRecallMode){
+    const target = document.getElementById('review-stroke-target');
+    if(target) target.innerHTML = '<div class="recall-note">先顯示答案，才會播放筆順</div>';
+    return;
+  }
   const activeItem = currentReviewLines[reviewIndex];
   if(!activeItem || !activeItem.line) return;
 
