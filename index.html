@@ -85,6 +85,7 @@ html,body{height:100%;overflow:hidden}
 .schedule-grid{display:grid;grid-template-columns:1.6fr .9fr;gap:18px;align-items:start}
 .schedule-form{display:flex;flex-direction:column;gap:14px}
 .schedule-fields-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.schedule-fields-row.once-mode{grid-template-columns:1fr 1fr}
 .field-block{display:flex;flex-direction:column}
 .field-label{font-size:13px;font-weight:700;color:#374151;margin-bottom:8px}
 .field-input{padding:11px 14px;border:1px solid #e5e7eb;border-radius:12px;font-size:13px;font-family:inherit;outline:none;background:#fff;color:#374151}
@@ -110,6 +111,12 @@ html,body{height:100%;overflow:hidden}
 .repeat-pill{padding:6px 12px;border:1.5px solid #e5e7eb;border-radius:999px;background:#fff;color:#374151;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s}
 .repeat-pill.active{background:#2563eb;color:#fff;border-color:#2563eb}
 .repeat-pill:hover{border-color:#bfdbfe}
+.schedule-once-panel{display:none;margin-top:-2px;padding:12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px}
+.schedule-check-row{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;color:#374151;margin-bottom:8px}
+.schedule-check-row:last-of-type{margin-bottom:0}
+.schedule-followup-title{font-size:12px;font-weight:900;color:#1d4ed8;margin:12px 0 8px;padding-top:10px;border-top:1px solid #e5e7eb}
+.schedule-followup-grid{display:none;margin-top:10px;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media(max-width:760px){.schedule-grid,.schedule-fields-row,.schedule-fields-row.once-mode,.schedule-followup-grid{grid-template-columns:1fr}}
 /* Main */
 .main{display:flex;flex-direction:column;overflow:hidden;min-height:0;min-width:0}
 .topbar{padding:16px 20px;background:#fff;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;gap:12px}
@@ -176,6 +183,15 @@ html,body{height:100%;overflow:hidden}
 .switch-row:last-child{border-bottom:none;padding-bottom:0}
 .switch-label{font-size:13px;font-weight:700;color:#111}
 .switch-sub{font-size:11px;color:var(--gray-3);margin-top:2px}
+.reminder-card-list{display:grid;gap:10px}
+.smart-reminder{display:grid;grid-template-columns:4px 1fr auto;gap:10px;align-items:center;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px}
+.smart-reminder-accent{width:4px;height:100%;border-radius:999px;background:var(--reminder-color,#2563eb)}
+.smart-reminder-title{font-size:13px;font-weight:900;color:#111;margin-bottom:3px}
+.smart-reminder-sub{font-size:12px;color:#6b7280;line-height:1.45}
+.smart-reminder-action{border:none;border-radius:999px;background:#eff6ff;color:#1d4ed8;padding:7px 10px;font-size:11px;font-weight:900;cursor:pointer;white-space:nowrap}
+.reminder-settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.reminder-settings-grid .field-input{width:100%}
+@media(max-width:760px){.smart-reminder{grid-template-columns:4px 1fr}.smart-reminder-action{grid-column:2;justify-self:start}.reminder-settings-grid{grid-template-columns:1fr}}
 .toggle{position:relative;width:44px;height:24px;flex-shrink:0}
 .toggle input{opacity:0;width:0;height:0;position:absolute}
 .toggle-track{position:absolute;inset:0;border-radius:999px;background:#cbd5e1;cursor:pointer;transition:.25s}
@@ -189,7 +205,27 @@ html,body{height:100%;overflow:hidden}
 .stat-lbl{font-size:11px;color:#1d4ed8;margin-top:2px}
 /* Subject history */
 .subj-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f1f5f9}
-.subj-row:last-child{border-bottom:none}
+.subj-row:last-child{border-bottom:none}.subject-tabs{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.subject-tab{border:1px solid #dbeafe;background:#fff;color:#1d4ed8;border-radius:999px;padding:8px 14px;font-size:12px;font-weight:900;cursor:pointer}
+.subject-tab.active{background:#2563eb;color:#fff;border-color:#2563eb}
+.subject-overview-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.subject-metric{background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:10px;text-align:center}
+.subject-metric-num{font-size:20px;font-weight:900;color:#111}
+.subject-metric-label{font-size:11px;color:#6b7280;margin-top:2px;font-weight:700}
+.mastery-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.mastery-toolbar select,.mastery-toolbar input{padding:8px 10px;border:1px solid #e5e7eb;border-radius:10px;font-size:12px;outline:none;background:#fff}
+.mastery-course{border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;margin-bottom:10px;background:#fff}
+.mastery-course-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#f8fafc;border-bottom:1px solid #e5e7eb}
+.mastery-course-title{font-size:13px;font-weight:900;color:#111;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mastery-course-meta{display:flex;gap:6px;flex-wrap:wrap;font-size:11px;color:#6b7280;font-weight:800}
+.mastery-table{display:grid;grid-template-columns:minmax(120px,1.1fr) minmax(120px,1fr) 90px 70px 72px 86px 86px 84px;gap:0;align-items:center;font-size:12px}
+.mastery-table-head{background:#fff;color:#6b7280;font-weight:900;border-bottom:1px solid #f1f5f9}
+.mastery-cell{padding:8px 10px;border-bottom:1px solid #f8fafc;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mastery-row:last-child .mastery-cell{border-bottom:none}
+.mastery-bar{height:8px;background:#e5e7eb;border-radius:999px;overflow:hidden;margin-top:4px}
+.mastery-bar-fill{height:100%;border-radius:999px;background:#22c55e}
+.mastery-status{display:inline-flex;border-radius:999px;padding:3px 8px;font-size:11px;font-weight:900;white-space:nowrap}
+@media(max-width:980px){.subject-overview-grid{grid-template-columns:repeat(2,1fr)}.mastery-table{grid-template-columns:1fr 1fr}.mastery-table-head{display:none}.mastery-cell{border-bottom:none}.mastery-row{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #f1f5f9}.mastery-row:last-child{border-bottom:none}}
 .subj-icon{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;font-size:18px;flex-shrink:0}
 .subj-info{flex:1}
 .subj-name{font-size:13px;font-weight:700}
@@ -203,6 +239,17 @@ html,body{height:100%;overflow:hidden}
 .week-col{flex:1;border-radius:6px 6px 0 0;background:#bfdbfe;min-height:8px;transition:height .5s;position:relative;cursor:pointer}
 .week-col.today{background:var(--blue)}
 .week-col-label{font-size:10px;text-align:center;color:var(--gray-3);margin-top:4px}
+.parent-kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.parent-kpi{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:10px;text-align:center}
+.parent-kpi-num{font-size:20px;font-weight:900;color:#111}
+.parent-kpi-label{font-size:11px;color:#6b7280;font-weight:800;margin-top:2px}
+.parent-list{display:grid;gap:8px}
+.parent-row{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px;font-size:12px}
+.parent-row-title{display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:900;color:#111;margin-bottom:4px}
+.parent-row-meta{color:#6b7280;line-height:1.45}
+.parent-chip{display:inline-flex;align-items:center;border-radius:999px;padding:3px 8px;font-size:11px;font-weight:900;white-space:nowrap}
+.parent-empty{background:#fff;border:1px dashed #d1d5db;border-radius:12px;padding:12px;font-size:12px;color:#6b7280;text-align:center}
+@media(max-width:760px){.summary-grid,.parent-kpi-grid{grid-template-columns:1fr}}
 /* Modal overlay */
 .modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;z-index:500;border-radius:0;opacity:0;pointer-events:none;transition:opacity .2s}
 .modal-overlay.open{opacity:1;pointer-events:all;display:flex}
@@ -370,7 +417,7 @@ html,body{height:100%;overflow:hidden}
               <div class="cal-grid" id="mini-cal"></div>
             </div>
             <div class="card">
-              <div class="card-title">⏰ 提醒設定</div>
+              <div class="card-title">⏰ 今日提醒</div>
               <div id="reminder-list-mini"></div>
             </div>
           </div>
@@ -400,7 +447,33 @@ html,body{height:100%;overflow:hidden}
       <div class="page" id="page-subjects">
         <div class="card">
           <div class="card-title">📚 科目學習歷程</div>
-          <div id="subject-history"></div>
+          <div class="subject-tabs">
+            <button class="subject-tab active" id="subject-tab-overview" onclick="setSubjectTab('overview')">總覽</button>
+            <button class="subject-tab" id="subject-tab-mastery" onclick="setSubjectTab('mastery')">熟練度明細</button>
+          </div>
+          <div id="subject-overview-panel">
+            <div id="subject-summary-metrics"></div>
+            <div id="subject-history"></div>
+          </div>
+          <div id="subject-mastery-panel" style="display:none">
+            <div class="mastery-toolbar">
+              <select id="mastery-subject-filter" onchange="renderMasteryDetails()">
+                <option value="all">全部科目</option>
+                <option value="chinese">國文</option>
+                <option value="english">英文</option>
+              </select>
+              <select id="mastery-status-filter" onchange="renderMasteryDetails()">
+                <option value="all">全部狀態</option>
+                <option value="new">新內容</option>
+                <option value="learning">學習中</option>
+                <option value="familiar">熟悉</option>
+                <option value="weak">需加強</option>
+                <option value="due">今日到期</option>
+              </select>
+              <input id="mastery-search" placeholder="搜尋字詞 / 單字" oninput="renderMasteryDetails()" />
+            </div>
+            <div id="mastery-detail-list"></div>
+          </div>
         </div>
         <div class="card">
           <div class="card-title">📈 學習趨勢（本週）</div>
@@ -420,30 +493,12 @@ html,body{height:100%;overflow:hidden}
       <!-- Reminders Page -->
       <div class="page" id="page-reminders">
         <div class="card">
-          <div class="card-title">⏰ 學習提醒設定</div>
+          <div class="card-title">⏰ 今日提醒與待辦</div>
           <div id="reminders-full"></div>
         </div>
         <div class="card">
-          <div class="card-title">➕ 新增提醒</div>
-          <div style="display:grid;gap:10px">
-            <div>
-              <label style="font-size:12px;color:var(--gray-3);font-weight:700;display:block;margin-bottom:4px">提醒名稱</label>
-              <input id="new-reminder-name" style="width:100%;padding:8px 12px;border-radius:10px;border:1px solid #e5e7eb;font-size:13px;outline:none" placeholder="例：英語口說練習" />
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-              <div>
-                <label style="font-size:12px;color:var(--gray-3);font-weight:700;display:block;margin-bottom:4px">時間</label>
-                <input id="new-reminder-time" type="time" value="19:00" style="width:100%;padding:8px 12px;border-radius:10px;border:1px solid #e5e7eb;font-size:13px;outline:none" />
-              </div>
-              <div>
-                <label style="font-size:12px;color:var(--gray-3);font-weight:700;display:block;margin-bottom:4px">頻率</label>
-                <select id="new-reminder-freq" style="width:100%;padding:8px 12px;border-radius:10px;border:1px solid #e5e7eb;font-size:13px;outline:none;background:#fff">
-                  <option>每天</option><option>每週一</option><option>每週五</option><option>週末</option>
-                </select>
-              </div>
-            </div>
-            <button onclick="addReminder()" style="padding:10px;border-radius:12px;border:none;background:var(--blue);color:#fff;font-weight:800;font-size:13px;cursor:pointer">新增提醒</button>
-          </div>
+          <div class="card-title">⚙️ 家長提醒規則</div>
+          <div id="reminder-settings"></div>
         </div>
       </div>
 
@@ -451,21 +506,29 @@ html,body{height:100%;overflow:hidden}
       <div class="page" id="page-parent">
         <div class="stat-row">
           <div class="stat-card">
-            <div class="stat-num">7</div>
+            <div class="stat-num">0</div>
             <div class="stat-lbl">本週完成任務</div>
           </div>
           <div class="stat-card">
-            <div class="stat-num">6</div>
+            <div class="stat-num">0</div>
             <div class="stat-lbl">連續學習天數</div>
           </div>
           <div class="stat-card">
-            <div class="stat-num">142</div>
+            <div class="stat-num">0</div>
             <div class="stat-lbl">本週學習分鐘</div>
           </div>
         </div>
         <div class="summary-grid">
           <div class="summary-item">
-            <h4>各科進度</h4>
+            <h4>今日狀態</h4>
+            <div id="parent-today-status"></div>
+          </div>
+          <div class="summary-item">
+            <h4>記憶狀態</h4>
+            <div id="parent-memory-status"></div>
+          </div>
+          <div class="summary-item">
+            <h4>各科概況</h4>
             <div id="parent-progress"></div>
           </div>
           <div class="summary-item">
@@ -482,18 +545,16 @@ html,body{height:100%;overflow:hidden}
             </div>
           </div>
           <div class="summary-item" style="grid-column:1/-1">
-            <h4>老師評語 / 近期作業</h4>
-            <div style="display:grid;gap:8px;margin-top:8px">
-              <div style="background:#fff;border-radius:10px;padding:10px 12px;font-size:12px">
-                <b style="color:#059669">國語</b> — 本週生字全數通過，請繼續保持！
-              </div>
-              <div style="background:#fff;border-radius:10px;padding:10px 12px;font-size:12px">
-                <b style="color:#d97706">數學</b> — 分數單元需加強，建議多做練習題。
-              </div>
-              <div style="background:#fff;border-radius:10px;padding:10px 12px;font-size:12px">
-                <b style="color:#2563eb">英語</b> — 聽力測驗表現優秀，口說練習持續中。
-              </div>
-            </div>
+            <h4>需加強內容</h4>
+            <div id="parent-weak-list" class="parent-list"></div>
+          </div>
+          <div class="summary-item">
+            <h4>給家長的下一步</h4>
+            <div id="parent-action-list" class="parent-list"></div>
+          </div>
+          <div class="summary-item">
+            <h4>近期安排</h4>
+            <div id="parent-upcoming-list" class="parent-list"></div>
           </div>
         </div>
       </div>
@@ -543,9 +604,19 @@ html,body{height:100%;overflow:hidden}
                   <option value="">請選擇課程...</option>
                 </select>
               </div>
-              <div class="schedule-fields-row">
-                <div class="field-block">
-                  <label class="field-label">每日複習行數</label>
+              <div class="field-block">
+                <label class="field-label">重複規則</label>
+                <div class="repeat-pill-row" id="repeat-pill-row">
+                  <div class="repeat-pill active" data-repeat="daily" onclick="selectRepeat('daily')">每天</div>
+                  <div class="repeat-pill" data-repeat="once" onclick="selectRepeat('once')">完整學習＋複習</div>
+                  <div class="repeat-pill" data-repeat="weekday" onclick="selectRepeat('weekday')">工作天</div>
+                  <div class="repeat-pill" data-repeat="weekend" onclick="selectRepeat('weekend')">休息天</div>
+                  <div class="repeat-pill" data-repeat="weekly" onclick="selectRepeat('weekly')">每週固定</div>
+                </div>
+              </div>
+              <div class="schedule-fields-row" id="schedule-config-row">
+                <div class="field-block" id="schedule-line-block">
+                  <label class="field-label" id="schedule-line-label">每日複習行數</label>
                   <div class="stepper">
                     <button type="button" onclick="stepLineCount(-1)" aria-label="減少">−</button>
                     <input type="number" id="daily-review-count" value="5" min="1" max="50" />
@@ -553,35 +624,49 @@ html,body{height:100%;overflow:hidden}
                   </div>
                 </div>
                 <div class="field-block">
-                  <label class="field-label" for="schedule-start-date">開始日期</label>
+                  <label class="field-label" id="schedule-start-label" for="schedule-start-date">開始日期</label>
                   <div class="field-input-date">
-                    <input type="date" id="schedule-start-date" />
+                    <input type="date" id="schedule-start-date" onchange="syncFollowupStartDefault()" />
                   </div>
                 </div>
-                <div class="field-block">
-                  <label class="field-label" for="schedule-end-date">結束日期 <span style="color:#9ca3af;font-weight:500">（選填）</span></label>
+                <div class="field-block" id="schedule-end-block">
+                  <label class="field-label" id="schedule-end-label" for="schedule-end-date">結束日期 <span style="color:#9ca3af;font-weight:500">（選填）</span></label>
                   <div class="field-input-date">
                     <input type="date" id="schedule-end-date" placeholder="選擇日期" />
                   </div>
                 </div>
               </div>
-              <div class="field-block">
-                <label class="field-label">重複規則</label>
-                <div class="repeat-pill-row" id="repeat-pill-row">
-                  <div class="repeat-pill active" data-repeat="daily" onclick="selectRepeat('daily')">每天</div>
-                  <div class="repeat-pill" data-repeat="weekday" onclick="selectRepeat('weekday')">工作天</div>
-                  <div class="repeat-pill" data-repeat="weekend" onclick="selectRepeat('weekend')">休息天</div>
-                  <div class="repeat-pill" data-repeat="weekly" onclick="selectRepeat('weekly')">每週固定</div>
+              <div id="schedule-weekly-row" style="display:none">
+                <label class="field-label">每週固定日</label>
+                <div style="display:flex;gap:8px;flex-wrap:wrap" id="schedule-weekday-options">
+                  <label class="repeat-pill"><input type="checkbox" value="1" checked style="margin-right:4px">一</label>
+                  <label class="repeat-pill"><input type="checkbox" value="2" style="margin-right:4px">二</label>
+                  <label class="repeat-pill"><input type="checkbox" value="3" style="margin-right:4px">三</label>
+                  <label class="repeat-pill"><input type="checkbox" value="4" style="margin-right:4px">四</label>
+                  <label class="repeat-pill"><input type="checkbox" value="5" style="margin-right:4px">五</label>
+                  <label class="repeat-pill"><input type="checkbox" value="6" style="margin-right:4px">六</label>
+                  <label class="repeat-pill"><input type="checkbox" value="0" style="margin-right:4px">日</label>
                 </div>
-                <div id="schedule-weekly-row" style="display:none;margin-top:10px">
-                  <div style="display:flex;gap:8px;flex-wrap:wrap" id="schedule-weekday-options">
-                    <label class="repeat-pill"><input type="checkbox" value="1" checked style="margin-right:4px">一</label>
-                    <label class="repeat-pill"><input type="checkbox" value="2" style="margin-right:4px">二</label>
-                    <label class="repeat-pill"><input type="checkbox" value="3" style="margin-right:4px">三</label>
-                    <label class="repeat-pill"><input type="checkbox" value="4" style="margin-right:4px">四</label>
-                    <label class="repeat-pill"><input type="checkbox" value="5" style="margin-right:4px">五</label>
-                    <label class="repeat-pill"><input type="checkbox" value="6" style="margin-right:4px">六</label>
-                    <label class="repeat-pill"><input type="checkbox" value="0" style="margin-right:4px">日</label>
+              </div>
+              <div id="schedule-once-row" class="schedule-once-panel">
+                <label class="schedule-check-row">
+                  <input type="checkbox" id="schedule-once-all" checked onchange="toggleOnceAllMode()" />
+                  本次複習全部詞句 / 單字
+                </label>
+                <input type="checkbox" id="schedule-followup-enabled" checked style="display:none" aria-hidden="true" />
+                <div class="schedule-followup-title">複習設定</div>
+                <div id="schedule-followup-row" class="schedule-followup-grid">
+                  <div>
+                    <label class="field-label" for="followup-line-count">複習每日行數</label>
+                    <input type="number" id="followup-line-count" class="field-input" value="5" min="1" max="50" />
+                  </div>
+                  <div>
+                    <label class="field-label" for="followup-start-date">複習開始日期</label>
+                    <input type="date" id="followup-start-date" class="field-input" onchange="this.dataset.auto='0'" />
+                  </div>
+                  <div>
+                    <label class="field-label" for="followup-end-date">複習結束日期</label>
+                    <input type="date" id="followup-end-date" class="field-input" />
                   </div>
                 </div>
               </div>
@@ -919,6 +1004,7 @@ function scheduleMatchesDate(item, date){
 // Track the selected repeat type chosen via pill buttons
 let selectedRepeatType = 'daily';
 let editingScheduleIndex = -1;
+let currentSubjectTab = 'overview';
 
 // Toggle visibility of repeat-related extra fields (legacy stub kept for safety)
 function onRepeatChange(){
@@ -943,12 +1029,71 @@ function selectRepeat(rt){
   document.querySelectorAll('#repeat-pill-row .repeat-pill').forEach(p => {
     p.classList.toggle('active', p.dataset.repeat === rt);
   });
-  document.getElementById('schedule-weekly-row').style.display = rt === 'weekly' ? '' : 'none';
+  updateScheduleFieldMode();
+}
+
+function toggleOnceAllMode(){
+  updateScheduleFieldMode();
+}
+
+function updateScheduleFieldMode(){
+  const isOnce = selectedRepeatType === 'once';
+  const onceAll = document.getElementById('schedule-once-all');
+  const lineBlock = document.getElementById('schedule-line-block');
+  const lineInput = document.getElementById('daily-review-count');
+  const lineLabel = document.getElementById('schedule-line-label');
+  const startLabel = document.getElementById('schedule-start-label');
+  const endBlock = document.getElementById('schedule-end-block');
+  const endInput = document.getElementById('schedule-end-date');
+  const configRow = document.getElementById('schedule-config-row');
+  const weeklyRow = document.getElementById('schedule-weekly-row');
+  const onceRow = document.getElementById('schedule-once-row');
+  const showLineCount = !isOnce || !(onceAll && onceAll.checked);
+
+  if(weeklyRow) weeklyRow.style.display = selectedRepeatType === 'weekly' ? '' : 'none';
+  if(onceRow) onceRow.style.display = isOnce ? 'block' : 'none';
+  if(configRow) configRow.classList.toggle('once-mode', isOnce && showLineCount);
+  if(lineBlock) lineBlock.style.display = showLineCount ? '' : 'none';
+  if(lineInput) lineInput.disabled = !showLineCount;
+  if(lineLabel) lineLabel.textContent = isOnce ? '本次複習行數' : '每日複習行數';
+  if(startLabel) startLabel.textContent = isOnce ? '完整學習日期' : '開始日期';
+  if(endBlock) endBlock.style.display = isOnce ? 'none' : '';
+  if(endInput){
+    endInput.disabled = isOnce;
+    if(isOnce) endInput.value = '';
+  }
+  toggleFollowupFields();
+}
+
+function toggleFollowupFields(){
+  const enabled = document.getElementById('schedule-followup-enabled');
+  const row = document.getElementById('schedule-followup-row');
+  const isOnce = selectedRepeatType === 'once';
+  if(enabled) enabled.checked = isOnce;
+  if(row) row.style.display = isOnce ? 'grid' : 'none';
+  if(isOnce) syncFollowupStartDefault();
+}
+
+function syncFollowupStartDefault(force = false){
+  const start = document.getElementById('schedule-start-date');
+  const followStart = document.getElementById('followup-start-date');
+  const followEnd = document.getElementById('followup-end-date');
+  if(!followStart) return;
+  const base = start && start.value ? start.value : todayKey();
+  const expected = addDays(base, 1);
+  if(force || !followStart.value || followStart.dataset.auto === '1'){
+    followStart.value = expected;
+    followStart.dataset.auto = '1';
+  }
+  followStart.min = expected;
+  if(followEnd) followEnd.min = expected;
 }
 
 function initScheduleDateDefaults(){
   const start = document.getElementById('schedule-start-date');
   const end = document.getElementById('schedule-end-date');
+  const followStart = document.getElementById('followup-start-date');
+  const followEnd = document.getElementById('followup-end-date');
   const today = todayKey();
   if(start && !start.value) start.value = today;
   if(start) start.min = today;
@@ -956,6 +1101,9 @@ function initScheduleDateDefaults(){
     end.min = today;
     if(end.value && end.value < today) end.value = '';
   }
+  syncFollowupStartDefault();
+  if(followStart && followStart.value && followStart.value < followStart.min) followStart.value = followStart.min;
+  if(followEnd && followEnd.value && followEnd.value < followEnd.min) followEnd.value = '';
 }
 
 function normalizeScheduleItem(item){
@@ -963,6 +1111,9 @@ function normalizeScheduleItem(item){
   const normalized = {...item};
   normalized.repeatType = normalized.repeatType || (normalized.date ? 'once' : 'daily');
   normalized.lineCount = Math.max(1, parseInt(normalized.lineCount || normalized.count || 5));
+  if(normalized.repeatType === 'once' && !normalized.date){
+    normalized.date = normalized.startDate || todayKey();
+  }
   if(normalized.repeatType === 'weekly'){
     normalized.weekdays = scheduleWeekdays(normalized).sort((a,b) => a - b);
     delete normalized.weekday;
@@ -995,11 +1146,30 @@ function buildTodayTasks(){
   return tasks;
 }
 
-let reminders = [
-  {id:0,name:'每日 19:00 國語複習',sub:'每天 5 個詞',on:true},
-  {id:1,name:'每週五考卷複習',sub:'數學 + 英語',on:true},
-  {id:2,name:'週末英語口說練習',sub:'每週六 10:00',on:false},
-];
+function defaultReminderSettings(){
+  return {
+    dailyTime: '19:00',
+    unfinished: true,
+    dueReview: true,
+    weakItems: true,
+    breakDays: true,
+    breakDayThreshold: 2,
+    upcoming: true
+  };
+}
+
+function normalizeReminderSettings(value){
+  const defaults = defaultReminderSettings();
+  if(!value || Array.isArray(value)) return defaults;
+  return {
+    ...defaults,
+    ...value,
+    dailyTime: value.dailyTime || defaults.dailyTime,
+    breakDayThreshold: Math.max(1, parseInt(value.breakDayThreshold || defaults.breakDayThreshold))
+  };
+}
+
+let reminders = defaultReminderSettings();
 // Computed dynamically from scheduleItems via getCalendarEvents()
 let events = {};
 
@@ -1203,24 +1373,94 @@ function getWeekMinutes(){
   return weekDatesEndingToday().map(d => (studyLog[d] && studyLog[d].minutes) || 0);
 }
 
+function getItemMasteryScore(state){
+  if(!state || !state.attempts) return 0;
+  const attempts = state.attempts || 0;
+  const correct = state.correct || 0;
+  const accuracy = attempts ? correct / attempts : 0;
+  let score = 30;
+  if(correct > 0) score = Math.max(score, 50);
+  if((state.repetitions || 0) >= 2) score = Math.max(score, 70);
+  if((state.interval || 0) >= 3) score = Math.max(score, 85);
+  if((state.interval || 0) >= 7) score = Math.max(score, 100);
+  score += Math.round((accuracy - 0.75) * 20);
+  if((state.lastQuality || 0) < 3) score -= 20;
+  score -= Math.min(20, (state.lapses || 0) * 6);
+  return Math.max(0, Math.min(100, score));
+}
+
+function getItemLearningStatus(state, due){
+  const score = getItemMasteryScore(state);
+  if(!state || !state.attempts) return {key:'new', label:'新內容', color:'#6b7280', bg:'#f3f4f6'};
+  if((state.lastQuality || 0) < 3 || score < 45) return {key:'weak', label:'需加強', color:'#991b1b', bg:'#fee2e2'};
+  if(due) return {key:'due', label:'今日到期', color:'#92400e', bg:'#fef3c7'};
+  if(score >= 80) return {key:'familiar', label:'熟悉', color:'#166534', bg:'#dcfce7'};
+  return {key:'learning', label:'學習中', color:'#1d4ed8', bg:'#dbeafe'};
+}
+
+function getLearningItems(){
+  const today = todayKey();
+  const items = [];
+  courses.forEach(course => {
+    const type = course.type || 'chinese';
+    (course.lines || []).forEach((line, idx) => {
+      const id = lineId(course.id, idx);
+      const state = reviewState[id] || null;
+      const due = state ? isLineDue(state, today) : false;
+      const mastery = getItemMasteryScore(state);
+      const status = getItemLearningStatus(state, due);
+      items.push({
+        id,
+        courseId: course.id,
+        courseName: course.name || '未命名課程',
+        type,
+        subjectName: type === 'english' ? '英文' : '國文',
+        phrase: line.phrase || '',
+        helper: type === 'english' ? (line.meaning || '') : (line.zhuyin || ''),
+        index: idx,
+        state,
+        due,
+        mastery,
+        status,
+        attempts: (state && state.attempts) || 0,
+        correct: (state && state.correct) || 0,
+        accuracy: state && state.attempts ? Math.round(((state.correct || 0) / state.attempts) * 100) : null,
+        lastReviewed: (state && state.lastReviewed) || '',
+        nextDue: (state && state.nextDue) || ''
+      });
+    });
+  });
+  return items;
+}
+
+function getMasterySummary(items = getLearningItems()){
+  const total = items.length;
+  const practiced = items.filter(i => i.attempts > 0 || (i.state && i.state.lastReviewed)).length;
+  const avgMastery = total ? Math.round(items.reduce((sum,i) => sum + i.mastery, 0) / total) : 0;
+  return {
+    total,
+    practiced,
+    avgMastery,
+    due: items.filter(i => i.status.key === 'due').length,
+    weak: items.filter(i => i.status.key === 'weak').length,
+    newItems: items.filter(i => i.status.key === 'new').length,
+    familiar: items.filter(i => i.status.key === 'familiar').length
+  };
+}
+
 function getSubjectStats(){
   const base = [
     {name:'國語',icon:'📖',color:'#059669',bg:'#d1fae5',type:'chinese'},
     {name:'英語',icon:'🌐',color:'#2563eb',bg:'#dbeafe',type:'english'}
   ];
+  const allItems = getLearningItems();
   return base.map(meta => {
-    const related = courses.filter(c => (c.type || 'chinese') === meta.type);
-    const ids = [];
-    related.forEach(c => (c.lines || []).forEach((_, idx) => ids.push(lineId(c.id, idx))));
-    const total = ids.length;
-    const practiced = ids.filter(id => {
-      const s = reviewState[id];
-      return s && ((s.attempts || 0) > 0 || s.lastReviewed);
-    }).length;
-    const attempts = ids.reduce((sum, id) => sum + ((reviewState[id] && reviewState[id].attempts) || 0), 0);
-    const correct = ids.reduce((sum, id) => sum + ((reviewState[id] && reviewState[id].correct) || 0), 0);
-    const pct = total ? Math.round(practiced / total * 100) : 0;
-    return {...meta, done: practiced, total, pct, attempts, correct};
+    const items = allItems.filter(i => i.type === meta.type);
+    const summary = getMasterySummary(items);
+    const attempts = items.reduce((sum, i) => sum + i.attempts, 0);
+    const correct = items.reduce((sum, i) => sum + i.correct, 0);
+    const pct = summary.total ? Math.round(summary.practiced / summary.total * 100) : 0;
+    return {...meta, done: summary.practiced, total: summary.total, pct, masteryPct: summary.avgMastery, attempts, correct, due: summary.due, weak: summary.weak, newItems: summary.newItems, familiar: summary.familiar};
   });
 }
 
@@ -1276,6 +1516,7 @@ function resetApp(){
   taskCompletions = {};
   studyLog = {};
   scheduleItems = [];
+  reminders = defaultReminderSettings();
   currentCourse = null;
   currentReviewLines = [];
   currentSchedule = null;
@@ -1358,7 +1599,7 @@ function loadData(){
       reviewState = data.reviewState || {};
       taskCompletions = data.taskCompletions || {};
       studyLog = data.studyLog || {};
-      if(Array.isArray(data.reminders)) reminders = data.reminders;
+      reminders = normalizeReminderSettings(data.reminders);
       if(Array.isArray(data.scheduleItems)){
         scheduleItems = data.scheduleItems.map(normalizeScheduleItem).filter(Boolean);
       } else if(data.currentSchedule){
@@ -1487,7 +1728,7 @@ function updateStats(){
   const weekMinutes = getWeekMinutes().reduce((a,b)=>a+b,0);
   const subjectStats = getSubjectStats();
   const totalItems = subjectStats.reduce((sum,s)=>sum+s.total,0);
-  const mastered = subjectStats.reduce((sum,s)=>sum+s.done,0);
+  const masterySum = subjectStats.reduce((sum,s)=>sum+(s.masteryPct * s.total),0);
   const weekSummary = getWeekTaskSummary();
   document.getElementById('stat-done').textContent = d;
   document.getElementById('task-count').textContent = defaultTasks.length;
@@ -1497,7 +1738,7 @@ function updateStats(){
   const streakEl = document.getElementById('streak-badge');
   if(streakEl) streakEl.textContent = `🔥 連續 ${getConsecutiveLearningDays()} 天`;
   const avgEl = document.getElementById('stat-avg');
-  if(avgEl) avgEl.textContent = totalItems ? Math.round(mastered / totalItems * 100) + '%' : '0%';
+  if(avgEl) avgEl.textContent = totalItems ? Math.round(masterySum / totalItems) + '%' : '0%';
   const minsEl = document.getElementById('stat-mins');
   if(minsEl) minsEl.textContent = weekMinutes;
 }
@@ -1512,51 +1753,186 @@ function renderProgress(){
   `).join('');
 }
 
-function renderRemindersMini(){
-  document.getElementById('reminder-list-mini').innerHTML = reminders.map((r,i)=>`
-    <div class="switch-row">
-      <div><div class="switch-label">${r.name}</div><div class="switch-sub">${r.sub}</div></div>
-      <label class="toggle"><input type="checkbox" ${r.on?'checked':''} onchange="toggleReminder(${r.id})"><div class="toggle-track"></div></label>
+function getInactiveLearningDays(limit = 30){
+  let count = 0;
+  for(let i = 0; i < limit; i++){
+    const dateStr = addDays(todayKey(), -i);
+    if(hasLearningActivity(dateStr)) break;
+    count++;
+  }
+  return count;
+}
+
+function renderSmartReminderCard(r, compact = false){
+  const action = r.page ? `<button class="smart-reminder-action" onclick="showPage('${r.page}')">${r.action || '查看'}</button>` : '';
+  return `
+    <div class="smart-reminder" style="--reminder-color:${r.color || '#2563eb'}">
+      <div class="smart-reminder-accent"></div>
+      <div>
+        <div class="smart-reminder-title">${escapeHtml(r.title)}</div>
+        <div class="smart-reminder-sub">${escapeHtml(r.sub)}</div>
+      </div>
+      ${compact ? '' : action}
     </div>
-  `).join('');
+  `;
+}
+
+function buildSmartReminders(){
+  reminders = normalizeReminderSettings(reminders);
+  const list = [];
+  const today = todayKey();
+  const todayTasks = buildTodayTasks();
+  const remaining = todayTasks.filter(t => !t.done);
+  const items = getLearningItems();
+  const dueItems = items.filter(i => i.status.key === 'due');
+  const weakItems = items.filter(i => i.status.key === 'weak').sort((a,b) => a.mastery - b.mastery);
+  const inactiveDays = getInactiveLearningDays();
+  const upcoming = getParentUpcomingDays(3);
+
+  if(!courses.length){
+    list.push({priority:0,color:'#6b7280',title:'尚未建立課程',sub:'先到課程設定新增國文或英文內容，系統才會產生學習提醒。',page:'course-setting',action:'建立課程'});
+  } else if(!(scheduleItems || []).length){
+    list.push({priority:1,color:'#92400e',title:'尚未安排複習行程',sub:'建議先替新課程安排「完整學習＋複習」，系統會自動建立後續每日複習。',page:'course-setting',action:'安排課程'});
+  }
+
+  if(reminders.unfinished && remaining.length){
+    list.push({
+      priority:2,
+      color:'#d97706',
+      title:`今天還有 ${remaining.length} 個任務未完成`,
+      sub:`建議 ${reminders.dailyTime} 前完成：${remaining.slice(0,2).map(t => t.name).join('、')}${remaining.length > 2 ? '...' : ''}`,
+      page:'today',
+      action:'去學習'
+    });
+  }
+
+  if(reminders.dueReview && dueItems.length){
+    const sample = dueItems.slice(0,3).map(i => i.phrase).join('、');
+    list.push({
+      priority:3,
+      color:'#2563eb',
+      title:`今天有 ${dueItems.length} 個內容到期複習`,
+      sub:`優先複習 ${sample}${dueItems.length > 3 ? '...' : ''}，可維持長期記憶。`,
+      page:'subjects',
+      action:'看熟練度'
+    });
+  }
+
+  if(reminders.weakItems && weakItems.length){
+    const sample = weakItems.slice(0,3).map(i => i.phrase).join('、');
+    list.push({
+      priority:4,
+      color:'#dc2626',
+      title:`有 ${weakItems.length} 個內容需要加強`,
+      sub:`今晚可陪讀：${sample}。每個讀 2 次，再讓孩子自己回想。`,
+      page:'parent',
+      action:'看摘要'
+    });
+  }
+
+  if(reminders.breakDays && courses.length && inactiveDays >= reminders.breakDayThreshold){
+    list.push({
+      priority:5,
+      color:'#7c3aed',
+      title:`已 ${inactiveDays} 天沒有學習紀錄`,
+      sub:'建議今天先做 5 分鐘短複習，重新接回學習節奏。',
+      page:'today',
+      action:'開始'
+    });
+  }
+
+  if(reminders.upcoming){
+    const heavy = upcoming.find(d => d.total >= 3);
+    const next = upcoming.find(d => d.total > 0);
+    if(heavy){
+      list.push({priority:6,color:'#0891b2',title:`${heavy.label} 有 ${heavy.total} 個任務`,sub:`任務較多，可提前拆分：${heavy.names.join('、')}`,page:'calendar',action:'看月曆'});
+    } else if(next){
+      list.push({priority:7,color:'#059669',title:`下一個複習日：${next.label}`,sub:`已安排 ${next.total} 個任務：${next.names.join('、')}`,page:'calendar',action:'看安排'});
+    }
+  }
+
+  if(!list.length){
+    list.push({priority:9,color:'#16a34a',title:'目前沒有需要提醒的事項',sub:'今日狀態穩定，維持短時間複習即可。',page:'today',action:'看今日'});
+  }
+  return list.sort((a,b) => a.priority - b.priority);
+}
+
+function renderReminderSettings(){
+  const el = document.getElementById('reminder-settings');
+  if(!el) return;
+  reminders = normalizeReminderSettings(reminders);
+  el.innerHTML = `
+    <div class="reminder-settings-grid">
+      <div class="field-block">
+        <label class="field-label" for="reminder-daily-time">每日提醒時間</label>
+        <input id="reminder-daily-time" type="time" class="field-input" value="${escapeHtml(reminders.dailyTime)}" onchange="updateReminderTime(this.value)" />
+      </div>
+      <div class="field-block">
+        <label class="field-label" for="reminder-break-threshold">中斷幾天提醒</label>
+        <input id="reminder-break-threshold" type="number" min="1" max="14" class="field-input" value="${reminders.breakDayThreshold}" onchange="updateReminderThreshold(this.value)" />
+      </div>
+    </div>
+    <div style="margin-top:10px">
+      ${[
+        ['unfinished','任務未完成時提醒','今日還有任務未完成時，在提醒中心顯示待辦。'],
+        ['dueReview','到期複習提醒','有字詞或單字依記憶曲線到期時提醒。'],
+        ['weakItems','需加強內容提醒','熟練度偏低或答錯的內容會列為陪讀重點。'],
+        ['breakDays','學習中斷提醒','連續幾天沒有學習紀錄時提醒家長重新啟動。'],
+        ['upcoming','近期安排提醒','接下來幾天任務較多或即將到來時提醒。']
+      ].map(([key,label,sub]) => `
+        <div class="switch-row">
+          <div><div class="switch-label">${label}</div><div class="switch-sub">${sub}</div></div>
+          <label class="toggle"><input type="checkbox" ${reminders[key] ? 'checked' : ''} onchange="updateReminderSetting('${key}', this.checked)"><div class="toggle-track"></div></label>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderRemindersMini(){
+  const el = document.getElementById('reminder-list-mini');
+  if(!el) return;
+  const smart = buildSmartReminders().slice(0, 3);
+  el.innerHTML = `<div class="reminder-card-list">${smart.map(r => renderSmartReminderCard(r, true)).join('')}</div>`;
 }
 
 function renderReminders(){
-  document.getElementById('reminders-full').innerHTML = reminders.map((r,i)=>`
-    <div class="switch-row">
-      <div><div class="switch-label">${r.name}</div><div class="switch-sub">${r.sub}</div></div>
-      <div style="display:flex;align-items:center;gap:12px">
-        <label class="toggle"><input type="checkbox" ${r.on?'checked':''} onchange="toggleReminder(${r.id})"><div class="toggle-track"></div></label>
-        <button onclick="deleteReminder(${r.id})" style="border:none;background:none;cursor:pointer;color:#ef4444;font-size:16px">🗑</button>
-      </div>
-    </div>
-  `).join('');
+  const full = document.getElementById('reminders-full');
+  if(full){
+    const smart = buildSmartReminders();
+    full.innerHTML = `<div class="reminder-card-list">${smart.map(r => renderSmartReminderCard(r)).join('')}</div>`;
+  }
+  renderReminderSettings();
+}
+
+function updateReminderSetting(key, value){
+  reminders = normalizeReminderSettings(reminders);
+  if(Object.prototype.hasOwnProperty.call(reminders, key)) reminders[key] = !!value;
+  saveData();
+  renderRemindersMini(); renderReminders();
+}
+
+function updateReminderTime(value){
+  reminders = normalizeReminderSettings(reminders);
+  reminders.dailyTime = value || '19:00';
+  saveData();
+  renderRemindersMini(); renderReminders();
+}
+
+function updateReminderThreshold(value){
+  reminders = normalizeReminderSettings(reminders);
+  reminders.breakDayThreshold = Math.max(1, Math.min(14, parseInt(value || '2') || 2));
+  saveData();
+  renderRemindersMini(); renderReminders();
 }
 
 function toggleReminder(id){
-  const reminder = reminders.find(r => r.id === id);
-  if(reminder) reminder.on = !reminder.on;
-  saveData();
-  renderRemindersMini(); renderReminders();
+  // Backward-compatible wrapper for older saved markup; new reminders use updateReminderSetting().
+  if(typeof id === 'string') updateReminderSetting(id, !normalizeReminderSettings(reminders)[id]);
 }
 
-function addReminder(){
-  const n=document.getElementById('new-reminder-name').value.trim();
-  const t=document.getElementById('new-reminder-time').value;
-  const f=document.getElementById('new-reminder-freq').value;
-  if(!n) return;
-  const nextId = reminders.length ? Math.max(...reminders.map(r => r.id || 0)) + 1 : 0;
-  reminders.push({id:nextId,name:`${f} ${t} ${n}`,sub:f,on:true});
-  document.getElementById('new-reminder-name').value='';
-  saveData();
-  renderRemindersMini(); renderReminders();
-}
-
-function deleteReminder(id){
-  reminders = reminders.filter(r => r.id !== id);
-  saveData();
-  renderRemindersMini(); renderReminders();
-}
+function addReminder(){ renderReminders(); }
+function deleteReminder(){ renderReminders(); }
 
 function renderCalendar(miniId, labelId){
   const mn=['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
@@ -1651,19 +2027,109 @@ function changeMonth(dir){
   renderCalendar('main-cal','cal-month-label2');
 }
 
+function setSubjectTab(tab){
+  currentSubjectTab = tab === 'mastery' ? 'mastery' : 'overview';
+  const overview = document.getElementById('subject-overview-panel');
+  const mastery = document.getElementById('subject-mastery-panel');
+  const overviewBtn = document.getElementById('subject-tab-overview');
+  const masteryBtn = document.getElementById('subject-tab-mastery');
+  if(overview) overview.style.display = currentSubjectTab === 'overview' ? '' : 'none';
+  if(mastery) mastery.style.display = currentSubjectTab === 'mastery' ? '' : 'none';
+  if(overviewBtn) overviewBtn.classList.toggle('active', currentSubjectTab === 'overview');
+  if(masteryBtn) masteryBtn.classList.toggle('active', currentSubjectTab === 'mastery');
+  if(currentSubjectTab === 'mastery') renderMasteryDetails();
+}
+
+function renderMasteryDetails(){
+  const el = document.getElementById('mastery-detail-list');
+  if(!el) return;
+  const subjectFilter = (document.getElementById('mastery-subject-filter') || {}).value || 'all';
+  const statusFilter = (document.getElementById('mastery-status-filter') || {}).value || 'all';
+  const search = ((document.getElementById('mastery-search') || {}).value || '').trim().toLowerCase();
+  let items = getLearningItems();
+  if(subjectFilter !== 'all') items = items.filter(i => i.type === subjectFilter);
+  if(statusFilter !== 'all') items = items.filter(i => i.status.key === statusFilter);
+  if(search) items = items.filter(i => (i.phrase + ' ' + i.helper + ' ' + i.courseName).toLowerCase().includes(search));
+
+  if(!items.length){
+    el.innerHTML = '<div style="padding:18px;text-align:center;color:#6b7280;background:#f8fafc;border-radius:12px">沒有符合條件的明細</div>';
+    return;
+  }
+
+  const grouped = {};
+  items.forEach(item => {
+    if(!grouped[item.courseId]) grouped[item.courseId] = [];
+    grouped[item.courseId].push(item);
+  });
+
+  el.innerHTML = Object.values(grouped).map(groupItems => {
+    const first = groupItems[0];
+    const summary = getMasterySummary(groupItems);
+    return `
+      <div class="mastery-course">
+        <div class="mastery-course-head">
+          <div class="mastery-course-title">${escapeHtml(first.subjectName)}｜${escapeHtml(first.courseName)}</div>
+          <div class="mastery-course-meta">
+            <span>進度 ${summary.practiced}/${summary.total}</span>
+            <span>熟練 ${summary.avgMastery}%</span>
+            <span>到期 ${summary.due}</span>
+            <span>需加強 ${summary.weak}</span>
+          </div>
+        </div>
+        <div class="mastery-table mastery-table-head">
+          <div class="mastery-cell">字詞 / 單字</div>
+          <div class="mastery-cell">注音 / 翻譯</div>
+          <div class="mastery-cell">熟練度</div>
+          <div class="mastery-cell">次數</div>
+          <div class="mastery-cell">正確率</div>
+          <div class="mastery-cell">上次複習</div>
+          <div class="mastery-cell">下次複習</div>
+          <div class="mastery-cell">狀態</div>
+        </div>
+        ${groupItems.map(item => `
+          <div class="mastery-table mastery-row">
+            <div class="mastery-cell" title="${escapeHtml(item.phrase)}">${escapeHtml(item.phrase || '—')}</div>
+            <div class="mastery-cell" title="${escapeHtml(item.helper)}">${escapeHtml(item.helper || '—')}</div>
+            <div class="mastery-cell">
+              <b>${item.mastery}%</b>
+              <div class="mastery-bar"><div class="mastery-bar-fill" style="width:${item.mastery}%;background:${item.status.color}"></div></div>
+            </div>
+            <div class="mastery-cell">${item.attempts}</div>
+            <div class="mastery-cell">${item.accuracy === null ? '—' : item.accuracy + '%'}</div>
+            <div class="mastery-cell">${item.lastReviewed || '—'}</div>
+            <div class="mastery-cell">${item.nextDue || '—'}</div>
+            <div class="mastery-cell"><span class="mastery-status" style="background:${item.status.bg};color:${item.status.color}">${item.status.label}</span></div>
+          </div>
+        `).join('')}
+      </div>`;
+  }).join('');
+}
+
 function renderSubjects(){
   const stats = getSubjectStats();
+  const summary = getMasterySummary();
+  const metricEl = document.getElementById('subject-summary-metrics');
+  if(metricEl){
+    metricEl.innerHTML = `
+      <div class="subject-overview-grid">
+        <div class="subject-metric"><div class="subject-metric-num">${summary.practiced}/${summary.total}</div><div class="subject-metric-label">整體練習進度</div></div>
+        <div class="subject-metric"><div class="subject-metric-num">${summary.avgMastery}%</div><div class="subject-metric-label">平均熟練度</div></div>
+        <div class="subject-metric"><div class="subject-metric-num">${summary.due}</div><div class="subject-metric-label">今日到期</div></div>
+        <div class="subject-metric"><div class="subject-metric-num">${summary.weak}</div><div class="subject-metric-label">需加強</div></div>
+      </div>`;
+  }
   document.getElementById('subject-history').innerHTML=stats.map(s=>`
     <div class="subj-row">
       <div class="subj-icon" style="background:${s.bg}">${s.icon}</div>
       <div class="subj-info">
         <div class="subj-name">${s.name}</div>
-        <div class="subj-detail">熟練 ${s.done} / ${s.total}，作答 ${s.attempts} 次</div>
-        <div class="bar" style="margin-top:5px"><div class="bar-fill" style="width:${s.pct}%;background:${s.color}"></div></div>
+        <div class="subj-detail">進度 ${s.done} / ${s.total}，熟練 ${s.masteryPct}%｜到期 ${s.due}｜需加強 ${s.weak}｜作答 ${s.attempts} 次</div>
+        <div class="bar" style="margin-top:5px"><div class="bar-fill" style="width:${s.masteryPct}%;background:${s.color}"></div></div>
       </div>
-      <div class="subj-pct" style="color:${s.color}">${s.pct}%</div>
+      <div class="subj-pct" style="color:${s.color}">${s.masteryPct}%</div>
     </div>
   `).join('');
+  if(currentSubjectTab === 'mastery') renderMasteryDetails();
   const mins = getWeekMinutes();
   const mx=Math.max(...mins)||1;
   document.getElementById('week-chart').innerHTML=mins.map((m,i)=>`
@@ -1671,6 +2137,74 @@ function renderSubjects(){
       <div style="width:100%;border-radius:6px 6px 0 0;background:${i===((new Date().getDay()+6)%7)?'var(--blue)':'#bfdbfe'};height:${Math.round(m/mx*52)+8}px" title="${m} 分鐘"></div>
     </div>
   `).join('');
+  setSubjectTab(currentSubjectTab);
+}
+
+function formatParentDate(dateStr){
+  const d = new Date(dateStr + 'T00:00:00');
+  const names = ['日','一','二','三','四','五','六'];
+  return `${dateStr.slice(5).replace('-','/')}（${names[d.getDay()]}）`;
+}
+
+function getParentFocusItems(limit = 5){
+  const priority = {weak:0, due:1, learning:2, new:3, familiar:4};
+  return getLearningItems()
+    .filter(item => item.status.key !== 'familiar' || item.mastery < 90)
+    .sort((a,b) => {
+      const pa = priority[a.status.key] ?? 9;
+      const pb = priority[b.status.key] ?? 9;
+      if(pa !== pb) return pa - pb;
+      if(a.mastery !== b.mastery) return a.mastery - b.mastery;
+      return a.courseName.localeCompare(b.courseName, 'zh-Hant');
+    })
+    .slice(0, limit);
+}
+
+function getParentUpcomingDays(days = 3){
+  const rows = [];
+  for(let i = 1; i <= days; i++){
+    const dateStr = addDays(todayKey(), i);
+    const dateObj = new Date(dateStr + 'T00:00:00');
+    const scheduled = getScheduledTaskIndexesForDate(dateObj);
+    rows.push({
+      dateStr,
+      label: formatParentDate(dateStr),
+      total: scheduled.length,
+      names: scheduled.slice(0, 3).map(x => `${x.course.type === 'english' ? '英文' : '國文'}｜${x.course.name}`)
+    });
+  }
+  return rows;
+}
+
+function buildParentSuggestions(todayTasks, focusItems, summary, weekSummary){
+  const suggestions = [];
+  const remaining = todayTasks.filter(t => !t.done);
+  if(!courses.length){
+    suggestions.push('先到「課程設定」新增國文或英文課程，再安排每日複習。');
+  }
+  if(courses.length && !(scheduleItems || []).length){
+    suggestions.push('目前還沒有複習行程，建議先替新課程安排「完整學習＋複習」。');
+  }
+  if(remaining.length){
+    suggestions.push(`今天還有 ${remaining.length} 個任務未完成，先完成 ${remaining.slice(0,2).map(t => t.name).join('、')}。`);
+  } else if(todayTasks.length){
+    suggestions.push('今天任務已完成，可以用 3 分鐘口頭抽問最不熟的內容。');
+  }
+  const weak = focusItems.filter(i => i.status.key === 'weak').slice(0, 3);
+  if(weak.length){
+    suggestions.push(`今晚優先陪讀：${weak.map(i => i.phrase).join('、')}。每個讀 2 次，再讓孩子自己回想。`);
+  } else if(summary.due){
+    suggestions.push(`今日有 ${summary.due} 個內容到期，完成排程複習即可維持記憶曲線。`);
+  } else if(summary.newItems){
+    suggestions.push(`還有 ${summary.newItems} 個新內容尚未練習，可安排短時段先學 5 個。`);
+  }
+  if(weekSummary.total && weekSummary.done / weekSummary.total < 0.7){
+    suggestions.push('本週完成率偏低，建議把任務拆成每天 5 到 10 分鐘，先求穩定。');
+  }
+  if(!suggestions.length){
+    suggestions.push('目前學習狀態穩定，維持每日短時間複習即可。');
+  }
+  return suggestions.slice(0, 3);
 }
 
 function renderParent(){
@@ -1679,24 +2213,101 @@ function renderParent(){
   const weekSummary = getWeekTaskSummary();
   const weeklyDone = weekSummary.done;
   const activeDays = getConsecutiveLearningDays();
-  const weekTotal = getWeekMinutes().reduce((a,b)=>a+b,0);
+  const weekMinutes = getWeekMinutes();
+  const weekTotal = weekMinutes.reduce((a,b)=>a+b,0);
+  const today = todayKey();
+  const todayStatus = getDayCompletionStatus(today);
+  const todayTasks = buildTodayTasks();
+  const todayMinutes = (studyLog[today] && studyLog[today].minutes) || 0;
+  const items = getLearningItems();
+  const masterySummary = getMasterySummary(items);
+  const focusItems = getParentFocusItems(5);
+  const upcoming = getParentUpcomingDays(3);
+  const suggestions = buildParentSuggestions(todayTasks, focusItems, masterySummary, weekSummary);
+
   if(nums[0]) nums[0].textContent = weeklyDone;
   if(nums[1]) nums[1].textContent = activeDays;
   if(nums[2]) nums[2].textContent = weekTotal;
-  document.getElementById('parent-progress').innerHTML=stats.map(s=>`
-    <div style="margin-bottom:8px">
-      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
-        <span style="font-weight:700;color:${s.color}">${s.name}</span><span style="color:var(--gray-3)">${s.pct}%</span>
+
+  const todayEl = document.getElementById('parent-today-status');
+  if(todayEl) todayEl.innerHTML = `
+    <div class="parent-kpi-grid">
+      <div class="parent-kpi"><div class="parent-kpi-num">${todayStatus.done}/${todayStatus.total}</div><div class="parent-kpi-label">今日任務</div></div>
+      <div class="parent-kpi"><div class="parent-kpi-num">${Math.max(0, todayStatus.total - todayStatus.done)}</div><div class="parent-kpi-label">剩餘任務</div></div>
+      <div class="parent-kpi"><div class="parent-kpi-num">${todayMinutes}</div><div class="parent-kpi-label">今日分鐘</div></div>
+    </div>
+    <div class="parent-list" style="margin-top:10px">
+      ${todayTasks.length ? todayTasks.map(t => `
+        <div class="parent-row">
+          <div class="parent-row-title">
+            <span>${escapeHtml(t.name)}</span>
+            <span class="parent-chip" style="color:${t.done ? '#166534' : '#92400e'};background:${t.done ? '#dcfce7' : '#fef3c7'}">${t.done ? '已完成' : '待完成'}</span>
+          </div>
+          <div class="parent-row-meta">${escapeHtml(t.desc)}</div>
+        </div>
+      `).join('') : '<div class="parent-empty">今天尚未安排任務</div>'}
+    </div>
+  `;
+
+  const memoryEl = document.getElementById('parent-memory-status');
+  if(memoryEl) memoryEl.innerHTML = `
+    <div class="parent-kpi-grid">
+      <div class="parent-kpi"><div class="parent-kpi-num">${masterySummary.avgMastery}%</div><div class="parent-kpi-label">平均熟練度</div></div>
+      <div class="parent-kpi"><div class="parent-kpi-num">${masterySummary.due}</div><div class="parent-kpi-label">今日到期</div></div>
+      <div class="parent-kpi"><div class="parent-kpi-num">${masterySummary.weak}</div><div class="parent-kpi-label">需加強</div></div>
+    </div>
+    <div class="parent-row" style="margin-top:10px">
+      <div class="parent-row-meta">已練習 ${masterySummary.practiced}/${masterySummary.total}，新內容 ${masterySummary.newItems}，熟悉 ${masterySummary.familiar}</div>
+    </div>
+  `;
+
+  const progressEl = document.getElementById('parent-progress');
+  if(progressEl) progressEl.innerHTML = stats.map(s=>`
+    <div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;gap:10px">
+        <span style="font-weight:900;color:${s.color}">${s.name}</span>
+        <span style="color:var(--gray-3)">熟練 ${s.masteryPct}%｜需加強 ${s.weak}</span>
       </div>
-      <div class="bar" style="height:8px"><div class="bar-fill" style="width:${s.pct}%;background:${s.color}"></div></div>
+      <div class="bar" style="height:8px"><div class="bar-fill" style="width:${s.masteryPct}%;background:${s.color}"></div></div>
+      <div style="font-size:11px;color:#6b7280;margin-top:4px">進度 ${s.done}/${s.total}，今日到期 ${s.due}，作答 ${s.attempts} 次</div>
     </div>
   `).join('');
-  const mins = getWeekMinutes();
-  const mx=Math.max(...mins)||1;
-  document.getElementById('parent-week-chart').innerHTML=mins.map((m,i)=>`
+
+  const mx=Math.max(...weekMinutes)||1;
+  document.getElementById('parent-week-chart').innerHTML=weekMinutes.map((m,i)=>`
     <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:80px">
       <div style="font-size:10px;color:var(--gray-3);margin-bottom:2px">${m}</div>
       <div style="width:100%;border-radius:6px 6px 0 0;background:${i===((new Date().getDay()+6)%7)?'var(--blue)':'#bfdbfe'};height:${Math.round(m/mx*58)+4}px"></div>
+    </div>
+  `).join('');
+
+  const weakEl = document.getElementById('parent-weak-list');
+  if(weakEl) weakEl.innerHTML = focusItems.length ? focusItems.map(item => `
+    <div class="parent-row">
+      <div class="parent-row-title">
+        <span>${escapeHtml(item.phrase || '未命名內容')}</span>
+        <span class="parent-chip" style="color:${item.status.color};background:${item.status.bg}">${item.status.label} ${item.mastery}%</span>
+      </div>
+      <div class="parent-row-meta">${escapeHtml(item.subjectName)}｜${escapeHtml(item.courseName)}${item.helper ? `｜${escapeHtml(item.helper)}` : ''}｜作答 ${item.attempts} 次${item.accuracy !== null ? `，正確率 ${item.accuracy}%` : ''}</div>
+    </div>
+  `).join('') : '<div class="parent-empty">目前沒有需要特別加強的內容</div>';
+
+  const actionEl = document.getElementById('parent-action-list');
+  if(actionEl) actionEl.innerHTML = suggestions.map((text, idx) => `
+    <div class="parent-row">
+      <div class="parent-row-title"><span>建議 ${idx + 1}</span></div>
+      <div class="parent-row-meta">${escapeHtml(text)}</div>
+    </div>
+  `).join('');
+
+  const upcomingEl = document.getElementById('parent-upcoming-list');
+  if(upcomingEl) upcomingEl.innerHTML = upcoming.map(day => `
+    <div class="parent-row">
+      <div class="parent-row-title">
+        <span>${day.label}</span>
+        <span class="parent-chip" style="color:${day.total ? '#1d4ed8' : '#6b7280'};background:${day.total ? '#dbeafe' : '#f3f4f6'}">${day.total} 任務</span>
+      </div>
+      <div class="parent-row-meta">${day.names.length ? escapeHtml(day.names.join('、')) : '尚未安排'}</div>
     </div>
   `).join('');
 }
@@ -1779,6 +2390,19 @@ function resetScheduleForm(){
   document.getElementById('daily-review-count').value = '5';
   document.getElementById('schedule-start-date').value = todayKey();
   document.getElementById('schedule-end-date').value = '';
+  const onceAll = document.getElementById('schedule-once-all');
+  if(onceAll) onceAll.checked = true;
+  const followEnabled = document.getElementById('schedule-followup-enabled');
+  if(followEnabled) followEnabled.checked = false;
+  const followCount = document.getElementById('followup-line-count');
+  if(followCount) followCount.value = '5';
+  const followStart = document.getElementById('followup-start-date');
+  if(followStart){
+    followStart.value = addDays(todayKey(), 1);
+    followStart.dataset.auto = '1';
+  }
+  const followEnd = document.getElementById('followup-end-date');
+  if(followEnd) followEnd.value = '';
   selectRepeat('daily');
   setWeeklyCheckboxes([1]);
   refreshScheduleEditButtons();
@@ -1788,15 +2412,49 @@ function cancelScheduleEdit(){
   resetScheduleForm();
 }
 
+function scheduleIdentity(item){
+  return JSON.stringify({
+    courseId: item.courseId || '',
+    repeatType: item.repeatType || 'daily',
+    weekdays: scheduleWeekdays(item).sort((a,b) => a - b),
+    date: item.date || '',
+    startDate: item.startDate || '',
+    endDate: item.endDate || ''
+  });
+}
+
+function saveScheduleItem(newItem, editIndex = -1){
+  const dup = scheduleItems.findIndex((s, idx) => idx !== editIndex && scheduleIdentity(s) === scheduleIdentity(newItem));
+  if(dup >= 0){
+    if(!confirm('此課程在此規則下已存在，是否更新每日複習數量？')){
+      return false;
+    }
+    scheduleItems[dup].lineCount = newItem.lineCount;
+    return true;
+  }
+  if(editIndex >= 0 && scheduleItems[editIndex]){
+    scheduleItems[editIndex] = newItem;
+  } else {
+    scheduleItems.push(newItem);
+  }
+  return true;
+}
+
 function editScheduleItem(idx){
   const item = scheduleItems && scheduleItems[idx];
   if(!item) return;
   editingScheduleIndex = idx;
   document.getElementById('review-course-select').value = item.courseId || '';
   document.getElementById('daily-review-count').value = item.lineCount || 5;
-  document.getElementById('schedule-start-date').value = item.startDate || todayKey();
-  document.getElementById('schedule-end-date').value = item.endDate || '';
+  document.getElementById('schedule-start-date').value = item.date || item.startDate || todayKey();
+  document.getElementById('schedule-end-date').value = item.repeatType === 'once' ? '' : (item.endDate || '');
   selectRepeat(item.repeatType || 'daily');
+  const allBox = document.getElementById('schedule-once-all');
+  const course = courses.find(c => c.id === item.courseId);
+  if(allBox) allBox.checked = item.repeatType === 'once' && course && item.lineCount >= (course.lines || []).length;
+  const followupEnabled = document.getElementById('schedule-followup-enabled');
+  if(followupEnabled) followupEnabled.checked = item.repeatType === 'once';
+  updateScheduleFieldMode();
   setWeeklyCheckboxes(scheduleWeekdays(item));
   refreshScheduleEditButtons();
   const form = document.querySelector('.schedule-form');
@@ -1845,7 +2503,7 @@ function renderScheduleList(){
 
 function addToSchedule(){
   const courseId = document.getElementById('review-course-select').value;
-  const lineCount = parseInt(document.getElementById('daily-review-count').value) || 5;
+  let lineCount = parseInt(document.getElementById('daily-review-count').value) || 5;
   const repeatType = selectedRepeatType || 'daily';
   initScheduleDateDefaults();
   const startDate = document.getElementById('schedule-start-date').value || todayKey();
@@ -1855,17 +2513,42 @@ function addToSchedule(){
     alert('請選擇課程');
     return;
   }
-  if(startDate && endDate && endDate < startDate){
+  const course = courses.find(c => c.id === courseId);
+  if(!course){
+    alert('課程不存在，請重新選擇課程');
+    return;
+  }
+  if(repeatType !== 'once' && startDate && endDate && endDate < startDate){
     alert('結束日期不可早於開始日期');
     return;
   }
-  if(endDate && endDate < todayKey()){
+  if(repeatType !== 'once' && endDate && endDate < todayKey()){
     alert('結束日期已早於今天，因此不會出現在今日任務。請重新選擇結束日期。');
     return;
   }
 
   const newItem = {courseId, lineCount, repeatType};
-  if(repeatType === 'weekly'){
+  let followItem = null;
+  if(repeatType === 'once'){
+    const onceAll = document.getElementById('schedule-once-all');
+    if(onceAll && onceAll.checked) lineCount = Math.max(1, (course.lines || []).length);
+    newItem.lineCount = lineCount;
+    newItem.date = startDate;
+
+    const followLineCount = parseInt(document.getElementById('followup-line-count').value) || 5;
+    const followStart = document.getElementById('followup-start-date').value || addDays(startDate, 1);
+    const followEnd = document.getElementById('followup-end-date').value || '';
+    if(followStart <= startDate){
+      alert('複習開始日期需晚於完整學習日期');
+      return;
+    }
+    if(followEnd && followEnd < followStart){
+      alert('複習結束日期不可早於開始日期');
+      return;
+    }
+    followItem = {courseId, lineCount: followLineCount, repeatType:'daily', startDate: followStart};
+    if(followEnd) followItem.endDate = followEnd;
+  } else if(repeatType === 'weekly'){
     const weekdays = Array.from(document.querySelectorAll('#schedule-weekday-options input[type="checkbox"]:checked'))
       .map(cb => parseInt(cb.value))
       .filter(v => !isNaN(v))
@@ -1876,27 +2559,14 @@ function addToSchedule(){
     }
     newItem.weekdays = weekdays;
   }
-  if(startDate) newItem.startDate = startDate;
-  if(endDate) newItem.endDate = endDate;
-
-  const dup = scheduleItems.findIndex((s, idx) =>
-    idx !== editingScheduleIndex &&
-    s.courseId === newItem.courseId &&
-    (s.repeatType || 'daily') === newItem.repeatType &&
-    JSON.stringify(scheduleWeekdays(s).sort((a,b) => a - b)) === JSON.stringify(scheduleWeekdays(newItem).sort((a,b) => a - b)) &&
-    (s.startDate || '') === (newItem.startDate || '') &&
-    (s.endDate || '') === (newItem.endDate || '')
-  );
-  if(dup >= 0){
-    if(!confirm('此課程在此規則下已存在，是否更新每日複習數量？')){
-      return;
-    }
-    scheduleItems[dup].lineCount = lineCount;
-  } else if(editingScheduleIndex >= 0 && scheduleItems[editingScheduleIndex]){
-    scheduleItems[editingScheduleIndex] = newItem;
-  } else {
-    scheduleItems.push(newItem);
+  if(repeatType !== 'once'){
+    if(startDate) newItem.startDate = startDate;
+    if(endDate) newItem.endDate = endDate;
   }
+
+  if(!saveScheduleItem(newItem, editingScheduleIndex)) return;
+  if(followItem && !saveScheduleItem(followItem, -1)) return;
+
   saveData();
   resetScheduleForm();
   renderScheduleList();
@@ -2861,6 +3531,12 @@ const RADICAL_DICT={"一": "一", "丁": "一", "七": "一", "丈": "一", "三
 const ZHUYIN_DICT={"一": "ㄧ", "七": "ㄑㄧ", "三": "ㄙㄢ", "上": "ㄕㄤˋ", "下": "ㄒㄧㄚˋ", "不": "ㄅㄨˋ", "且": "ㄑㄧㄝˇ", "世": "ㄕˋ", "丘": "ㄑㄧㄡ", "丟": "ㄉㄧㄡ", "中": "ㄓㄨㄥ", "串": "ㄔㄨㄢˋ", "主": "ㄓㄨˇ", "乘": "ㄔㄥˊ", "九": "ㄐㄧㄡˇ", "也": "ㄧㄝˇ", "乾": "ㄍㄢ", "亂": "ㄌㄨㄢˋ", "了": "ㄌㄜ", "二": "ㄦˋ", "互": "ㄏㄨˋ", "五": "ㄨˇ", "些": "ㄒㄧㄝ", "亡": "ㄨㄤˊ", "交": "ㄐㄧㄠ", "京": "ㄐㄧㄥ", "亮": "ㄌㄧㄤˋ", "人": "ㄖㄣˊ", "什": "ㄕㄣˊ", "仁": "ㄖㄣˊ", "今": "ㄐㄧㄣ", "他": "ㄊㄚ", "以": "ㄧˇ", "仰": "ㄧㄤˇ", "件": "ㄐㄧㄢˋ", "任": "ㄖㄣˋ", "伏": "ㄈㄨˊ", "休": "ㄒㄧ", "伯": "ㄅㄛˊ", "伴": "ㄅㄢˋ", "伸": "ㄕㄣ", "但": "ㄉㄢˋ", "佈": "ㄅㄨˋ", "位": "ㄨㄟˋ", "低": "ㄉㄧ", "住": "ㄓㄨˋ", "何": "ㄏㄜˊ", "作": "ㄗㄨㄛˋ", "你": "ㄋㄧˇ", "佳": "ㄐㄧㄚ", "侄": "ㄓˊ", "來": "ㄌㄞˊ", "便": "ㄆㄧㄢˊ", "促": "ㄘㄨˋ", "俊": "ㄐㄩㄣˋ", "俗": "ㄙㄨˊ", "保": "ㄅㄠˇ", "信": "ㄒㄧㄣˋ", "修": "ㄒㄧㄡ", "俯": "ㄈㄨˇ", "個": "ㄍㄜˋ", "倍": "ㄅㄟˋ", "們": "ㄇㄣˊ", "倒": "ㄉㄠˇ", "候": "ㄏㄡˋ", "借": "ㄐㄧㄝˋ", "假": "ㄐㄧㄚˋ", "偉": "ㄩㄝˇ", "做": "ㄗㄨㄛˋ", "停": "ㄊㄧㄥˊ", "健": "ㄐㄧㄢˋ", "側": "ㄘㄜˋ", "傑": "ㄐㄧㄝˊ", "備": "ㄅㄟˋ", "催": "ㄘㄨㄟ", "傲": "ㄠˋ", "傳": "ㄔㄨㄢˊ", "傷": "ㄕㄤ", "傻": "ㄕㄚˇ", "傾": "ㄑㄧㄥ", "價": "ㄐㄧㄚˋ", "億": "ㄧˋ", "儉": "ㄐㄧㄢˇ", "償": "ㄔㄤˊ", "優": "ㄧ", "元": "ㄩㄢˊ", "兄": "ㄒㄩㄥ", "兆": "ㄓㄠˋ", "先": "ㄒㄧㄢ", "光": "ㄍㄨㄤ", "克": "ㄎㄜˋ", "兒": "ㄦˊ", "兔": "ㄊㄨˋ", "入": "ㄖㄨˋ", "內": "ㄋㄟˋ", "全": "ㄑㄩㄢˊ", "八": "ㄅㄚ", "公": "ㄍㄨㄥ", "六": "ㄌㄧㄡˋ", "共": "ㄍㄨㄥˋ", "其": "ㄑㄧˊ", "具": "ㄐㄩˋ", "典": "ㄉㄧㄢˇ", "再": "ㄗㄞˋ", "冢": "ㄓㄨㄥˇ", "冥": "ㄇㄧㄥˊ", "冬": "ㄉㄨㄥ", "冰": "ㄅㄧㄥ", "冷": "ㄌㄥˇ", "凋": "ㄉㄧㄠ", "凍": "ㄉㄨㄥˋ", "凝": "ㄋㄧㄥˊ", "出": "ㄔㄨ", "刀": "ㄉㄠ", "分": "ㄈㄣ", "切": "ㄑㄧㄝ", "刑": "ㄒㄧㄥˊ", "列": "ㄌㄧㄝˋ", "初": "ㄔㄨ", "判": "ㄆㄢˋ", "別": "ㄅㄧㄝˊ", "刨": "ㄆㄠˊ", "利": "ㄌㄧˋ", "到": "ㄉㄠˋ", "制": "ㄓˋ", "刷": "ㄕㄨㄚ", "刺": "ㄘˋ", "刻": "ㄎㄜˋ", "則": "ㄗㄜˊ", "削": "ㄒㄩㄝ", "前": "ㄑㄧㄢˊ", "剎": "ㄕㄚ", "剔": "ㄊㄧ", "剛": "ㄍㄤ", "剪": "ㄐㄧㄢˇ", "割": "ㄍㄜ", "創": "ㄔㄨㄤˋ", "劃": "ㄏㄨㄚˋ", "劇": "ㄐㄩˋ", "劈": "ㄆㄧ", "劉": "ㄌㄧㄡˊ", "劍": "ㄐㄧㄢˋ", "力": "ㄌㄧˋ", "功": "ㄍㄨㄥ", "加": "ㄐㄧㄚ", "劣": "ㄌㄧㄝˋ", "助": "ㄓㄨˋ", "努": "ㄋㄨˇ", "勇": "ㄩㄥˇ", "動": "ㄉㄨㄥˋ", "務": "ㄨˋ", "勝": "ㄕㄥˋ", "勞": "ㄌㄠˊ", "勤": "ㄑㄧㄣˊ", "勺": "ㄕㄠˊ", "勻": "ㄩㄣˊ", "包": "ㄅㄠ", "化": "ㄏㄨㄚˋ", "北": "ㄅㄟˇ", "匙": "ㄕ", "匾": "ㄅㄧㄢˇ", "區": "ㄑㄩ", "十": "ㄕˊ", "千": "ㄑㄧㄢ", "升": "ㄕㄥ", "午": "ㄨˇ", "半": "ㄅㄢˋ", "卑": "ㄅㄟ", "南": "ㄋㄢˊ", "卡": "ㄎㄚˇ", "印": "ㄧㄣˋ", "危": "ㄨㄟ", "卸": "ㄒㄧㄝˋ", "卻": "ㄑㄩㄝˋ", "厚": "ㄏㄡˋ", "厭": "ㄧㄢˋ", "去": "ㄑㄩˋ", "又": "ㄧˋ", "叉": "ㄔㄚ", "及": "ㄐㄧˊ", "友": "ㄧˇ", "叔": "ㄕㄨ", "取": "ㄑㄩˇ", "受": "ㄕㄡˋ", "口": "ㄎㄡˇ", "句": "ㄐㄩˋ", "叨": "ㄉㄠ", "只": "ㄓˇ", "叫": "ㄐㄧㄠˋ", "召": "ㄓㄠˋ", "可": "ㄎㄜˇ", "台": "ㄊㄞˊ", "史": "ㄕˇ", "右": "ㄧˋ", "吃": "ㄔ", "各": "ㄍㄜˋ", "合": "ㄏㄜˊ", "吉": "ㄐㄧˊ", "吊": "ㄉㄧㄠˋ", "同": "ㄊㄨㄥˊ", "名": "ㄇㄧㄥˊ", "向": "ㄒㄧㄤˋ", "吟": "ㄧㄣˊ", "吧": "ㄅㄚ", "吳": "ㄨˊ", "吵": "ㄔㄠˇ", "吸": "ㄒㄧ", "吹": "ㄔㄨㄟ", "吼": "ㄏㄡˇ", "呀": "ㄧㄚ", "呆": "ㄉㄞ", "告": "ㄍㄠˋ", "呢": "ㄋㄜ", "周": "ㄓㄡ", "味": "ㄩㄝˋ", "呸": "ㄆㄟ", "呻": "ㄕㄣ", "呼": "ㄏㄨ", "和": "ㄏㄜˊ", "咚": "ㄉㄨㄥ", "咦": "ㄧˊ", "哀": "ㄞ", "品": "ㄆㄧㄣˇ", "哇": "ㄨㄚ", "哈": "ㄏㄚ", "哦": "ㄛˊ", "哪": "ㄋㄚˇ", "哭": "ㄎㄨ", "哲": "ㄓㄜˊ", "哼": "ㄏㄥ", "唇": "ㄔㄨㄣˊ", "唉": "ㄞ", "唱": "ㄔㄤˋ", "唷": "ㄧ", "商": "ㄕㄤ", "啊": "ㄚ", "問": "ㄩㄝˋ", "啦": "ㄌㄚ", "啪": "ㄆㄚ", "喂": "ㄩㄝˋ", "善": "ㄕㄢˋ", "喊": "ㄏㄢˇ", "喔": "ㄛ", "喚": "ㄏㄨㄢˋ", "喜": "ㄒㄧˇ", "喝": "ㄏㄜ", "喧": "ㄒㄩㄢ", "單": "ㄉㄢ", "嗆": "ㄑㄧㄤ", "嗎": "ㄇㄚ", "嗝": "ㄍㄜˊ", "嗨": "ㄏㄞ", "嗯": "ㄣ", "嘆": "ㄊㄢˋ", "嘔": "ㄡˇ", "嘖": "ㄗㄜˊ", "嘗": "ㄔㄤˊ", "嘩": "ㄏㄨㄚ", "嘮": "ㄌㄠˊ", "嘴": "ㄗㄨㄟˇ", "嘶": "ㄙ", "嘻": "ㄒㄧ", "嘿": "ㄏㄟ", "噎": "ㄧㄝ", "噓": "ㄒㄩ", "噢": "ㄛ", "器": "ㄑㄧˋ", "噴": "ㄆㄣ", "嚥": "ㄧㄢˋ", "嚴": "ㄧㄢˊ", "嚷": "ㄖㄤˇ", "囂": "ㄒㄧㄠ", "囉": "ㄌㄨㄛ", "四": "ㄙˋ", "回": "ㄏㄨㄟˊ", "因": "ㄧㄣ", "困": "ㄎㄨㄣˋ", "圈": "ㄑㄩㄢ", "國": "ㄍㄨㄛˊ", "圍": "ㄩㄝˊ", "園": "ㄩㄢˊ", "圓": "ㄩㄢˊ", "圖": "ㄊㄨˊ", "團": "ㄊㄨㄢˊ", "土": "ㄊㄨˇ", "在": "ㄗㄞˋ", "地": "ㄉㄧˋ", "址": "ㄓˇ", "坐": "ㄗㄨㄛˋ", "坡": "ㄆㄛ", "型": "ㄒㄧㄥˊ", "垢": "ㄍㄡˋ", "城": "ㄔㄥˊ", "堅": "ㄐㄧㄢ", "堆": "ㄉㄨㄟ", "報": "ㄅㄠˋ", "場": "ㄔㄤˇ", "塊": "ㄎㄨㄞˋ", "塑": "ㄙㄨˋ", "塔": "ㄊㄚˇ", "塘": "ㄊㄤˊ", "塚": "ㄓㄨㄥˇ", "填": "ㄊㄧㄢˊ", "塵": "ㄔㄣˊ", "境": "ㄐㄧㄥˋ", "墓": "ㄇㄨˋ", "墜": "ㄓㄨㄟˋ", "增": "ㄗㄥ", "墨": "ㄇㄛˋ", "墾": "ㄎㄣˇ", "壁": "ㄅㄧˋ", "壓": "ㄧㄚ", "壘": "ㄌㄟˇ", "壞": "ㄏㄨㄞˋ", "壯": "ㄓㄨㄤˋ", "壺": "ㄏㄨˊ", "壽": "ㄕㄡˋ", "夏": "ㄒㄧㄚˋ", "夕": "ㄒㄧ", "外": "ㄨㄞˋ", "多": "ㄉㄨㄛ", "夜": "ㄧㄝˋ", "夠": "ㄍㄡˋ", "夢": "ㄇㄥˋ", "大": "ㄉㄚˋ", "天": "ㄊㄧㄢ", "太": "ㄊㄞˋ", "夫": "ㄈㄨ", "失": "ㄕ", "奇": "ㄑㄧˊ", "奏": "ㄗㄡˋ", "奐": "ㄏㄨㄢˋ", "契": "ㄑㄧˋ", "奔": "ㄅㄣ", "套": "ㄊㄠˋ", "奢": "ㄕㄜ", "奧": "ㄠˋ", "奪": "ㄉㄨㄛˊ", "女": "ㄋㄩˇ", "奶": "ㄋㄞˇ", "她": "ㄊㄚ", "好": "ㄏㄠˇ", "如": "ㄖㄨˊ", "妍": "ㄧㄢˊ", "妒": "ㄉㄨˋ", "妙": "ㄇㄧㄠˋ", "妹": "ㄇㄟˋ", "妻": "ㄑㄧ", "始": "ㄕˇ", "姐": "ㄐㄧㄝˇ", "姑": "ㄍㄨ", "姨": "ㄧˊ", "姿": "ㄗ", "娃": "ㄨㄚˊ", "婆": "ㄆㄛˊ", "婉": "ㄨㄢˇ", "婿": "ㄒㄩˋ", "媚": "ㄇㄟˋ", "媽": "ㄇㄚ", "嫂": "ㄙㄠˇ", "嫉": "ㄐㄧˊ", "嫌": "ㄒㄧㄢˊ", "嫣": "ㄧㄢ", "嫩": "ㄋㄣˋ", "嫻": "ㄒㄧㄢˊ", "嬈": "ㄖㄠˊ", "嬌": "ㄐㄧㄠ", "嬰": "ㄧㄥ", "嬸": "ㄕㄣˇ", "子": "ㄗˇ", "字": "ㄗˋ", "存": "ㄘㄨㄣˊ", "孝": "ㄒㄧㄠˋ", "孤": "ㄍㄨ", "孩": "ㄏㄞˊ", "孫": "ㄙㄨㄣ", "學": "ㄒㄩㄝˊ", "它": "ㄊㄚ", "守": "ㄕㄡˇ", "安": "ㄢ", "完": "ㄨㄢˊ", "定": "ㄉㄧㄥˋ", "宜": "ㄧˊ", "室": "ㄕˋ", "宵": "ㄒㄧㄠ", "家": "ㄐㄧㄚ", "容": "ㄖㄨㄥˊ", "寂": "ㄐㄧˋ", "密": "ㄇㄧˋ", "寞": "ㄇㄛˋ", "察": "ㄔㄚˊ", "實": "ㄕˊ", "寧": "ㄋㄧㄥˊ", "審": "ㄕㄣˇ", "寫": "ㄒㄧㄝˇ", "寬": "ㄎㄨㄢ", "寶": "ㄅㄠˇ", "將": "ㄐㄧㄤ", "尊": "ㄗㄨㄣ", "尋": "ㄒㄩㄣˊ", "對": "ㄉㄨㄟˋ", "導": "ㄉㄠˇ", "小": "ㄒㄧㄠˇ", "少": "ㄕㄠˇ", "就": "ㄐㄧㄡˋ", "尺": "ㄔˇ", "局": "ㄐㄩˊ", "居": "ㄐㄩ", "屋": "ㄨ", "屏": "ㄆㄧㄥˊ", "展": "ㄓㄢˇ", "層": "ㄘㄥˊ", "山": "ㄕㄢ", "岩": "ㄧㄢˊ", "岸": "ㄢˋ", "峰": "ㄈㄥ", "島": "ㄉㄠˇ", "峽": "ㄒㄧㄚˊ", "崖": "ㄧㄚˊ", "崗": "ㄍㄤˇ", "嵐": "ㄌㄢˊ", "嶺": "ㄌㄧㄥˇ", "嶼": "ㄩˇ", "巖": "ㄧㄢˊ", "巢": "ㄔㄠˊ", "工": "ㄍㄨㄥ", "左": "ㄗㄨㄛˇ", "巧": "ㄑㄧㄠˇ", "己": "ㄐㄧˇ", "已": "ㄧˇ", "市": "ㄕˋ", "布": "ㄅㄨˋ", "帆": "ㄈㄢ", "希": "ㄒㄧ", "帛": "ㄅㄛˊ", "師": "ㄕ", "帳": "ㄓㄤˋ", "帶": "ㄉㄞˋ", "常": "ㄔㄤˊ", "帽": "ㄇㄠˋ", "幕": "ㄇㄨˋ", "幟": "ㄓˋ", "幡": "ㄈㄢ", "幫": "ㄅㄤ", "平": "ㄆㄧㄥˊ", "年": "ㄋㄧㄢˊ", "幻": "ㄏㄨㄢˋ", "幼": "ㄧˋ", "幽": "ㄧ", "幾": "ㄐㄧˇ", "床": "ㄔㄨㄤˊ", "序": "ㄒㄩˋ", "底": "ㄉㄧˇ", "店": "ㄉㄧㄢˋ", "府": "ㄈㄨˇ", "度": "ㄉㄨˋ", "座": "ㄗㄨㄛˋ", "康": "ㄎㄤ", "廚": "ㄔㄨˊ", "廳": "ㄊㄧㄥ", "延": "ㄧㄢˊ", "建": "ㄐㄧㄢˋ", "式": "ㄕˋ", "引": "ㄧㄣˇ", "弟": "ㄉㄧˋ", "弦": "ㄒㄧㄢˊ", "張": "ㄓㄤ", "彈": "ㄊㄢˊ", "彎": "ㄨㄢ", "形": "ㄒㄧㄥˊ", "彩": "ㄘㄞˇ", "影": "ㄧㄥˇ", "往": "ㄨㄤˇ", "很": "ㄏㄣˇ", "律": "ㄌㄩˋ", "後": "ㄏㄡˋ", "徐": "ㄒㄩˊ", "徑": "ㄐㄧㄥˋ", "得": "ㄉㄜˊ", "從": "ㄘㄨㄥˊ", "復": "ㄈㄨˋ", "德": "ㄉㄜˊ", "徽": "ㄏㄨㄟ", "心": "ㄒㄧㄣ", "必": "ㄅㄧˋ", "忘": "ㄨㄤˋ", "忙": "ㄇㄤˊ", "忠": "ㄓㄨㄥ", "快": "ㄎㄨㄞˋ", "念": "ㄋㄧㄢˋ", "忽": "ㄏㄨ", "怎": "ㄗㄣˇ", "怒": "ㄋㄨˋ", "怕": "ㄆㄚˋ", "思": "ㄙ", "急": "ㄐㄧˊ", "怪": "ㄍㄨㄞˋ", "怯": "ㄑㄧㄝˋ", "恐": "ㄎㄨㄥˇ", "恕": "ㄕㄨˋ", "恢": "ㄏㄨㄟ", "恥": "ㄔˇ", "恩": "ㄣ", "恬": "ㄊㄧㄢˊ", "恭": "ㄍㄨㄥ", "息": "ㄒㄧ", "悄": "ㄑㄧㄠˇ", "悟": "ㄨˋ", "悲": "ㄅㄟ", "悶": "ㄇㄣˋ", "情": "ㄑㄧㄥˊ", "惑": "ㄏㄨㄛˋ", "惜": "ㄒㄧ", "惡": "ㄜˋ", "惰": "ㄉㄨㄛˋ", "惱": "ㄋㄠˇ", "想": "ㄒㄧㄤˇ", "愁": "ㄔㄡˊ", "意": "ㄧˋ", "愚": "ㄩˊ", "愛": "ㄞˋ", "感": "ㄍㄢˇ", "慈": "ㄘˊ", "慌": "ㄏㄨㄤ", "慢": "ㄇㄢˋ", "慧": "ㄏㄨㄟˋ", "慶": "ㄑㄧㄥˋ", "憂": "ㄧ", "憤": "ㄈㄣˋ", "憶": "ㄧˋ", "應": "ㄧㄥ", "懲": "ㄔㄥˊ", "懶": "ㄌㄢˇ", "懷": "ㄏㄨㄞˊ", "懸": "ㄒㄩㄢˊ", "成": "ㄔㄥˊ", "我": "ㄨㄛˇ", "或": "ㄏㄨㄛˋ", "截": "ㄐㄧㄝˊ", "戰": "ㄓㄢˋ", "戲": "ㄒㄧˋ", "房": "ㄈㄤˊ", "所": "ㄙㄨㄛˇ", "扇": "ㄕㄢˋ", "手": "ㄕㄡˇ", "才": "ㄘㄞˊ", "打": "ㄉㄚˇ", "扔": "ㄖㄥ", "扛": "ㄎㄤˊ", "扣": "ㄎㄡˋ", "扭": "ㄋㄧㄡˇ", "扶": "ㄈㄨˊ", "批": "ㄆㄧ", "找": "ㄓㄠˇ", "技": "ㄐㄧˋ", "把": "ㄅㄚˇ", "抓": "ㄓㄨㄚ", "投": "ㄊㄡˊ", "折": "ㄓㄜˊ", "抱": "ㄅㄠˋ", "押": "ㄧㄚ", "拂": "ㄈㄨˊ", "拈": "ㄋㄧㄢ", "拉": "ㄌㄚ", "拋": "ㄆㄠ", "拍": "ㄆㄞ", "拒": "ㄐㄩˋ", "拓": "ㄊㄨㄛˋ", "拖": "ㄊㄨㄛ", "拙": "ㄓㄨㄛ", "拳": "ㄑㄩㄢˊ", "拽": "ㄓㄨㄞˋ", "拿": "ㄋㄚˊ", "持": "ㄔˊ", "指": "ㄓˇ", "挑": "ㄊㄧㄠ", "挖": "ㄨㄚ", "振": "ㄓㄣˋ", "挺": "ㄊㄧㄥˇ", "捉": "ㄓㄨㄛ", "捏": "ㄋㄧㄝ", "捕": "ㄅㄨˇ", "捨": "ㄕㄜˇ", "捶": "ㄔㄨㄟˊ", "掃": "ㄙㄠˇ", "掉": "ㄉㄧㄠˋ", "掌": "ㄓㄤˇ", "掏": "ㄊㄠ", "掐": "ㄑㄧㄚ", "排": "ㄆㄞˊ", "掘": "ㄐㄩㄝˊ", "掛": "ㄍㄨㄚˋ", "接": "ㄐㄧㄝ", "控": "ㄎㄨㄥˋ", "推": "ㄊㄨㄟ", "掩": "ㄧㄢˇ", "揉": "ㄖㄡˊ", "提": "ㄊㄧˊ", "揚": "ㄧㄤˊ", "換": "ㄏㄨㄢˋ", "握": "ㄨㄛˋ", "揮": "ㄏㄨㄟ", "搓": "ㄘㄨㄛ", "搖": "ㄧㄠˊ", "搗": "ㄉㄠˇ", "搜": "ㄙㄡ", "搬": "ㄅㄢ", "搭": "ㄉㄚ", "摔": "ㄕㄨㄞ", "摩": "ㄇㄛˊ", "撈": "ㄌㄠ", "撞": "ㄓㄨㄤˋ", "撥": "ㄅㄛ", "播": "ㄅㄛ", "撿": "ㄐㄧㄢˇ", "擇": "ㄗㄜˊ", "擊": "ㄐㄧ", "擋": "ㄉㄤˇ", "操": "ㄘㄠ", "擠": "ㄐㄧˇ", "擦": "ㄘㄚ", "擴": "ㄎㄨㄛˋ", "擺": "ㄅㄞˇ", "攀": "ㄆㄢ", "攙": "ㄔㄢ", "收": "ㄕㄡ", "改": "ㄍㄞˇ", "攻": "ㄍㄨㄥ", "放": "ㄈㄤˋ", "政": "ㄓㄥˋ", "敏": "ㄇㄧㄣˇ", "救": "ㄐㄧㄡˋ", "敗": "ㄅㄞˋ", "教": "ㄐㄧㄠˋ", "敢": "ㄍㄢˇ", "散": "ㄙㄢˋ", "敬": "ㄐㄧㄥˋ", "敲": "ㄑㄧㄠ", "整": "ㄓㄥˇ", "數": "ㄕㄨˋ", "文": "ㄩㄝˊ", "斑": "ㄅㄢ", "斕": "ㄌㄢˊ", "料": "ㄌㄧㄠˋ", "斜": "ㄒㄧㄝˊ", "新": "ㄒㄧㄣ", "斷": "ㄉㄨㄢˋ", "方": "ㄈㄤ", "於": "ㄩˊ", "旁": "ㄆㄤˊ", "旅": "ㄌㄩˇ", "旗": "ㄑㄧˊ", "日": "ㄖˋ", "旦": "ㄉㄢˋ", "早": "ㄗㄠˇ", "旺": "ㄨㄤˋ", "昇": "ㄕㄥ", "昌": "ㄔㄤ", "明": "ㄇㄧㄥˊ", "昏": "ㄏㄨㄣ", "易": "ㄧˋ", "星": "ㄒㄧㄥ", "映": "ㄧㄥˋ", "春": "ㄔㄨㄣ", "昨": "ㄗㄨㄛˊ", "是": "ㄕˋ", "時": "ㄕˊ", "晃": "ㄏㄨㄤˋ", "晚": "ㄨㄢˇ", "晝": "ㄓㄡˋ", "晨": "ㄔㄣˊ", "晰": "ㄒㄧ", "晴": "ㄑㄧㄥˊ", "智": "ㄓˋ", "暖": "ㄋㄨㄢˇ", "暗": "ㄢˋ", "暮": "ㄇㄨˋ", "暴": "ㄅㄠˋ", "曉": "ㄒㄧㄠˇ", "曬": "ㄕㄞˋ", "曲": "ㄑㄩˇ", "更": "ㄍㄥˋ", "書": "ㄕㄨ", "曾": "ㄘㄥˊ", "最": "ㄗㄨㄟˋ", "會": "ㄏㄨㄟˋ", "月": "ㄩㄝˋ", "有": "ㄧˇ", "朋": "ㄆㄥˊ", "服": "ㄈㄨˊ", "朗": "ㄌㄤˇ", "望": "ㄨㄤˋ", "朦": "ㄇㄥˊ", "朧": "ㄌㄨㄥˊ", "木": "ㄇㄨˋ", "本": "ㄅㄣˇ", "朽": "ㄒㄧㄡˇ", "李": "ㄌㄧˇ", "杏": "ㄒㄧㄥˋ", "材": "ㄘㄞˊ", "村": "ㄘㄨㄣ", "杜": "ㄉㄨˋ", "束": "ㄕㄨˋ", "杯": "ㄅㄟ", "東": "ㄉㄨㄥ", "松": "ㄙㄨㄥ", "林": "ㄌㄧㄣˊ", "果": "ㄍㄨㄛˇ", "枯": "ㄎㄨ", "架": "ㄐㄧㄚˋ", "柏": "ㄅㄞˇ", "染": "ㄖㄢˇ", "柔": "ㄖㄡˊ", "柳": "ㄌㄧㄡˇ", "柿": "ㄕˋ", "校": "ㄒㄧㄠˋ", "根": "ㄍㄣ", "格": "ㄍㄜˊ", "桂": "ㄍㄨㄟˋ", "桃": "ㄊㄠˊ", "桌": "ㄓㄨㄛ", "桶": "ㄊㄨㄥˇ", "梅": "ㄇㄟˊ", "條": "ㄊㄧㄠˊ", "梨": "ㄌㄧˊ", "梯": "ㄊㄧ", "棄": "ㄑㄧˋ", "棉": "ㄇㄧㄢˊ", "棋": "ㄑㄧˊ", "棕": "ㄗㄨㄥ", "森": "ㄙㄣ", "棵": "ㄎㄜ", "椅": "ㄧˇ", "植": "ㄓˊ", "椿": "ㄔㄨㄣ", "楊": "ㄧㄤˊ", "楓": "ㄈㄥ", "楚": "ㄔㄨˇ", "業": "ㄧㄝˋ", "極": "ㄐㄧˊ", "概": "ㄍㄞˋ", "榆": "ㄩˊ", "榕": "ㄖㄨㄥˊ", "榮": "ㄖㄨㄥˊ", "構": "ㄍㄡˋ", "樂": "ㄌㄜˋ", "樓": "ㄌㄡˊ", "標": "ㄅㄧㄠ", "樟": "ㄓㄤ", "模": "ㄇㄛˊ", "樣": "ㄧㄤˋ", "樸": "ㄆㄨˇ", "樹": "ㄕㄨˋ", "橋": "ㄑㄧㄠˊ", "橘": "ㄐㄩˊ", "橙": "ㄔㄥˊ", "機": "ㄐㄧ", "檜": "ㄍㄨㄟˋ", "權": "ㄑㄩㄢˊ", "欠": "ㄑㄧㄢˋ", "次": "ㄘˋ", "欣": "ㄒㄧㄣ", "歌": "ㄍㄜ", "歡": "ㄏㄨㄢ", "正": "ㄓㄥˋ", "步": "ㄅㄨˋ", "歪": "ㄨㄞ", "歲": "ㄙㄨㄟˋ", "歷": "ㄌㄧˋ", "死": "ㄙˇ", "殘": "ㄘㄢˊ", "段": "ㄉㄨㄢˋ", "母": "ㄇㄨˇ", "每": "ㄇㄟˇ", "比": "ㄅㄧˇ", "毛": "ㄇㄠˊ", "氈": "ㄓㄢ", "民": "ㄇㄧㄣˊ", "氣": "ㄑㄧˋ", "水": "ㄕㄨㄟˇ", "汙": "ㄨ", "江": "ㄐㄧㄤ", "池": "ㄔˊ", "污": "ㄨ", "決": "ㄐㄩㄝˊ", "沃": "ㄨㄛˋ", "沈": "ㄔㄣˊ", "沉": "ㄔㄣˊ", "沒": "ㄇㄟˊ", "沖": "ㄔㄨㄥ", "沙": "ㄕㄚ", "河": "ㄏㄜˊ", "治": "ㄓˋ", "沼": "ㄓㄠˇ", "泉": "ㄑㄩㄢˊ", "法": "ㄈㄚˇ", "泡": "ㄆㄠˋ", "波": "ㄅㄛ", "泥": "ㄋㄧˊ", "注": "ㄓㄨˋ", "泳": "ㄩㄥˇ", "洗": "ㄒㄧˇ", "洞": "ㄉㄨㄥˋ", "洲": "ㄓㄡ", "派": "ㄆㄞˋ", "流": "ㄌㄧㄡˊ", "浪": "ㄌㄤˋ", "浮": "ㄈㄨˊ", "浴": "ㄩˋ", "海": "ㄏㄞˇ", "浸": "ㄐㄧㄣˋ", "消": "ㄒㄧㄠ", "涵": "ㄏㄢˊ", "涼": "ㄌㄧㄤˊ", "淋": "ㄌㄧㄣˊ", "淘": "ㄊㄠˊ", "淡": "ㄉㄢˋ", "淨": "ㄐㄧㄥˋ", "深": "ㄕㄣ", "淵": "ㄩㄢ", "混": "ㄏㄨㄣˋ", "淺": "ㄑㄧㄢˇ", "清": "ㄑㄧㄥ", "減": "ㄐㄧㄢˇ", "渠": "ㄑㄩˊ", "測": "ㄘㄜˋ", "港": "ㄍㄤˇ", "渴": "ㄎㄜˇ", "游": "ㄧˊ", "渺": "ㄇㄧㄠˇ", "渾": "ㄏㄨㄣˊ", "湖": "ㄏㄨˊ", "湯": "ㄊㄤ", "溉": "ㄍㄞˋ", "準": "ㄓㄨㄣˇ", "溜": "ㄌㄧㄡ", "溝": "ㄍㄡ", "溪": "ㄒㄧ", "溫": "ㄩㄝ", "溼": "ㄕ", "滅": "ㄇㄧㄝˋ", "滋": "ㄗ", "滑": "ㄏㄨㄚˊ", "滷": "ㄌㄨˇ", "滾": "ㄍㄨㄣˇ", "滿": "ㄇㄢˇ", "漂": "ㄆㄧㄠˋ", "漠": "ㄇㄛˋ", "漸": "ㄐㄧㄢˋ", "潔": "ㄐㄧㄝˊ", "潤": "ㄖㄨㄣˋ", "潮": "ㄔㄠˊ", "澆": "ㄐㄧㄠ", "澈": "ㄔㄜˋ", "澗": "ㄐㄧㄢˋ", "澤": "ㄗㄜˊ", "濁": "ㄓㄨㄛˊ", "濃": "ㄋㄨㄥˊ", "濛": "ㄇㄥˊ", "濟": "ㄐㄧˋ", "濾": "ㄌㄩˋ", "瀑": "ㄆㄨˋ", "灌": "ㄍㄨㄢˋ", "灑": "ㄙㄚˇ", "灘": "ㄊㄢ", "灣": "ㄨㄢ", "火": "ㄏㄨㄛˇ", "灰": "ㄏㄨㄟ", "炒": "ㄔㄠˇ", "炫": "ㄒㄩㄢˋ", "炸": "ㄓㄚˊ", "為": "ㄨㄟˋ", "烈": "ㄌㄧㄝˋ", "烘": "ㄏㄨㄥ", "烤": "ㄎㄠˇ", "烹": "ㄆㄥ", "無": "ㄨˊ", "焦": "ㄐㄧㄠ", "然": "ㄖㄢˊ", "煌": "ㄏㄨㄤˊ", "煎": "ㄐㄧㄢ", "照": "ㄓㄠˋ", "煩": "ㄈㄢˊ", "煮": "ㄓㄨˇ", "熠": "ㄧˋ", "熱": "ㄖㄜˋ", "燈": "ㄉㄥ", "燉": "ㄉㄨㄣˋ", "燒": "ㄕㄠ", "燕": "ㄧㄢˋ", "燙": "ㄊㄤˋ", "燜": "ㄇㄣˋ", "燦": "ㄘㄢˋ", "爍": "ㄕㄨㄛˋ", "爛": "ㄌㄢˋ", "爬": "ㄆㄚˊ", "父": "ㄈㄨˋ", "爸": "ㄅㄚˋ", "爺": "ㄧㄝˊ", "牆": "ㄑㄧㄤˊ", "片": "ㄆㄧㄢˋ", "版": "ㄅㄢˇ", "牌": "ㄆㄞˊ", "牙": "ㄧㄚˊ", "牛": "ㄋㄧㄡˊ", "牢": "ㄌㄠˊ", "牧": "ㄇㄨˋ", "物": "ㄨˋ", "特": "ㄊㄜˋ", "牽": "ㄑㄧㄢ", "犁": "ㄌㄧˊ", "狂": "ㄎㄨㄤˊ", "狗": "ㄍㄡˇ", "猖": "ㄔㄤ", "猛": "ㄇㄥˇ", "猴": "ㄏㄡˊ", "獎": "ㄐㄧㄤˇ", "獨": "ㄉㄨˊ", "獲": "ㄏㄨㄛˋ", "獵": "ㄌㄧㄝˋ", "玄": "ㄒㄩㄢˊ", "率": "ㄕㄨㄞˋ", "玉": "ㄩˋ", "王": "ㄨㄤˊ", "玩": "ㄨㄢˊ", "玻": "ㄅㄛ", "珠": "ㄓㄨ", "班": "ㄅㄢ", "現": "ㄒㄧㄢˋ", "球": "ㄑㄧㄡˊ", "理": "ㄌㄧˇ", "琴": "ㄑㄧㄣˊ", "琶": "ㄆㄚˊ", "瑞": "ㄖㄨㄟˋ", "璀": "ㄘㄨㄟˇ", "璃": "ㄌㄧˊ", "璨": "ㄘㄢˋ", "環": "ㄏㄨㄢˊ", "瓜": "ㄍㄨㄚ", "瓶": "ㄆㄧㄥˊ", "瓷": "ㄘˊ", "甜": "ㄊㄧㄢˊ", "生": "ㄕㄥ", "甥": "ㄕㄥ", "用": "ㄩㄥˋ", "田": "ㄊㄧㄢˊ", "由": "ㄧㄡˊ", "界": "ㄐㄧㄝˋ", "留": "ㄌㄧㄡˊ", "畜": "ㄔㄨˋ", "略": "ㄌˋ", "畫": "ㄏㄨㄚˋ", "異": "ㄧˋ", "當": "ㄉㄤ", "疾": "ㄐㄧˊ", "病": "ㄅㄧㄥˋ", "痕": "ㄏㄣˊ", "痛": "ㄊㄨㄥˋ", "瘠": "ㄐㄧˊ", "瘦": "ㄕㄡˋ", "癒": "ㄩˋ", "登": "ㄉㄥ", "發": "ㄈㄚ", "白": "ㄅㄞˊ", "百": "ㄅㄞˇ", "的": "ㄉㄜ", "皎": "ㄐㄧㄠˇ", "皮": "ㄆㄧˊ", "盈": "ㄧㄥˊ", "盒": "ㄏㄜˊ", "盛": "ㄕㄥˋ", "盟": "ㄇㄥˊ", "盡": "ㄐㄧㄣˋ", "盤": "ㄆㄢˊ", "盪": "ㄉㄤˋ", "目": "ㄇㄨˋ", "直": "ㄓˊ", "相": "ㄒㄧㄤˋ", "盼": "ㄆㄢˋ", "省": "ㄕㄥˇ", "眉": "ㄇㄟˊ", "看": "ㄎㄢˋ", "真": "ㄓㄣ", "眨": "ㄓㄚˇ", "眩": "ㄒㄩㄢˋ", "眼": "ㄧㄢˇ", "睛": "ㄐㄧㄥ", "睜": "ㄓㄥ", "睡": "ㄕㄨㄟˋ", "睹": "ㄉㄨˇ", "瞄": "ㄇㄧㄠˊ", "瞥": "ㄆㄧㄝ", "瞧": "ㄑㄧㄠˊ", "瞪": "ㄉㄥˋ", "矚": "ㄓㄨˇ", "知": "ㄓ", "短": "ㄉㄨㄢˇ", "矮": "ㄞˇ", "石": "ㄕˊ", "砌": "ㄑㄧˋ", "砍": "ㄎㄢˇ", "研": "ㄧㄢˊ", "砰": "ㄆㄥ", "破": "ㄆㄛˋ", "硬": "ㄧㄥˋ", "碑": "ㄅㄟ", "碗": "ㄨㄢˇ", "碧": "ㄅㄧˋ", "碩": "ㄕㄨㄛˋ", "碰": "ㄆㄥˋ", "確": "ㄑㄩㄝˋ", "碼": "ㄇㄚˇ", "磨": "ㄇㄛˊ", "礁": "ㄐㄧㄠ", "示": "ㄕˋ", "社": "ㄕㄜˋ", "祈": "ㄑㄧˊ", "祕": "ㄇㄧˋ", "祝": "ㄓㄨˋ", "神": "ㄕㄣˊ", "祥": "ㄒㄧㄤˊ", "票": "ㄆㄧㄠˋ", "禁": "ㄐㄧㄣˋ", "福": "ㄈㄨˊ", "禮": "ㄌㄧˇ", "禱": "ㄉㄠˇ", "禾": "ㄏㄜˊ", "秀": "ㄒㄧㄡˋ", "秋": "ㄑㄧㄡ", "科": "ㄎㄜ", "秒": "ㄇㄧㄠˇ", "移": "ㄧˊ", "程": "ㄔㄥˊ", "稚": "ㄓˋ", "種": "ㄓㄨㄥˇ", "稱": "ㄔㄥ", "稻": "ㄉㄠˋ", "穀": "ㄍㄨˇ", "積": "ㄐㄧ", "穗": "ㄙㄨㄟˋ", "穴": "ㄒㄩㄝˋ", "究": "ㄐㄧㄡ", "空": "ㄎㄨㄥ", "穿": "ㄔㄨㄢ", "突": "ㄊㄨ", "窄": "ㄓㄞˇ", "窗": "ㄔㄨㄤ", "窩": "ㄨㄛ", "窺": "ㄎㄨㄟ", "竄": "ㄘㄨㄢˋ", "立": "ㄌㄧˋ", "站": "ㄓㄢˋ", "章": "ㄓㄤ", "童": "ㄊㄨㄥˊ", "端": "ㄉㄨㄢ", "竹": "ㄓㄨˊ", "笑": "ㄒㄧㄠˋ", "笛": "ㄉㄧˊ", "笨": "ㄅㄣˋ", "第": "ㄉㄧˋ", "筆": "ㄅㄧˇ", "等": "ㄉㄥˇ", "答": "ㄉㄚˊ", "算": "ㄙㄨㄢˋ", "管": "ㄍㄨㄢˇ", "箱": "ㄒㄧㄤ", "節": "ㄐㄧㄝˊ", "篇": "ㄆㄧㄢ", "築": "ㄓㄨˊ", "篩": "ㄕㄞ", "簡": "ㄐㄧㄢˇ", "簽": "ㄑㄧㄢ", "簾": "ㄌㄧㄢˊ", "米": "ㄇㄧˇ", "粉": "ㄈㄣˇ", "粗": "ㄘㄨ", "精": "ㄐㄧㄥ", "糊": "ㄏㄨˊ", "糖": "ㄊㄤˊ", "糜": "ㄇㄧˊ", "約": "ㄩㄝ", "紅": "ㄏㄨㄥˊ", "紋": "ㄩㄝˊ", "紗": "ㄕㄚ", "紙": "ㄓˇ", "級": "ㄐㄧˊ", "紛": "ㄈㄣ", "素": "ㄙㄨˋ", "索": "ㄙㄨㄛˇ", "紫": "ㄗˇ", "累": "ㄌㄟˋ", "細": "ㄒㄧˋ", "終": "ㄓㄨㄥ", "組": "ㄗㄨˇ", "結": "ㄐㄧㄝˊ", "絕": "ㄐㄩㄝˊ", "絢": "ㄒㄩㄢˋ", "給": "ㄍㄟˇ", "絲": "ㄙ", "綁": "ㄅㄤˇ", "經": "ㄐㄧㄥ", "綠": "ㄌㄩˋ", "綢": "ㄔㄡˊ", "網": "ㄨㄤˇ", "緊": "ㄐㄧㄣˇ", "線": "ㄒㄧㄢˋ", "緞": "ㄉㄨㄢˋ", "編": "ㄅㄧㄢ", "緩": "ㄏㄨㄢˇ", "縣": "ㄒㄧㄢˋ", "縫": "ㄈㄥˊ", "縮": "ㄙㄨㄛ", "總": "ㄗㄨㄥˇ", "績": "ㄐㄧ", "繁": "ㄈㄢˊ", "織": "ㄓ", "繡": "ㄒㄧㄡˋ", "繩": "ㄕㄥˊ", "繽": "ㄅㄧㄣ", "纏": "ㄔㄢˊ", "罩": "ㄓㄠˋ", "罪": "ㄗㄨㄟˋ", "置": "ㄓˋ", "罰": "ㄈㄚˊ", "羅": "ㄌㄨㄛˊ", "羊": "ㄧㄤˊ", "美": "ㄇㄟˇ", "羞": "ㄒㄧㄡ", "群": "ㄑㄩㄣˊ", "義": "ㄧˋ", "羽": "ㄩˇ", "翁": "ㄩㄝ", "翅": "ㄔˋ", "翎": "ㄌㄧㄥˊ", "翔": "ㄒㄧㄤˊ", "翠": "ㄘㄨㄟˋ", "翩": "ㄆㄧㄢ", "翱": "ㄠˊ", "翹": "ㄑㄧㄠˋ", "翻": "ㄈㄢ", "翼": "ㄧˋ", "耀": "ㄧㄠˋ", "老": "ㄌㄠˇ", "考": "ㄎㄠˇ", "而": "ㄦˊ", "耐": "ㄋㄞˋ", "耕": "ㄍㄥ", "耙": "ㄅㄚˋ", "耳": "ㄦˇ", "聊": "ㄌㄧㄠˊ", "聖": "ㄕㄥˋ", "聘": "ㄆㄧㄣˋ", "聚": "ㄐㄩˋ", "聰": "ㄘㄨㄥ", "聲": "ㄕㄥ", "聽": "ㄊㄧㄥ", "肉": "ㄖㄡˋ", "肘": "ㄓㄡˇ", "肚": "ㄉㄨˋ", "肝": "ㄍㄢ", "肥": "ㄈㄟˊ", "肩": "ㄐㄧㄢ", "育": "ㄩˋ", "肺": "ㄈㄟˋ", "胃": "ㄩㄝˋ", "背": "ㄅㄟˋ", "胎": "ㄊㄞ", "胖": "ㄆㄤˋ", "胡": "ㄏㄨˊ", "胸": "ㄒㄩㄥ", "能": "ㄋㄥˊ", "脆": "ㄘㄨㄟˋ", "脊": "ㄐㄧˇ", "脹": "ㄓㄤˋ", "腎": "ㄕㄣˋ", "腐": "ㄈㄨˇ", "腕": "ㄨㄢˋ", "腦": "ㄋㄠˇ", "腰": "ㄧㄠ", "腳": "ㄐㄧㄠˇ", "腸": "ㄔㄤˊ", "腹": "ㄈㄨˋ", "腿": "ㄊㄨㄟˇ", "膀": "ㄅㄤˇ", "膝": "ㄒㄧ", "膠": "ㄐㄧㄠ", "膨": "ㄆㄥˊ", "膩": "ㄋㄧˋ", "膽": "ㄉㄢˇ", "臂": "ㄅㄧˋ", "臉": "ㄌㄧㄢˇ", "臥": "ㄨㄛˋ", "自": "ㄗˋ", "臭": "ㄔㄡˋ", "臺": "ㄊㄞˊ", "舅": "ㄐㄧㄡˋ", "與": "ㄩˇ", "興": "ㄒㄧㄥ", "舉": "ㄐㄩˇ", "舊": "ㄐㄧㄡˋ", "舌": "ㄕㄜˊ", "舞": "ㄨˇ", "航": "ㄏㄤˊ", "船": "ㄔㄨㄢˊ", "良": "ㄌㄧㄤˊ", "色": "ㄙㄜˋ", "花": "ㄏㄨㄚ", "芽": "ㄧㄚˊ", "苗": "ㄇㄧㄠˊ", "苦": "ㄎㄨˇ", "英": "ㄧㄥ", "茁": "ㄓㄨㄛˊ", "茂": "ㄇㄠˋ", "茫": "ㄇㄤˊ", "茶": "ㄔㄚˊ", "草": "ㄘㄠˇ", "荒": "ㄏㄨㄤ", "荷": "ㄏㄜˊ", "莊": "ㄓㄨㄤ", "莖": "ㄐㄧㄥ", "菊": "ㄐㄩˊ", "菜": "ㄘㄞˋ", "華": "ㄏㄨㄚˊ", "萎": "ㄩㄝˇ", "萬": "ㄨㄢˋ", "落": "ㄌㄨㄛˋ", "葉": "ㄧㄝˋ", "蒜": "ㄙㄨㄢˋ", "蒸": "ㄓㄥ", "蒼": "ㄘㄤ", "蓋": "ㄍㄞˋ", "蓮": "ㄌㄧㄢˊ", "蔑": "ㄇㄧㄝˋ", "蔡": "ㄘㄞˋ", "蔥": "ㄘㄨㄥ", "蔽": "ㄅㄧˋ", "蕩": "ㄉㄤˋ", "蕪": "ㄨˊ", "薄": "ㄅㄠˊ", "薑": "ㄐㄧㄤ", "薪": "ㄒㄧㄣ", "藍": "ㄌㄢˊ", "藏": "ㄘㄤˊ", "藐": "ㄇㄧㄠˇ", "藝": "ㄧˋ", "藤": "ㄊㄥˊ", "藥": "ㄧㄠˋ", "蘭": "ㄌㄢˊ", "虎": "ㄏㄨˇ", "虔": "ㄑㄧㄢˊ", "處": "ㄔㄨˋ", "虛": "ㄒㄩ", "號": "ㄏㄠˋ", "虹": "ㄏㄨㄥˊ", "蚊": "ㄩㄝˊ", "蛇": "ㄕㄜˊ", "蛋": "ㄉㄢˋ", "蜂": "ㄈㄥ", "蜓": "ㄊㄧㄥˊ", "蜜": "ㄇㄧˋ", "蜻": "ㄑㄧㄥ", "蝴": "ㄏㄨˊ", "蝶": "ㄉㄧㄝˊ", "蝸": "ㄍㄨㄚ", "融": "ㄖㄨㄥˊ", "蟲": "ㄔㄨㄥˊ", "蟻": "ㄧˇ", "蠅": "ㄧㄥˊ", "蠻": "ㄇㄢˊ", "血": "ㄒㄩㄝˋ", "行": "ㄒㄧㄥˊ", "術": "ㄕㄨˋ", "街": "ㄐㄧㄝ", "衛": "ㄨㄟˋ", "衝": "ㄔㄨㄥ", "衡": "ㄏㄥˊ", "衣": "ㄧ", "表": "ㄅㄧㄠˇ", "衰": "ㄕㄨㄞ", "袋": "ㄉㄞˋ", "被": "ㄅㄟˋ", "裙": "ㄑㄩㄣˊ", "補": "ㄅㄨˇ", "裝": "ㄓㄨㄤ", "裡": "ㄌㄧˇ", "裹": "ㄍㄨㄛˇ", "製": "ㄓˋ", "複": "ㄈㄨˋ", "褐": "ㄏㄜˋ", "褲": "ㄎㄨˋ", "襪": "ㄨㄚˋ", "西": "ㄒㄧ", "要": "ㄧㄠˋ", "見": "ㄐㄧㄢˋ", "規": "ㄍㄨㄟ", "覓": "ㄇㄧˋ", "視": "ㄕˋ", "覺": "ㄐㄩㄝˊ", "觀": "ㄍㄨㄢ", "角": "ㄐㄧㄠˇ", "解": "ㄐㄧㄝˇ", "訂": "ㄉㄧㄥˋ", "計": "ㄐㄧˋ", "訊": "ㄒㄩㄣˋ", "記": "ㄐㄧˋ", "設": "ㄕㄜˋ", "訴": "ㄙㄨˋ", "評": "ㄆㄧㄥˊ", "詞": "ㄘˊ", "試": "ㄕˋ", "詩": "ㄕ", "話": "ㄏㄨㄚˋ", "該": "ㄍㄞ", "詳": "ㄒㄧㄤˊ", "認": "ㄖㄣˋ", "誓": "ㄕˋ", "誕": "ㄉㄢˋ", "語": "ㄩˇ", "誠": "ㄔㄥˊ", "說": "ㄕㄨㄛ", "誰": "ㄕㄨㄟˊ", "課": "ㄎㄜˋ", "調": "ㄊㄧㄠˊ", "談": "ㄊㄢˊ", "請": "ㄑㄧㄥˇ", "諒": "ㄌㄧㄤˋ", "論": "ㄌㄨㄣˋ", "諾": "ㄋㄨㄛˋ", "謙": "ㄑㄧㄢ", "講": "ㄐㄧㄤˇ", "謝": "ㄒㄧㄝˋ", "證": "ㄓㄥˋ", "識": "ㄕˊ", "警": "ㄐㄧㄥˇ", "譯": "ㄧˋ", "議": "ㄧˋ", "護": "ㄏㄨˋ", "讀": "ㄉㄨˊ", "變": "ㄅㄧㄢˋ", "讓": "ㄖㄤˋ", "谷": "ㄍㄨˇ", "豆": "ㄉㄡˋ", "豐": "ㄈㄥ", "豔": "ㄧㄢˋ", "象": "ㄒㄧㄤˋ", "豪": "ㄏㄠˊ", "豬": "ㄓㄨ", "貓": "ㄇㄠ", "貝": "ㄅㄟˋ", "負": "ㄈㄨˋ", "貧": "ㄆㄧㄣˊ", "責": "ㄗㄜˊ", "貴": "ㄍㄨㄟˋ", "買": "ㄇㄞˇ", "貸": "ㄉㄞˋ", "貼": "ㄊㄧㄝ", "貿": "ㄇㄠˋ", "賀": "ㄏㄜˋ", "資": "ㄗ", "賞": "ㄕㄤˇ", "賠": "ㄆㄟˊ", "賢": "ㄒㄧㄢˊ", "賣": "ㄇㄞˋ", "質": "ㄓˋ", "賺": "ㄓㄨㄢˋ", "賽": "ㄙㄞˋ", "贏": "ㄧㄥˊ", "赦": "ㄕㄜˋ", "走": "ㄗㄡˇ", "起": "ㄑㄧˇ", "超": "ㄔㄠ", "越": "ㄩㄝˋ", "趕": "ㄍㄢˇ", "趙": "ㄓㄠˋ", "趟": "ㄊㄤˋ", "足": "ㄗㄨˊ", "跑": "ㄆㄠˇ", "跟": "ㄍㄣ", "跡": "ㄐㄧˋ", "跨": "ㄎㄨㄚˋ", "跪": "ㄍㄨㄟˋ", "路": "ㄌㄨˋ", "跳": "ㄊㄧㄠˋ", "踏": "ㄊㄚˋ", "踝": "ㄏㄨㄞˊ", "踩": "ㄘㄞˇ", "蹤": "ㄗㄨㄥ", "蹦": "ㄅㄥˋ", "蹬": "ㄉㄥ", "蹲": "ㄉㄨㄣ", "躁": "ㄗㄠˋ", "身": "ㄕㄣ", "躲": "ㄉㄨㄛˇ", "躺": "ㄊㄤˇ", "車": "ㄔㄜ", "軌": "ㄍㄨㄟˇ", "軍": "ㄐㄩㄣ", "軟": "ㄖㄨㄢˇ", "較": "ㄐㄧㄠˋ", "載": "ㄗㄞˋ", "輕": "ㄑㄧㄥ", "輝": "ㄏㄨㄟ", "輪": "ㄌㄨㄣˊ", "輸": "ㄕㄨ", "轉": "ㄓㄨㄢˇ", "辣": "ㄌㄚˋ", "辦": "ㄅㄢˋ", "辯": "ㄅㄧㄢˋ", "辱": "ㄖㄨˇ", "農": "ㄋㄨㄥˊ", "迅": "ㄒㄩㄣˋ", "近": "ㄐㄧㄣˋ", "迷": "ㄇㄧˊ", "追": "ㄓㄨㄟ", "退": "ㄊㄨㄟˋ", "送": "ㄙㄨㄥˋ", "逃": "ㄊㄠˊ", "逐": "ㄓㄨˊ", "途": "ㄊㄨˊ", "這": "ㄓㄜˋ", "通": "ㄊㄨㄥ", "逛": "ㄍㄨㄤˋ", "速": "ㄙㄨˋ", "造": "ㄗㄠˋ", "連": "ㄌㄧㄢˊ", "進": "ㄐㄧㄣˋ", "遊": "ㄧㄡˊ", "運": "ㄩㄣˋ", "過": "ㄍㄨㄛˋ", "道": "ㄉㄠˋ", "達": "ㄉㄚˊ", "遛": "ㄌㄧㄡˋ", "遞": "ㄉㄧˋ", "遠": "ㄩㄢˇ", "遣": "ㄑㄧㄢˇ", "遮": "ㄓㄜ", "遲": "ㄔˊ", "選": "ㄒㄩㄢˇ", "遺": "ㄧˊ", "避": "ㄅㄧˋ", "邀": "ㄧㄠ", "邁": "ㄇㄞˋ", "還": "ㄏㄞˊ", "邊": "ㄅㄧㄢ", "那": "ㄋㄚˋ", "部": "ㄅㄨˋ", "郭": "ㄍㄨㄛ", "都": "ㄉㄡ", "鄉": "ㄒㄧㄤ", "鄙": "ㄅㄧˇ", "鄭": "ㄓㄥˋ", "鄰": "ㄌㄧㄣˊ", "配": "ㄆㄟˋ", "酒": "ㄐㄧㄡˇ", "酬": "ㄔㄡˊ", "酸": "ㄙㄨㄢ", "醃": "ㄧㄢ", "醋": "ㄘㄨˋ", "醒": "ㄒㄧㄥˇ", "醜": "ㄔㄡˇ", "醫": "ㄧ", "醬": "ㄐㄧㄤˋ", "釋": "ㄕˋ", "重": "ㄓㄨㄥˋ", "野": "ㄧㄝˇ", "量": "ㄌㄧㄤˋ", "金": "ㄐㄧㄣ", "釘": "ㄉㄧㄥ", "釣": "ㄉㄧㄠˋ", "鈍": "ㄉㄨㄣˋ", "鉤": "ㄍㄡ", "銀": "ㄧㄣˊ", "銅": "ㄊㄨㄥˊ", "鋁": "ㄌㄩˇ", "鋤": "ㄔㄨˊ", "鋼": "ㄍㄤ", "錄": "ㄌㄨˋ", "錢": "ㄑㄧㄢˊ", "錯": "ㄘㄨㄛˋ", "鍋": "ㄍㄨㄛ", "鍵": "ㄐㄧㄢˋ", "鎖": "ㄙㄨㄛˇ", "鎮": "ㄓㄣˋ", "鏟": "ㄔㄢˇ", "鏡": "ㄐㄧㄥˋ", "鐘": "ㄓㄨㄥ", "鐮": "ㄌㄧㄢˊ", "鐵": "ㄊㄧㄝˇ", "鑑": "ㄐㄧㄢˋ", "鑒": "ㄐㄧㄢˋ", "鑰": "ㄧㄠˋ", "鑿": "ㄗㄠˊ", "長": "ㄓㄤˇ", "門": "ㄇㄣˊ", "閃": "ㄕㄢˇ", "閉": "ㄅㄧˋ", "開": "ㄎㄞ", "閒": "ㄒㄧㄢˊ", "間": "ㄐㄧㄢ", "關": "ㄍㄨㄢ", "防": "ㄈㄤˊ", "陋": "ㄌㄡˋ", "降": "ㄐㄧㄤˋ", "院": "ㄩㄢˋ", "除": "ㄔㄨˊ", "陰": "ㄧㄣ", "陳": "ㄔㄣˊ", "陵": "ㄌㄧㄥˊ", "陶": "ㄊㄠˊ", "陸": "ㄌㄨˋ", "陽": "ㄧㄤˊ", "隊": "ㄉㄨㄟˋ", "際": "ㄐㄧˋ", "障": "ㄓㄤˋ", "隨": "ㄙㄨㄟˊ", "險": "ㄒㄧㄢˇ", "隱": "ㄧㄣˇ", "隻": "ㄓ", "雀": "ㄑㄩㄝˋ", "雁": "ㄧㄢˋ", "雄": "ㄒㄩㄥˊ", "雅": "ㄧㄚˇ", "集": "ㄐㄧˊ", "雇": "ㄍㄨˋ", "雖": "ㄙㄨㄟ", "雙": "ㄕㄨㄤ", "雜": "ㄗㄚˊ", "雞": "ㄐㄧ", "離": "ㄌㄧˊ", "難": "ㄋㄢˊ", "雨": "ㄩˇ", "雪": "ㄒㄩㄝˇ", "雲": "ㄩㄣˊ", "零": "ㄌㄧㄥˊ", "雷": "ㄌㄟˊ", "電": "ㄉㄧㄢˋ", "需": "ㄒㄩ", "霓": "ㄋㄧˊ", "霜": "ㄕㄨㄤ", "霞": "ㄒㄧㄚˊ", "霧": "ㄨˋ", "露": "ㄌㄨˋ", "霾": "ㄇㄞˊ", "靄": "ㄞˇ", "靈": "ㄌㄧㄥˊ", "青": "ㄑㄧㄥ", "靜": "ㄐㄧㄥˋ", "非": "ㄈㄟ", "靠": "ㄎㄠˋ", "面": "ㄇㄧㄢˋ", "鞋": "ㄒㄧㄝˊ", "鞍": "ㄢ", "音": "ㄧㄣ", "響": "ㄒㄧㄤˇ", "頂": "ㄉㄧㄥˇ", "須": "ㄒㄩ", "頑": "ㄨㄢˊ", "領": "ㄌㄧㄥˇ", "頭": "ㄊㄡˊ", "頸": "ㄐㄧㄥˇ", "頹": "ㄊㄨㄟˊ", "頻": "ㄆㄧㄣˊ", "題": "ㄊㄧˊ", "額": "ㄜˊ", "類": "ㄌㄟˋ", "風": "ㄈㄥ", "飄": "ㄆㄧㄠ", "飛": "ㄈㄟ", "食": "ㄕˊ", "飢": "ㄐㄧ", "飯": "ㄈㄢˋ", "飼": "ㄙˋ", "飽": "ㄅㄠˇ", "飾": "ㄕˋ", "餅": "ㄅㄧㄥˇ", "養": "ㄧㄤˇ", "餓": "ㄜˋ", "館": "ㄍㄨㄢˇ", "饒": "ㄖㄠˊ", "首": "ㄕㄡˇ", "香": "ㄒㄧㄤ", "馬": "ㄇㄚˇ", "馱": "ㄊㄨㄛˊ", "馴": "ㄒㄩㄣˋ", "駕": "ㄐㄧㄚˋ", "騎": "ㄑㄧˊ", "騰": "ㄊㄥˊ", "驅": "ㄑㄩ", "驕": "ㄐㄧㄠ", "驗": "ㄧㄢˋ", "驚": "ㄐㄧㄥ", "骨": "ㄍㄨˇ", "髒": "ㄗㄤ", "體": "ㄊㄧˇ", "高": "ㄍㄠ", "髮": "ㄈㄚˋ", "鬆": "ㄙㄨㄥ", "鬧": "ㄋㄠˋ", "鬱": "ㄩˋ", "魚": "ㄩˊ", "鮮": "ㄒㄧㄢ", "鯨": "ㄐㄧㄥ", "鳥": "ㄋㄧㄠˇ", "鴉": "ㄧㄚ", "鴨": "ㄧㄚ", "鴿": "ㄍㄜ", "鵑": "ㄐㄩㄢ", "鵝": "ㄜˊ", "鵡": "ㄨˇ", "鵲": "ㄑㄩㄝˋ", "鶯": "ㄧㄥ", "鶴": "ㄏㄜˋ", "鷄": "ㄐㄧ", "鷹": "ㄧㄥ", "鸚": "ㄧㄥ", "鹹": "ㄒㄧㄢˊ", "鹿": "ㄌㄨˋ", "麗": "ㄌㄧˋ", "麥": "ㄇㄞˋ", "麵": "ㄇㄧㄢˋ", "麻": "ㄇㄚˊ", "麼": "ㄇㄜ", "黃": "ㄏㄨㄤˊ", "黎": "ㄌㄧˊ", "黑": "ㄏㄟ", "默": "ㄇㄛˋ", "點": "ㄉㄧㄢˇ", "鼓": "ㄍㄨˇ", "鼠": "ㄕㄨˇ", "鼻": "ㄅㄧˊ", "齊": "ㄑㄧˊ", "齒": "ㄔˇ", "龍": "ㄌㄨㄥˊ"};
 </script>
 </html>
+
+
+
+
+
+
 
 
 
