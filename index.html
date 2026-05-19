@@ -22,6 +22,8 @@ html,body{height:100%;overflow:hidden}
   --green:#22c55e;--amber:#f59e0b;--red:#ef4444;
   --gray-1:#f8fafc;--gray-2:#e5e7eb;--gray-3:#6b7280;--gray-4:#374151;
   --navy:#172554;--white:#fff;--radius:16px;--radius-lg:24px;
+  --sidebar-text-size:13px;--sidebar-icon-size:26px;
+  --content-text-size:14px;--content-image-scale:1;
 }
 .app{font-family:'Noto Sans TC','Microsoft JhengHei',sans-serif;background:#f0f4f8;height:100vh;border-radius:0;overflow:hidden;display:flex;flex-direction:column;font-size:14px;color:#1f2937;position:relative}
 .frame{display:grid;grid-template-columns:220px 1fr;flex:1;min-height:0;height:100%}
@@ -30,22 +32,23 @@ html,body{height:100%;overflow:hidden}
 .brand{display:flex;align-items:center;gap:10px;margin-bottom:20px;color:#fff}
 .brand-icon{width:56px;height:56px;display:grid;place-items:center;flex-shrink:0;background:transparent}
 .brand-name{font-size:17px;font-weight:900;color:#fff}
-.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;color:rgba(255,255,255,.75);cursor:pointer;font-weight:500;transition:all .2s;font-size:13px;border:none;background:none;width:100%;text-align:left}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;color:rgba(255,255,255,.75);cursor:pointer;font-weight:500;transition:all .2s;font-size:var(--sidebar-text-size);border:none;background:none;width:100%;text-align:left}
 .nav-item:hover{background:rgba(255,255,255,.15);color:#fff}
 .nav-item.active{background:rgba(255,255,255,.22);color:#fff;font-weight:700}
-.nav-icon{width:22px;text-align:center;font-size:16px}
+.nav-icon{width:var(--sidebar-icon-size);text-align:center;font-size:calc(var(--sidebar-icon-size) * .62)}
 /* Individual nav icon images extracted into icon/ */
-.nav-icon-img{width:26px;height:26px;background-size:contain;background-repeat:no-repeat;background-position:center;flex-shrink:0}
-.nav-icon-home{background-image:url('icon/nav_home.png')}
-.nav-icon-cal{background-image:url('icon/nav_cal.png')}
+.nav-icon-img{width:var(--sidebar-icon-size);height:var(--sidebar-icon-size);background-size:contain;background-repeat:no-repeat;background-position:center;flex-shrink:0}
+.nav-icon-home{background-image:url('icon/nav_today_redesign.svg')}
+.nav-icon-cal{background-image:url('icon/nav_calendar_week_redesign.svg')}
 .nav-icon-books{background-image:url('icon/nav_books.png')}
 .nav-icon-bell{background-image:url('icon/nav_bell.png')}
 .nav-icon-parents{background-image:url('icon/nav_parents.png')}
+.nav-icon-course{background-image:url('icon/section_course.png')}
 .nav-icon-gear{background-image:url('icon/nav_gear.png')}
 .sidebar{position:relative;padding-bottom:130px}
 .sidebar-mascot{position:absolute;left:0;right:0;bottom:6px;height:120px;background-image:url('icon/mascot_backpack.png');background-size:contain;background-repeat:no-repeat;background-position:center bottom;opacity:.98;pointer-events:none}
 .add-schedule-mascot{position:absolute;right:10px;bottom:10px;width:90px;height:90px;background-image:url('icon/mascot_calendar.png');background-size:contain;background-repeat:no-repeat;background-position:center;opacity:.98;pointer-events:none}
-.topbar-airplane{width:44px;height:34px;background-image:url('icon/deco_airplane.png');background-size:contain;background-repeat:no-repeat;background-position:center;flex-shrink:0;margin-right:6px}
+.topbar-airplane{width:calc(44px * var(--content-image-scale));height:calc(34px * var(--content-image-scale));background-image:url('icon/deco_airplane.png');background-size:contain;background-repeat:no-repeat;background-position:center;flex-shrink:0;margin-right:6px}
 /* Course management section */
 .course-mgmt-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:12px}
 .course-mgmt-header h3{font-size:18px;font-weight:900;color:#111;display:flex;align-items:center;gap:8px;margin:0}
@@ -53,24 +56,24 @@ html,body{height:100%;overflow:hidden}
 .course-mgmt-add-btn{display:inline-flex;align-items:center;gap:6px;padding:11px 22px;background:linear-gradient(90deg,#2563eb,#4f8cff);color:#fff;border:none;border-radius:999px;font-weight:800;cursor:pointer;font-size:14px;box-shadow:0 4px 14px rgba(37,99,235,.35);transition:transform .15s,box-shadow .15s;white-space:nowrap}
 .course-mgmt-add-btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(37,99,235,.4)}
 /* Course list lesson icons */
-.lesson-icon{width:68px;height:68px;background-size:contain;background-repeat:no-repeat;background-position:center;flex-shrink:0}
+.lesson-icon{width:calc(68px * var(--content-image-scale));height:calc(68px * var(--content-image-scale));background-size:contain;background-repeat:no-repeat;background-position:center;flex-shrink:0}
 .lesson-icon-chinese{background-image:url('icon/lesson_book.png')}
 .lesson-icon-english{background-image:url('icon/lesson_notebook.png')}
 /* Course list cards */
 .course-card{position:relative;padding:18px 20px;background:#fff;border:1.5px solid #eef2f7;border-radius:18px;cursor:pointer;display:flex;align-items:center;gap:18px;margin-bottom:12px;transition:all .2s;overflow:hidden}
 .course-card:hover{border-color:#bfdbfe;box-shadow:0 6px 18px rgba(37,99,235,.08);transform:translateY(-1px)}
 .course-card-body{flex:1;min-width:0}
-.course-card-title{font-size:20px;font-weight:900;color:#111;line-height:1.25;margin-bottom:10px;word-break:break-word;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.course-card-title{font-size:calc(var(--content-text-size) + 6px);font-weight:900;color:#111;line-height:1.25;margin-bottom:10px;word-break:break-word;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .course-card-meta{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#2563eb;font-weight:700;background:#eff6ff;padding:5px 12px;border-radius:999px}
 .course-card-meta-icon{width:14px;height:14px;display:inline-block}
 .course-card-side{display:flex;align-items:center;gap:14px;flex-shrink:0}
-.course-card-badge{height:30px;width:auto;object-fit:contain;flex-shrink:0}
+.course-card-badge{height:calc(30px * var(--content-image-scale));width:auto;object-fit:contain;flex-shrink:0}
 .course-card-menu{width:20px;height:20px;background-image:url('icon/menu_dots.png');background-size:contain;background-repeat:no-repeat;background-position:center;opacity:.55;cursor:pointer;flex-shrink:0;transition:opacity .15s}
 .course-card-menu:hover{opacity:1}
 /* Subtle ABC decoration on English cards */
 .course-card.is-english::after{content:'';position:absolute;right:120px;bottom:8px;width:90px;height:48px;background-image:url('icon/deco_abc.png');background-size:contain;background-repeat:no-repeat;background-position:right bottom;opacity:.5;pointer-events:none}
 /* Card title decoration */
-.card-title-icon{width:24px;height:24px;background-size:contain;background-repeat:no-repeat;background-position:center;display:inline-block;vertical-align:-5px;margin-right:6px}
+.card-title-icon{width:calc(24px * var(--content-image-scale));height:calc(24px * var(--content-image-scale));background-size:contain;background-repeat:no-repeat;background-position:center;display:inline-block;vertical-align:-5px;margin-right:6px}
 .card-title-icon-course{background-image:url('icon/section_course.png')}
 .card-title-icon-cal{background-image:url('icon/nav_cal.png')}
 .schedule-compact-list{display:grid;gap:8px}
@@ -102,7 +105,7 @@ html,body{height:100%;overflow:hidden}
 .stepper input::-webkit-inner-spin-button,.stepper input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 /* Right-side mascot card */
 .schedule-mascot-card{background:linear-gradient(180deg,#f8faff,#eef4ff);border:1px solid #e5edff;border-radius:18px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;position:relative}
-.schedule-mascot-card img{width:100px;height:auto;display:block}
+.schedule-mascot-card img{width:calc(100px * var(--content-image-scale));height:auto;display:block}
 .schedule-mascot-card .copy{font-size:13px;font-weight:800;color:#1d4ed8;line-height:1.5}
 .schedule-add-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 22px;background:linear-gradient(90deg,#2563eb,#4f8cff);color:#fff;border:none;border-radius:999px;font-weight:800;cursor:pointer;font-size:14px;box-shadow:0 4px 14px rgba(37,99,235,.35);transition:transform .15s,box-shadow .15s}
 .schedule-add-btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(37,99,235,.4)}
@@ -319,6 +322,19 @@ html,body{height:100%;overflow:hidden}
 .plan-table th,.plan-table td{border-bottom:1px solid #e5e7eb;padding:9px 6px;text-align:left;vertical-align:top}
 .plan-table th{font-size:11px;color:#374151;background:#f8fafc}
 .plan-tag{display:inline-flex;align-items:center;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:900;background:#dcfce7;color:#166534}
+.appearance-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:12px}
+.appearance-control{background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:12px}
+.appearance-control-head{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px}
+.appearance-control-title{font-size:12px;font-weight:900;color:#111}
+.appearance-control-value{font-size:11px;font-weight:900;color:#2563eb;background:#eff6ff;border-radius:999px;padding:3px 8px;white-space:nowrap}
+.appearance-control input[type=range]{width:100%;accent-color:#2563eb}
+.appearance-hint{font-size:11px;color:#6b7280;line-height:1.5;margin-top:6px}
+.main{font-size:var(--content-text-size)}
+.main button,.main input,.main textarea,.main select{font-size:var(--content-text-size)}
+.main .card-title,.main .topbar-title,.main .modal-title,.main .course-mgmt-header h3{font-size:calc(var(--content-text-size) + 3px)}
+.main .stat-num{font-size:calc(var(--content-text-size) + 14px)}
+.main :is(.topbar-sub,.stat-lbl,.task-desc,.course-card-meta,.field-label,.schedule-compact-title,.schedule-compact-meta,.parent-row-meta,.version-info-value,.version-info-label,.modal-sub){font-size:var(--content-text-size)}
+.main img:not(.avatar-btn img){max-width:100%}
 
 /* Form styles */
 .form-label{display:block;font-size:12px;font-weight:700;color:#374151;margin-bottom:6px;margin-top:12px}
@@ -408,7 +424,7 @@ html,body{height:100%;overflow:hidden}
         <span class="nav-icon-img nav-icon-parents"></span>家長摘要
       </button>
       <button class="nav-item" onclick="showPage('course-setting')">
-        <span class="nav-icon-img nav-icon-gear"></span>課程設定
+        <span class="nav-icon-img nav-icon-course"></span>課程設定
       </button>
       <button class="nav-item" onclick="showPage('system-setting')">
         <span class="nav-icon-img nav-icon-gear"></span>系統設定
@@ -838,6 +854,48 @@ html,body{height:100%;overflow:hidden}
         </div>
 
         <div class="card">
+          <div class="card-title">🔠 字體大小與樣式</div>
+          <div style="font-size:12px;color:#6b7280;line-height:1.6">
+            調整後會立即套用並保存在此瀏覽器。左側設定影響主選單；右側設定影響主要內容區。
+          </div>
+          <div class="appearance-grid">
+            <div class="appearance-control">
+              <div class="appearance-control-head">
+                <div class="appearance-control-title">左邊選單文字大小</div>
+                <div class="appearance-control-value" id="appearance-sidebar-text-value">13px</div>
+              </div>
+              <input type="range" id="appearance-sidebar-text" min="11" max="18" step="1" oninput="updateAppearanceSetting('sidebarText', this.value)" />
+              <div class="appearance-hint">建議 13 到 15px；小螢幕可略小。</div>
+            </div>
+            <div class="appearance-control">
+              <div class="appearance-control-head">
+                <div class="appearance-control-title">左邊圖示大小</div>
+                <div class="appearance-control-value" id="appearance-sidebar-icon-value">26px</div>
+              </div>
+              <input type="range" id="appearance-sidebar-icon" min="20" max="38" step="1" oninput="updateAppearanceSetting('sidebarIcon', this.value)" />
+              <div class="appearance-hint">影響左側導覽圖示呈現大小。</div>
+            </div>
+            <div class="appearance-control">
+              <div class="appearance-control-head">
+                <div class="appearance-control-title">右邊其他文字大小</div>
+                <div class="appearance-control-value" id="appearance-content-text-value">14px</div>
+              </div>
+              <input type="range" id="appearance-content-text" min="12" max="19" step="1" oninput="updateAppearanceSetting('contentText', this.value)" />
+              <div class="appearance-hint">影響任務、設定、表單與多數內容文字。</div>
+            </div>
+            <div class="appearance-control">
+              <div class="appearance-control-head">
+                <div class="appearance-control-title">右邊圖示/圖片大小</div>
+                <div class="appearance-control-value" id="appearance-content-image-value">100%</div>
+              </div>
+              <input type="range" id="appearance-content-image" min="80" max="130" step="5" oninput="updateAppearanceSetting('contentImage', this.value)" />
+              <div class="appearance-hint">影響課程圖示、徽章、裝飾圖與內容圖片。</div>
+            </div>
+          </div>
+          <button class="schedule-add-btn" onclick="resetAppearanceSettings()" style="margin-top:12px;background:#e5e7eb;color:#374151;box-shadow:none">還原預設大小</button>
+        </div>
+
+        <div class="card">
           <div class="card-title">🏷️ 版本與方案</div>
           <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
             <div style="font-size:12px;color:#6b7280;line-height:1.6">查看目前版本、雲端狀態，以及未來免費/進階版功能差異。</div>
@@ -1216,6 +1274,14 @@ const PLAN_FEATURES = [
   {name:'家長摘要', free:'基礎摘要', pro:'每週報告與進步追蹤'},
   {name:'匯出報告', free:'系統 JSON 備份', pro:'PDF/Excel 學習報告'}
 ];
+const APPEARANCE_STORAGE_KEY = 'leoAppearanceSettings';
+const DEFAULT_APPEARANCE_SETTINGS = {
+  sidebarText: 13,
+  sidebarIcon: 26,
+  contentText: 14,
+  contentImage: 100
+};
+let appearanceSettings = {...DEFAULT_APPEARANCE_SETTINGS};
 
 let firebaseApp = null;
 let firebaseAuth = null;
@@ -1843,7 +1909,7 @@ function resetLocalData(){
     const keys = [];
     for(let i = 0; i < localStorage.length; i++){
       const key = localStorage.key(i);
-      if(key === 'kidName' || (key && key.startsWith('chineseData-'))) keys.push(key);
+      if(key === 'kidName' || key === APPEARANCE_STORAGE_KEY || (key && key.startsWith('chineseData-'))) keys.push(key);
     }
     keys.forEach(key => localStorage.removeItem(key));
   } catch(e){}
@@ -1861,6 +1927,8 @@ function resetLocalData(){
   currentSchedule = null;
   defaultTasks = [];
   selectedCalendarDate = todayKey();
+  appearanceSettings = {...DEFAULT_APPEARANCE_SETTINGS};
+  applyAppearanceSettings(false);
   window.__welcomePhrase = null;
 
   document.getElementById('login-screen').style.display = 'flex';
@@ -1983,6 +2051,7 @@ function renderAll(){
   renderScheduleList();
   renderVersionInfo();
   renderSystemResetOptions();
+  renderAppearanceControls();
 }
 
 function showPage(name){
@@ -2010,6 +2079,7 @@ function showPage(name){
   if(name === 'system-setting'){
     renderVersionInfo();
     renderSystemResetOptions();
+    renderAppearanceControls();
   }
 }
 
@@ -3226,6 +3296,83 @@ function openPlanModal(){
 function closePlanModal(){
   const modal = document.getElementById('plan-modal');
   if(modal) modal.classList.remove('open');
+}
+
+function clampAppearanceValue(key, value){
+  const n = parseInt(value, 10);
+  const ranges = {
+    sidebarText: [11, 18],
+    sidebarIcon: [20, 38],
+    contentText: [12, 19],
+    contentImage: [80, 130]
+  };
+  const [min, max] = ranges[key] || [0, 999];
+  if(Number.isNaN(n)) return DEFAULT_APPEARANCE_SETTINGS[key];
+  return Math.min(max, Math.max(min, n));
+}
+
+function normalizeAppearanceSettings(raw){
+  const src = raw && typeof raw === 'object' ? raw : {};
+  return {
+    sidebarText: clampAppearanceValue('sidebarText', src.sidebarText ?? DEFAULT_APPEARANCE_SETTINGS.sidebarText),
+    sidebarIcon: clampAppearanceValue('sidebarIcon', src.sidebarIcon ?? DEFAULT_APPEARANCE_SETTINGS.sidebarIcon),
+    contentText: clampAppearanceValue('contentText', src.contentText ?? DEFAULT_APPEARANCE_SETTINGS.contentText),
+    contentImage: clampAppearanceValue('contentImage', src.contentImage ?? DEFAULT_APPEARANCE_SETTINGS.contentImage)
+  };
+}
+
+function loadAppearanceSettings(){
+  try{
+    const stored = localStorage.getItem(APPEARANCE_STORAGE_KEY);
+    appearanceSettings = stored ? normalizeAppearanceSettings(JSON.parse(stored)) : {...DEFAULT_APPEARANCE_SETTINGS};
+  }catch(e){
+    appearanceSettings = {...DEFAULT_APPEARANCE_SETTINGS};
+  }
+  applyAppearanceSettings(false);
+}
+
+function saveAppearanceSettings(){
+  try{ localStorage.setItem(APPEARANCE_STORAGE_KEY, JSON.stringify(appearanceSettings)); }catch(e){}
+}
+
+function applyAppearanceSettings(shouldSave = true){
+  appearanceSettings = normalizeAppearanceSettings(appearanceSettings);
+  const root = document.documentElement;
+  if(root && root.style){
+    root.style.setProperty('--sidebar-text-size', appearanceSettings.sidebarText + 'px');
+    root.style.setProperty('--sidebar-icon-size', appearanceSettings.sidebarIcon + 'px');
+    root.style.setProperty('--content-text-size', appearanceSettings.contentText + 'px');
+    root.style.setProperty('--content-image-scale', String(appearanceSettings.contentImage / 100));
+  }
+  renderAppearanceControls();
+  if(shouldSave) saveAppearanceSettings();
+}
+
+function renderAppearanceControls(){
+  const config = [
+    ['sidebarText', 'appearance-sidebar-text', 'appearance-sidebar-text-value', 'px'],
+    ['sidebarIcon', 'appearance-sidebar-icon', 'appearance-sidebar-icon-value', 'px'],
+    ['contentText', 'appearance-content-text', 'appearance-content-text-value', 'px'],
+    ['contentImage', 'appearance-content-image', 'appearance-content-image-value', '%']
+  ];
+  config.forEach(([key, inputId, valueId, unit]) => {
+    const input = document.getElementById(inputId);
+    const value = document.getElementById(valueId);
+    const n = appearanceSettings[key];
+    if(input) input.value = String(n);
+    if(value) value.textContent = `${n}${unit}`;
+  });
+}
+
+function updateAppearanceSetting(key, value){
+  if(!(key in DEFAULT_APPEARANCE_SETTINGS)) return;
+  appearanceSettings[key] = clampAppearanceValue(key, value);
+  applyAppearanceSettings(true);
+}
+
+function resetAppearanceSettings(){
+  appearanceSettings = {...DEFAULT_APPEARANCE_SETTINGS};
+  applyAppearanceSettings(true);
 }
 
 function hasVerifiedFirebaseUser(){
@@ -4928,6 +5075,7 @@ function autoGenerateZhuyin(idx) {
 // the welcome phrase as text on the login screen. The phrase will be spoken
 // out loud after the user clicks 開始學習 (guaranteed user gesture, no autoplay block).
 (function initLoginScreen(){
+  loadAppearanceSettings();
   initFirebaseOnline();
   let saved = '';
   try { saved = localStorage.getItem('kidName') || ''; } catch(e){}
