@@ -311,6 +311,14 @@ html,body{height:100%;overflow:hidden}
 .cloud-chip.is-unverified{background:#fef3c7;color:#92400e}
 .cloud-action-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
 .cloud-action-row .schedule-add-btn{flex:1;min-width:150px}
+.version-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:10px}
+.version-info-tile{background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:10px}
+.version-info-label{font-size:10px;color:#6b7280;font-weight:800;margin-bottom:4px}
+.version-info-value{font-size:13px;color:#111;font-weight:900;word-break:break-word}
+.plan-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px}
+.plan-table th,.plan-table td{border-bottom:1px solid #e5e7eb;padding:9px 6px;text-align:left;vertical-align:top}
+.plan-table th{font-size:11px;color:#374151;background:#f8fafc}
+.plan-tag{display:inline-flex;align-items:center;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:900;background:#dcfce7;color:#166534}
 
 /* Form styles */
 .form-label{display:block;font-size:12px;font-weight:700;color:#374151;margin-bottom:6px;margin-top:12px}
@@ -402,8 +410,8 @@ html,body{height:100%;overflow:hidden}
       <button class="nav-item" onclick="showPage('course-setting')">
         <span class="nav-icon-img nav-icon-gear"></span>課程設定
       </button>
-      <button class="nav-item" onclick="resetApp()" style="color:rgba(255,255,255,.75)">
-        <span class="nav-icon">🔄</span>重新開始
+      <button class="nav-item" onclick="showPage('system-setting')">
+        <span class="nav-icon-img nav-icon-gear"></span>系統設定
       </button>
       <div class="sidebar-mascot" aria-hidden="true"></div>
     </nav>
@@ -781,8 +789,12 @@ html,body{height:100%;overflow:hidden}
           </div>
         </div>
 
+      </div>
+
+      <!-- System Settings Page -->
+      <div class="page" id="page-system-setting">
         <div class="card">
-          <div class="card-title">⚙️ 系統設定</div>
+          <div class="card-title">💾 本機備份</div>
           <div style="font-size:12px;color:#6b7280;line-height:1.6;margin-bottom:12px">
             匯出或還原系統資料。匯入會覆蓋勾選的資料類型；若要單純合併課程，請使用上方「匯入課程」。
           </div>
@@ -813,15 +825,65 @@ html,body{height:100%;overflow:hidden}
             <button class="schedule-add-btn" onclick="exportSystemBackup()" style="flex:1;min-width:150px;background:#0ea5e9">匯出系統資料</button>
             <button class="schedule-add-btn" onclick="triggerSystemImport()" style="flex:1;min-width:150px;background:#f59e0b">匯入系統資料</button>
           </div>
-          <div style="margin-top:14px;padding-top:12px;border-top:1px solid #e5e7eb">
-            <div style="font-size:12px;font-weight:900;color:#111;margin-bottom:4px">Firebase 雲端同步</div>
-            <div id="firebase-sync-status" style="font-size:11px;color:#6b7280;line-height:1.5">登入並完成 Email 驗證後，可把目前資料上傳到雲端，或從雲端下載回本機。</div>
-            <div class="cloud-action-row">
-              <button class="schedule-add-btn" onclick="firebaseUploadSnapshot()" style="background:#22c55e">上傳到雲端</button>
-              <button class="schedule-add-btn" onclick="firebaseDownloadSnapshot()" style="background:#6366f1">從雲端下載</button>
-              <button class="schedule-add-btn" onclick="firebaseSignOut()" style="background:#e5e7eb;color:#374151;box-shadow:none">登出線上帳號</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">☁️ 雲端同步</div>
+          <div id="firebase-sync-status" style="font-size:12px;color:#6b7280;line-height:1.6">登入並完成 Email 驗證後，可把目前資料上傳到雲端，或從雲端下載回本機。</div>
+          <div class="cloud-action-row">
+            <button class="schedule-add-btn" onclick="firebaseUploadSnapshot()" style="background:#22c55e">上傳到雲端</button>
+            <button class="schedule-add-btn" onclick="firebaseDownloadSnapshot()" style="background:#6366f1">從雲端下載</button>
+            <button class="schedule-add-btn" onclick="firebaseSignOut()" style="background:#e5e7eb;color:#374151;box-shadow:none">登出線上帳號</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">🏷️ 版本與方案</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+            <div style="font-size:12px;color:#6b7280;line-height:1.6">查看目前版本、雲端狀態，以及未來免費/進階版功能差異。</div>
+            <span class="plan-tag" id="current-plan-chip">免費版</span>
+          </div>
+          <div class="version-grid">
+            <div class="version-info-tile">
+              <div class="version-info-label">目前版本</div>
+              <div class="version-info-value" id="app-version-value">-</div>
+            </div>
+            <div class="version-info-tile">
+              <div class="version-info-label">版本日期</div>
+              <div class="version-info-value" id="app-release-value">-</div>
+            </div>
+            <div class="version-info-tile">
+              <div class="version-info-label">雲端狀態</div>
+              <div class="version-info-value" id="app-cloud-value">-</div>
             </div>
           </div>
+          <div style="font-size:11px;color:#6b7280;line-height:1.6;margin-top:10px" id="app-release-notes">-</div>
+          <button class="schedule-add-btn" onclick="openPlanModal()" style="margin-top:12px;background:#111827">查看方案差異</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">⚠️ 系統重置</div>
+          <div style="font-size:12px;color:#b91c1c;line-height:1.6;margin-bottom:12px;font-weight:800">
+            本功能會永久刪除所選資料。刪除後無法回復；若你尚未備份，請先使用本機備份或雲端同步。
+          </div>
+          <div style="display:grid;gap:10px">
+            <label class="schedule-check-row" style="margin:0;align-items:flex-start">
+              <input type="checkbox" id="reset-local-data" />
+              <span>
+                <strong>本機資料</strong><br>
+                <span style="font-size:11px;color:#6b7280">清除這台裝置/browser 內的用戶、課程、進度、提醒與時程。</span>
+              </span>
+            </label>
+            <label class="schedule-check-row" id="reset-cloud-row" style="margin:0;align-items:flex-start">
+              <input type="checkbox" id="reset-cloud-data" />
+              <span>
+                <strong id="reset-cloud-label">雲端資料</strong><br>
+                <span style="font-size:11px;color:#6b7280">刪除目前登入帳號在 Firestore 的雲端備份。</span>
+              </span>
+            </label>
+          </div>
+          <div id="system-reset-status" style="font-size:11px;color:#6b7280;line-height:1.6;margin-top:10px"></div>
+          <button class="schedule-add-btn" onclick="executeSystemReset()" style="margin-top:12px;background:#dc2626">執行系統重置</button>
         </div>
       </div>
 
@@ -1064,6 +1126,32 @@ My teacher is kind."></textarea>
       <button onclick="closeImportCoursesModal()" class="modal-btn modal-close">取消</button>
     </div>
   </div>
+
+  <!-- Plan Comparison Modal -->
+  <div class="modal-overlay" id="plan-modal">
+    <div class="modal" style="width:min(560px,92vw)">
+      <div class="modal-title">版本與方案</div>
+      <div class="modal-sub">目前先開放免費版功能；進階版是未來升級方向，尚未啟用收費。</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <span class="plan-tag" id="plan-modal-current">目前方案：免費版</span>
+        <span class="cloud-chip" id="plan-modal-version">v-</span>
+      </div>
+      <table class="plan-table" aria-label="免費版與進階版功能差異">
+        <thead>
+          <tr>
+            <th>功能</th>
+            <th>免費版</th>
+            <th>進階版</th>
+          </tr>
+        </thead>
+        <tbody id="plan-comparison-body"></tbody>
+      </table>
+      <div style="font-size:11px;color:#6b7280;line-height:1.6;margin-top:12px">
+        現階段不會限制既有功能；若未來加入付費版，會先保留免費版可用的核心學習與手動備份。
+      </div>
+      <button onclick="closePlanModal()" class="modal-btn modal-close">關閉</button>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/pinyin-pro@3.26.0/dist/index.js"></script>
@@ -1104,6 +1192,30 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "360388707477",
   appId: "1:360388707477:web:b4137439117dc27420c79c"
 };
+
+const APP_VERSION = {
+  version: '1.0.0',
+  releasedAt: '2026-05-19',
+  channel: 'beta',
+  plan: 'free',
+  planLabel: '免費版',
+  highlights: [
+    'Firebase Email 登入',
+    'Firestore 雲端同步',
+    '系統資料匯入/匯出',
+    '段考衝刺與錯題清單'
+  ]
+};
+const PLAN_FEATURES = [
+  {name:'本機學習', free:'可用', pro:'可用'},
+  {name:'Email 登入', free:'可用', pro:'可用'},
+  {name:'雲端備份', free:'手動上傳/下載', pro:'自動同步與版本回復'},
+  {name:'課程數量', free:'不限制既有使用', pro:'可搭配多孩子與多班級管理'},
+  {name:'段考衝刺', free:'基礎排程', pro:'智慧排程、考前弱點優先'},
+  {name:'錯題分析', free:'錯題清單', pro:'趨勢分析與加強建議'},
+  {name:'家長摘要', free:'基礎摘要', pro:'每週報告與進步追蹤'},
+  {name:'匯出報告', free:'系統 JSON 備份', pro:'PDF/Excel 學習報告'}
+];
 
 let firebaseApp = null;
 let firebaseAuth = null;
@@ -1716,13 +1828,17 @@ function startApp(){
 }
 
 function resetApp(){
-  const pwd = prompt('重新開始會刪除目前用戶與所有課程資料，請輸入密碼');
+  const pwd = prompt('重置本機資料會刪除目前用戶與所有課程資料，請輸入密碼');
   if(pwd === null) return;
   if(pwd !== '1234'){
     alert('密碼錯誤，資料未刪除');
     return;
   }
+  resetLocalData();
+  alert('已清除用戶與所有課程資料');
+}
 
+function resetLocalData(){
   try {
     const keys = [];
     for(let i = 0; i < localStorage.length; i++){
@@ -1755,7 +1871,8 @@ function resetApp(){
   if(input){ input.style.display = ''; input.value = ''; input.focus(); }
   if(sub) sub.textContent = '歡迎來到學習系統';
   if(msg){ msg.style.display = 'none'; msg.textContent = ''; }
-  alert('已清除用戶與所有課程資料');
+  renderVersionInfo();
+  renderSystemResetOptions();
 }
 
 // Speak a random welcome / encouragement when arriving on the main app.
@@ -1864,6 +1981,8 @@ function renderAll(){
   updateCourseSelects();
   initScheduleDateDefaults();
   renderScheduleList();
+  renderVersionInfo();
+  renderSystemResetOptions();
 }
 
 function showPage(name){
@@ -1882,12 +2001,16 @@ function showPage(name){
     console.error('Page not found:', 'page-'+name);
   }
 
-  const navMap={today:0,calendar:1,subjects:2,reminders:3,parent:4,'course-setting':5};
+  const navMap={today:0,calendar:1,subjects:2,reminders:3,parent:4,'course-setting':5,'system-setting':6};
   if(navMap[name] !== undefined) {
     const navItems = document.querySelectorAll('.nav-item');
     if(navItems[navMap[name]]) navItems[navMap[name]].classList.add('active');
   }
   if(name === 'course-setting') initScheduleDateDefaults();
+  if(name === 'system-setting'){
+    renderVersionInfo();
+    renderSystemResetOptions();
+  }
 }
 
 function renderTasks(list){
@@ -3055,6 +3178,130 @@ function escapeHtml(text){
     .replace(/'/g, '&#39;');
 }
 
+function appVersionLabel(){
+  return `v${APP_VERSION.version} ${APP_VERSION.channel}`;
+}
+
+function appCloudLabel(){
+  if(firebaseUser && firebaseUser.emailVerified) return '雲端已登入';
+  if(firebaseUser && !firebaseUser.emailVerified) return 'Email 未驗證';
+  return isFirebaseConfigured() ? '雲端未登入' : '離線模式';
+}
+
+function renderVersionInfo(){
+  const versionEl = document.getElementById('app-version-value');
+  const releaseEl = document.getElementById('app-release-value');
+  const cloudEl = document.getElementById('app-cloud-value');
+  const notesEl = document.getElementById('app-release-notes');
+  const planChip = document.getElementById('current-plan-chip');
+  if(versionEl) versionEl.textContent = appVersionLabel();
+  if(releaseEl) releaseEl.textContent = APP_VERSION.releasedAt;
+  if(cloudEl) cloudEl.textContent = appCloudLabel();
+  if(planChip) planChip.textContent = APP_VERSION.planLabel;
+  if(notesEl) notesEl.textContent = `最近更新：${APP_VERSION.highlights.join('、')}`;
+}
+
+function renderPlanComparison(){
+  const body = document.getElementById('plan-comparison-body');
+  if(!body) return;
+  body.innerHTML = PLAN_FEATURES.map(item => `
+    <tr>
+      <td><strong>${escapeHtml(item.name)}</strong></td>
+      <td>${escapeHtml(item.free)}</td>
+      <td>${escapeHtml(item.pro)}</td>
+    </tr>
+  `).join('');
+  const current = document.getElementById('plan-modal-current');
+  const version = document.getElementById('plan-modal-version');
+  if(current) current.textContent = `目前方案：${APP_VERSION.planLabel}`;
+  if(version) version.textContent = appVersionLabel();
+}
+
+function openPlanModal(){
+  renderPlanComparison();
+  const modal = document.getElementById('plan-modal');
+  if(modal) modal.classList.add('open');
+}
+
+function closePlanModal(){
+  const modal = document.getElementById('plan-modal');
+  if(modal) modal.classList.remove('open');
+}
+
+function hasVerifiedFirebaseUser(){
+  const user = firebaseAuth && firebaseAuth.currentUser ? firebaseAuth.currentUser : firebaseUser;
+  return !!(user && user.emailVerified);
+}
+
+function renderSystemResetOptions(){
+  const cloudCb = document.getElementById('reset-cloud-data');
+  const cloudLabel = document.getElementById('reset-cloud-label');
+  const cloudRow = document.getElementById('reset-cloud-row');
+  const status = document.getElementById('system-reset-status');
+  if(!cloudCb) return;
+  const canResetCloud = hasVerifiedFirebaseUser();
+  cloudCb.disabled = !canResetCloud;
+  if(!canResetCloud) cloudCb.checked = false;
+  if(cloudLabel) cloudLabel.textContent = canResetCloud ? '雲端資料' : '雲端資料（需登入雲端帳號）';
+  if(cloudRow){
+    cloudRow.style.opacity = canResetCloud ? '1' : '.58';
+    cloudRow.style.cursor = canResetCloud ? 'pointer' : 'not-allowed';
+  }
+  if(status){
+    status.textContent = canResetCloud
+      ? '已登入並完成 Email 驗證，可選擇刪除目前帳號的雲端備份。'
+      : '若要刪除雲端資料，請先登入雲端帳號並完成 Email 驗證。';
+  }
+}
+
+async function deleteFirebaseSnapshot(){
+  const user = requireVerifiedFirebaseUser();
+  if(!user) return false;
+  const ref = firebaseSnapshotRef();
+  if(!ref) return false;
+  await ref.delete();
+  return true;
+}
+
+async function executeSystemReset(){
+  const localCb = document.getElementById('reset-local-data');
+  const cloudCb = document.getElementById('reset-cloud-data');
+  const resetLocal = !!(localCb && localCb.checked);
+  const resetCloud = !!(cloudCb && cloudCb.checked && !cloudCb.disabled);
+  if(!resetLocal && !resetCloud){
+    alert('請先選擇要刪除的資料');
+    return;
+  }
+  if(resetCloud && !hasVerifiedFirebaseUser()){
+    alert('刪除雲端資料前，請先登入雲端帳號並完成 Email 驗證。');
+    renderSystemResetOptions();
+    return;
+  }
+  const pwd = prompt('系統重置需輸入密碼');
+  if(pwd === null) return;
+  if(pwd !== '1234'){
+    alert('密碼錯誤，資料未刪除');
+    return;
+  }
+  const targets = [];
+  if(resetLocal) targets.push('本機資料');
+  if(resetCloud) targets.push('雲端資料');
+  if(!confirm(`即將刪除：${targets.join('、')}\n\n資料刪除後無法回復，確定要繼續嗎？`)) return;
+
+  try{
+    if(resetCloud) await deleteFirebaseSnapshot();
+    if(resetLocal) resetLocalData();
+    if(!resetLocal){
+      if(cloudCb) cloudCb.checked = false;
+      renderSystemResetOptions();
+    }
+    alert(`已刪除：${targets.join('、')}`);
+  }catch(err){
+    console.error(err);
+    alert('系統重置失敗，請確認雲端權限與網路連線後再試。');
+  }
+}
+
 function courseTransferCopy(course){
   return {
     name: String(course.name || ''),
@@ -3387,6 +3634,8 @@ function setFirebaseStatus(message, type = 'offline'){
       chip.textContent = isFirebaseConfigured() ? '雲端未登入' : '離線模式';
     }
   }
+  renderVersionInfo();
+  renderSystemResetOptions();
 }
 
 function firebaseSnapshotRef(){
