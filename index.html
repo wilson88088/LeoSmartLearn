@@ -366,6 +366,72 @@ html,body{height:100%;overflow:hidden}
 .phrase-example-en{grid-column:2 / 4}
 .phrase-example-zh{grid-column:4 / 7}
 @media(max-width:820px){.phrase-editor-head{display:none}.phrase-editor-row,.phrase-editor-row.is-english{grid-template-columns:34px 1fr;gap:8px}.phrase-editor-row .phrase-editor-input,.phrase-editor-row .phrase-editor-action,.phrase-example-en,.phrase-example-zh{grid-column:2}.phrase-editor-index{grid-row:1 / span 6}}
+@media(max-width:760px){
+  html,body{width:100%;overflow:hidden}
+  :root{--sidebar-text-size:11px;--sidebar-icon-size:22px}
+  .app{height:100dvh;font-size:13px}
+  .frame{display:block;height:100%;min-height:0}
+  .sidebar{
+    position:fixed;left:0;right:0;bottom:0;z-index:420;height:74px;min-height:74px;
+    padding:7px 8px calc(7px + env(safe-area-inset-bottom));display:flex;flex-direction:row;gap:6px;
+    overflow-x:auto;overflow-y:hidden;border-radius:18px 18px 0 0;box-shadow:0 -10px 24px rgba(15,23,42,.18);
+    background:linear-gradient(90deg,#1e3a8a,#2563eb)
+  }
+  .brand,.sidebar-mascot{display:none}
+  .nav-item{
+    min-width:72px;flex:0 0 72px;height:58px;justify-content:center;flex-direction:column;gap:3px;
+    padding:6px 4px;border-radius:13px;text-align:center;line-height:1.15;white-space:normal
+  }
+  .nav-icon-img,.nav-icon{margin:0 auto}
+  .main{height:100%;padding-bottom:82px;min-width:0}
+  .topbar{padding:10px 12px;gap:8px;align-items:flex-start;flex-wrap:wrap}
+  .topbar-left{flex:1 1 190px;min-width:0}
+  .topbar-title{line-height:1.35;word-break:break-word}
+  .topbar-sub{display:flex;gap:6px;flex-wrap:wrap;line-height:1.45}
+  .streak-badge{margin-right:0}
+  .topbar-airplane{display:none}
+  .cloud-chip{order:3}
+  .search-box{order:5;flex:1 0 100%;width:100%;min-width:0}
+  .avatar-btn{width:36px;height:36px;order:4}
+  .page{padding:12px 12px 18px}
+  .card{padding:14px;border-radius:16px;margin-bottom:12px}
+  .grid-2,.summary-grid,.parent-kpi-grid,.subject-overview-grid,.reminder-settings-grid,.appearance-grid,.version-grid{grid-template-columns:1fr}
+  .stat-row{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  .stat-card{padding:9px 6px;border-radius:12px}
+  .stat-num{font-size:20px}
+  .stat-lbl{font-size:10px}
+  .task-item{align-items:flex-start;flex-wrap:wrap;padding:11px 12px}
+  .task-meta{min-width:0;flex:1}
+  .task-tag{margin-left:32px}
+  .start-btn{min-height:38px}
+  .cal-grid{gap:3px}
+  .cal-day{min-height:38px;padding:4px;border-radius:8px}
+  .cal-day b{font-size:11px}
+  .course-mgmt-header{align-items:stretch;flex-direction:column}
+  .course-mgmt-add-btn,.schedule-add-btn{width:100%;min-height:44px}
+  .course-card{padding:12px;gap:10px;border-radius:14px}
+  .lesson-icon{width:48px;height:48px}
+  .course-card-title{font-size:16px;margin-bottom:6px}
+  .course-card-side{gap:8px}
+  .course-card-badge{height:24px}
+  .course-card.is-english::after{display:none}
+  .schedule-card{padding:14px}
+  .schedule-grid,.schedule-fields-row,.schedule-fields-row.once-mode,.schedule-followup-grid,.exam-cram-grid,.exam-course-list,.exam-preview-row{grid-template-columns:1fr}
+  .schedule-mascot-card{padding:12px}
+  .schedule-mascot-card img{width:72px}
+  .cloud-action-row{display:grid;grid-template-columns:1fr;gap:8px}
+  .modal-overlay{align-items:flex-end;justify-content:center;padding:0}
+  .modal,.modal[style]{
+    width:100%!important;max-width:none!important;max-height:86dvh;border-radius:22px 22px 0 0;
+    padding:18px 16px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -12px 36px rgba(15,23,42,.24)
+  }
+  .login-screen{align-items:flex-start;overflow:auto;padding:18px 12px}
+  .login-card{width:min(100%,360px);padding:24px 18px;border-radius:20px;margin:auto}
+  .online-auth-grid{grid-template-columns:1fr}
+  .mastery-toolbar{align-items:stretch}
+  .mastery-toolbar select,.mastery-toolbar input{width:100%}
+  .parent-row-title,.wrong-title{align-items:flex-start;flex-direction:column}
+}
   </style>
 </head>
 <body>
