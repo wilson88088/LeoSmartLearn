@@ -301,6 +301,16 @@ html,body{height:100%;overflow:hidden}
 .login-input:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
 .login-btn{width:100%;padding:12px;border:none;border-radius:12px;background:#2563eb;color:#fff;font-weight:800;font-size:14px;cursor:pointer;transition:all .2s;font-family:'Noto Sans TC','Microsoft JhengHei',sans-serif}
 .login-btn:hover{background:#1d4ed8;transform:scale(1.02)}
+.online-auth-box{margin-top:18px;padding-top:16px;border-top:1px solid #e5e7eb;text-align:left}
+.online-auth-title{font-size:12px;font-weight:900;color:#111;margin-bottom:8px;text-align:center}
+.online-auth-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.online-auth-btn{padding:10px;border:none;border-radius:10px;font-size:12px;font-weight:900;cursor:pointer;font-family:'Noto Sans TC','Microsoft JhengHei',sans-serif}
+.online-auth-note{font-size:11px;color:#6b7280;line-height:1.5;margin-top:8px;text-align:center;min-height:16px}
+.cloud-chip{font-size:11px;font-weight:900;border-radius:999px;padding:5px 9px;background:#f3f4f6;color:#374151;white-space:nowrap}
+.cloud-chip.is-online{background:#dcfce7;color:#166534}
+.cloud-chip.is-unverified{background:#fef3c7;color:#92400e}
+.cloud-action-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.cloud-action-row .schedule-add-btn{flex:1;min-width:150px}
 
 /* Form styles */
 .form-label{display:block;font-size:12px;font-weight:700;color:#374151;margin-bottom:6px;margin-top:12px}
@@ -351,6 +361,18 @@ html,body{height:100%;overflow:hidden}
       onkeypress="if(event.key==='Enter') startApp()"
     />
     <button class="login-btn" onclick="startApp()">開始學習 🚀</button>
+    <div class="online-auth-box">
+      <div class="online-auth-title">線上帳號（Firebase）</div>
+      <input type="email" class="login-input" id="firebase-email" placeholder="Email" autocomplete="email" />
+      <input type="password" class="login-input" id="firebase-password" placeholder="密碼（至少 6 碼）" autocomplete="current-password" onkeypress="if(event.key==='Enter') firebaseSignIn()" />
+      <div class="online-auth-grid">
+        <button class="online-auth-btn" onclick="firebaseSignIn()" style="background:#2563eb;color:#fff">登入舊帳號</button>
+        <button class="online-auth-btn" onclick="firebaseSignUp()" style="background:#22c55e;color:#fff">申請新帳號</button>
+        <button class="online-auth-btn" onclick="firebaseSendVerification()" style="background:#fff;color:#92400e;border:1px solid #fde68a">重寄驗證信</button>
+        <button class="online-auth-btn" onclick="firebaseResetPassword()" style="background:#f3f4f6;color:#374151">忘記密碼</button>
+      </div>
+      <div id="firebase-login-status" class="online-auth-note">未設定 Firebase 時，可先使用離線模式。</div>
+    </div>
   </div>
 </div>
 
@@ -396,6 +418,7 @@ html,body{height:100%;overflow:hidden}
           </div>
         </div>
         <div class="topbar-airplane" aria-hidden="true"></div>
+        <span id="cloud-status-chip" class="cloud-chip">離線模式</span>
         <input class="search-box" placeholder="🔍 搜尋科目或作業" id="search-box" oninput="handleSearch(this.value)" />
         <button class="avatar-btn" onclick="showPage('parent')" title="家長摘要"><img src="icon/avatar.png" alt="頭像" /></button>
       </div>
@@ -790,6 +813,15 @@ html,body{height:100%;overflow:hidden}
             <button class="schedule-add-btn" onclick="exportSystemBackup()" style="flex:1;min-width:150px;background:#0ea5e9">匯出系統資料</button>
             <button class="schedule-add-btn" onclick="triggerSystemImport()" style="flex:1;min-width:150px;background:#f59e0b">匯入系統資料</button>
           </div>
+          <div style="margin-top:14px;padding-top:12px;border-top:1px solid #e5e7eb">
+            <div style="font-size:12px;font-weight:900;color:#111;margin-bottom:4px">Firebase 雲端同步</div>
+            <div id="firebase-sync-status" style="font-size:11px;color:#6b7280;line-height:1.5">登入並完成 Email 驗證後，可把目前資料上傳到雲端，或從雲端下載回本機。</div>
+            <div class="cloud-action-row">
+              <button class="schedule-add-btn" onclick="firebaseUploadSnapshot()" style="background:#22c55e">上傳到雲端</button>
+              <button class="schedule-add-btn" onclick="firebaseDownloadSnapshot()" style="background:#6366f1">從雲端下載</button>
+              <button class="schedule-add-btn" onclick="firebaseSignOut()" style="background:#e5e7eb;color:#374151;box-shadow:none">登出線上帳號</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1036,6 +1068,9 @@ My teacher is kind."></textarea>
 
 <script src="https://cdn.jsdelivr.net/npm/pinyin-pro@3.26.0/dist/index.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <script>
 // Pre-warm SpeechSynthesis voices so they're ready when we need them
 if('speechSynthesis' in window){
@@ -1060,6 +1095,20 @@ let scheduleItems = [];         // Persisted list of today's review schedule ite
 let tempPhrases = [];
 let pendingImportCourses = [];
 let pendingExamCramPlan = null;
+
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCYTvjXMdhB0TeVYCgcdGExH9GnXx64n10",
+  authDomain: "leolessonhelper.firebaseapp.com",
+  projectId: "leolessonhelper",
+  storageBucket: "leolessonhelper.firebasestorage.app",
+  messagingSenderId: "360388707477",
+  appId: "1:360388707477:web:b4137439117dc27420c79c"
+};
+
+let firebaseApp = null;
+let firebaseAuth = null;
+let firebaseDb = null;
+let firebaseUser = null;
 
 // Today's tasks are built dynamically from currentSchedule
 let defaultTasks = [];
@@ -3316,6 +3365,257 @@ function handleSystemImportFile(event){
   reader.readAsText(file, 'utf-8');
 }
 
+function isFirebaseConfigured(){
+  return !!(FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.authDomain && FIREBASE_CONFIG.projectId && FIREBASE_CONFIG.appId);
+}
+
+function setFirebaseStatus(message, type = 'offline'){
+  const loginStatus = document.getElementById('firebase-login-status');
+  const syncStatus = document.getElementById('firebase-sync-status');
+  const chip = document.getElementById('cloud-status-chip');
+  if(loginStatus) loginStatus.textContent = message;
+  if(syncStatus) syncStatus.textContent = message;
+  if(chip){
+    chip.classList.remove('is-online', 'is-unverified');
+    if(type === 'online'){
+      chip.classList.add('is-online');
+      chip.textContent = '雲端已登入';
+    } else if(type === 'unverified'){
+      chip.classList.add('is-unverified');
+      chip.textContent = 'Email 未驗證';
+    } else {
+      chip.textContent = isFirebaseConfigured() ? '雲端未登入' : '離線模式';
+    }
+  }
+}
+
+function firebaseSnapshotRef(){
+  if(!firebaseDb || !firebaseUser) return null;
+  return firebaseDb.collection('user_snapshots').doc(firebaseUser.uid);
+}
+
+function initFirebaseOnline(){
+  if(!isFirebaseConfigured()){
+    setFirebaseStatus('尚未填入 Firebase 設定，目前使用離線模式。', 'offline');
+    return false;
+  }
+  if(firebaseApp && firebaseAuth && firebaseDb) return true;
+  if(typeof firebase === 'undefined'){
+    setFirebaseStatus('Firebase SDK 尚未載入，請確認網路連線或改用離線模式。', 'offline');
+    return false;
+  }
+  try{
+    firebaseApp = firebase.apps && firebase.apps.length ? firebase.app() : firebase.initializeApp(FIREBASE_CONFIG);
+    firebaseAuth = firebase.auth();
+    firebaseDb = firebase.firestore();
+    firebaseAuth.onAuthStateChanged(user => {
+      firebaseUser = user || null;
+      if(!user){
+        setFirebaseStatus('尚未登入線上帳號。', 'offline');
+      } else if(!user.emailVerified){
+        setFirebaseStatus(`已登入 ${user.email || '帳號'}，請先完成 Email 驗證。`, 'unverified');
+      } else {
+        setFirebaseStatus(`已登入 ${user.email || '線上帳號'}，可手動上傳或下載雲端資料。`, 'online');
+      }
+    });
+    return true;
+  }catch(err){
+    console.error(err);
+    setFirebaseStatus('Firebase 初始化失敗，請檢查設定值。', 'offline');
+    return false;
+  }
+}
+
+function firebaseCredentials(){
+  const email = (document.getElementById('firebase-email')?.value || '').trim();
+  const password = document.getElementById('firebase-password')?.value || '';
+  if(!email || !password){
+    alert('請輸入 Email 與密碼');
+    return null;
+  }
+  if(password.length < 6){
+    alert('Firebase 密碼至少需要 6 碼');
+    return null;
+  }
+  return {email, password};
+}
+
+async function firebaseSignUp(){
+  if(!initFirebaseOnline()) return;
+  const cred = firebaseCredentials();
+  if(!cred) return;
+  try{
+    const result = await firebaseAuth.createUserWithEmailAndPassword(cred.email, cred.password);
+    firebaseUser = result.user;
+    if(firebaseUser && typeof firebaseUser.sendEmailVerification === 'function'){
+      await firebaseUser.sendEmailVerification();
+    }
+    setFirebaseStatus('新帳號已建立，驗證信已寄出。完成 Email 驗證後再登入即可同步。', 'unverified');
+    alert('已建立帳號並寄出 Email 驗證信，請先到信箱完成驗證。');
+  }catch(err){
+    console.error(err);
+    alert(firebaseAuthErrorMessage(err));
+  }
+}
+
+async function firebaseSignIn(){
+  if(!initFirebaseOnline()) return;
+  const cred = firebaseCredentials();
+  if(!cred) return;
+  try{
+    const result = await firebaseAuth.signInWithEmailAndPassword(cred.email, cred.password);
+    firebaseUser = result.user;
+    if(!firebaseUser.emailVerified){
+      setFirebaseStatus(`已登入 ${firebaseUser.email || cred.email}，請先完成 Email 驗證。`, 'unverified');
+      alert('請先完成 Email 驗證，再使用雲端同步。');
+      return;
+    }
+    const nameInput = document.getElementById('kid-name-input');
+    if(nameInput && !nameInput.value.trim() && !localStorage.getItem('kidName')){
+      nameInput.value = cred.email.split('@')[0] || '小朋友';
+    }
+    setFirebaseStatus(`已登入 ${firebaseUser.email || cred.email}，可手動上傳或下載雲端資料。`, 'online');
+    startApp();
+  }catch(err){
+    console.error(err);
+    alert(firebaseAuthErrorMessage(err));
+  }
+}
+
+async function firebaseSignOut(){
+  if(!firebaseAuth){
+    setFirebaseStatus('尚未登入線上帳號。', 'offline');
+    return;
+  }
+  try{
+    await firebaseAuth.signOut();
+    firebaseUser = null;
+    setFirebaseStatus('已登出線上帳號，本機資料仍保留。', 'offline');
+  }catch(err){
+    console.error(err);
+    alert('登出失敗，請稍後再試。');
+  }
+}
+
+async function firebaseSendVerification(){
+  if(!firebaseAuth && !initFirebaseOnline()) return;
+  const user = firebaseAuth && firebaseAuth.currentUser ? firebaseAuth.currentUser : firebaseUser;
+  if(!user){
+    alert('請先登入或申請帳號');
+    return;
+  }
+  if(user.emailVerified){
+    alert('這個 Email 已完成驗證');
+    return;
+  }
+  try{
+    await user.sendEmailVerification();
+    setFirebaseStatus('驗證信已重新寄出，請到信箱完成驗證。', 'unverified');
+    alert('驗證信已重新寄出，請到信箱、垃圾郵件、促銷內容查看。');
+  }catch(err){
+    console.error(err);
+    alert(firebaseAuthErrorMessage(err));
+  }
+}
+
+async function firebaseResetPassword(){
+  if(!initFirebaseOnline()) return;
+  const email = (document.getElementById('firebase-email')?.value || '').trim();
+  if(!email){
+    alert('請先輸入 Email');
+    return;
+  }
+  try{
+    await firebaseAuth.sendPasswordResetEmail(email);
+    alert('密碼重設信已寄出');
+  }catch(err){
+    console.error(err);
+    alert(firebaseAuthErrorMessage(err));
+  }
+}
+
+function requireVerifiedFirebaseUser(){
+  if(!initFirebaseOnline()) return null;
+  const user = firebaseAuth && firebaseAuth.currentUser ? firebaseAuth.currentUser : firebaseUser;
+  if(!user){
+    alert('請先登入線上帳號');
+    return null;
+  }
+  if(!user.emailVerified){
+    setFirebaseStatus(`已登入 ${user.email || '帳號'}，請先完成 Email 驗證。`, 'unverified');
+    alert('請先完成 Email 驗證，再使用雲端同步。');
+    return null;
+  }
+  firebaseUser = user;
+  return user;
+}
+
+async function firebaseUploadSnapshot(){
+  const user = requireVerifiedFirebaseUser();
+  if(!user) return;
+  const ref = firebaseSnapshotRef();
+  if(!ref) return;
+  try{
+    const payload = buildSystemBackupPayload(['user', 'progress', 'schedule', 'courses']);
+    await ref.set({
+      ownerUid: user.uid,
+      email: user.email || '',
+      payload,
+      clientUpdatedAt: new Date().toISOString(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, {merge:true});
+    setFirebaseStatus(`已上傳到雲端：${new Date().toLocaleString()}`, 'online');
+    alert('雲端資料已上傳完成');
+  }catch(err){
+    console.error(err);
+    alert('上傳失敗，請確認 Firestore 規則與網路連線。');
+  }
+}
+
+async function firebaseDownloadSnapshot(){
+  const user = requireVerifiedFirebaseUser();
+  if(!user) return;
+  const ref = firebaseSnapshotRef();
+  if(!ref) return;
+  try{
+    const snap = await ref.get();
+    if(!snap.exists){
+      alert('雲端目前沒有備份資料');
+      return;
+    }
+    const data = snap.data() || {};
+    if(!data.payload){
+      alert('雲端資料格式不正確');
+      return;
+    }
+    if(!confirm('從雲端下載會覆蓋本機的用戶、進度、時程與課程資料，確定繼續嗎？')) return;
+    applySystemBackup(data.payload, ['user', 'progress', 'schedule', 'courses']);
+    setFirebaseStatus(`已從雲端下載：${new Date().toLocaleString()}`, 'online');
+    alert('雲端資料已下載完成');
+  }catch(err){
+    console.error(err);
+    alert('下載失敗，請確認 Firestore 規則與網路連線。');
+  }
+}
+
+function firebaseAuthErrorMessage(err){
+  const code = err && err.code ? String(err.code) : '';
+  const map = {
+    'auth/email-already-in-use': '這個 Email 已經註冊過，請改用登入舊帳號。',
+    'auth/invalid-email': 'Email 格式不正確。',
+    'auth/invalid-credential': 'Email 或密碼不正確。',
+    'auth/network-request-failed': '網路連線失敗，請確認目前可以連上 Firebase/Google 服務。',
+    'auth/operation-not-allowed': 'Firebase Authentication 尚未啟用 Email/Password 登入方式。',
+    'auth/too-many-requests': '驗證信寄送太頻繁，Firebase 暫時擋住了請求，請等 15 到 60 分鐘後再試。',
+    'auth/unauthorized-continue-uri': '驗證信連結網域未授權，請到 Firebase Authentication 的 Authorized domains 加入你的網域。',
+    'auth/unauthorized-domain': '目前網頁所在網域未授權，請到 Firebase Authentication 的 Authorized domains 加入你的網域。',
+    'auth/user-not-found': '找不到這個帳號。',
+    'auth/wrong-password': '密碼不正確。',
+    'auth/weak-password': '密碼強度不足，請至少使用 6 碼。'
+  };
+  return map[code] || `Firebase 操作失敗${code ? '：' + code : ''}。請稍後再試。`;
+}
+
 function renderCoursesList(){
   let html = '';
   if(courses.length === 0){
@@ -4379,6 +4679,7 @@ function autoGenerateZhuyin(idx) {
 // the welcome phrase as text on the login screen. The phrase will be spoken
 // out loud after the user clicks 開始學習 (guaranteed user gesture, no autoplay block).
 (function initLoginScreen(){
+  initFirebaseOnline();
   let saved = '';
   try { saved = localStorage.getItem('kidName') || ''; } catch(e){}
   if(!saved) return;
